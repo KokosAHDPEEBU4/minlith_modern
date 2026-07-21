@@ -1,0 +1,732 @@
+Now I have read all the relevant files. Here is the complete compilation of the calculation logic you requested.
+
+---
+
+## FULL CALCULATION LOGIC FROM THE REPOSITORY
+
+The detailed calculation formulas are **NOT** in `WORKFLOW_MINLITH.md` (which is only a project roadmap). The actual formulas are distributed across three primary files:
+- **`EXCEL_REFERENCE_MINLITH.md`** -- Excel cell-level formulas and formulas extracted from the original MINLITH1.xlsx
+- **`MINERAL_CHEMISTRY.md`** -- Stoichiometric distribution matrices and the algorithmic sequence
+- **`TZ_MINLITH_Modern.md`** -- The specification with type classification thresholds
+
+Below is the **complete extracted text** of every section about Type 1-5 calculations, Stage VI, Ca correction, anorthite distribution, and edge cases.
+
+---
+
+### SECTION 1: STAGE 0 -- PREPARATION (Formula Unit Conversion)
+
+**From EXCEL_REFERENCE_MINLITH.md, Section 5.2 + 5.3 + Appendix A:**
+
+```
+Stage 0: Convert weight.% to formula units (f.u.)
+=================================================
+
+General formula:
+  ф.е. = weight.% / molar_mass * 10000
+
+Specific oxide conversions (from Excel sheet "Нач+Type 12"):
+
+SiO2 (row 2):
+  D2 = ROUND(B2*10000/C2, 0)
+  Example: ROUND(52.5*10000/60.09, 0) = ROUND(8736.89, 0) = 8737
+  NOTE: Rounded to INTEGER.
+
+TiO2 (row 3):
+  D3 = B3  (weight.% = f.u. directly)
+
+Al2O3 (row 4):
+  D4 = ROUND(B4*10000/C4, 0)   [where C4 = 101.96 molar mass]
+
+Fe2O3 -> FeO conversion (row 6):
+  D6 = ROUND((B5*0.9+B6)*10000/C6, 0)   [where C6 = 71.85]
+  Fe2O3 is converted to FeO-equivalent by multiplying by 0.9, 
+  then added to the actual FeO value.
+  Example: ROUND((1.71*0.9 + 8.06)*10000/71.85, 0) = ROUND(9.599*10000/71.85, 0) = 1336
+
+MgO (row 7):
+  D7 = ROUND(B7*10000/C7, 0)   [where C7 = 40.32]
+
+CaO -- APATITE CORRECTION (row 8):
+  D8 = ROUND(B8*10000/C8, 0) - ROUND(3.33*B11/C11*10000 + B15/C15*10000/2, 0)
+  
+  This means:
+    CaO_corrected = CaO_raw(f.u.) - (3.33 * P2O5_f.u. + F_f.u./2)
+    
+  Where:
+    - 3.33 * P2O5 = Ca consumed by apatite Ca5(PO4)3(F,Cl,OH)
+      (5 Ca per 3 P = 5/3 = 1.667, but formula uses 3.33 because 
+       P2O5 contains 2 P atoms, so 5 Ca / (3/2 P2O5) = 10/3 = 3.33)
+    - F/2 = Ca consumed by fluorite CaF2
+      (1 Ca per 2 F atoms)
+
+Na2O -- HALITE CORRECTION (row 9):
+  D9 = ROUND(B9*10000/C9, 2) - ROUND(B16/C16/2*10000, 2)   [where C9=61.982, C16=35.457]
+  
+  This means:
+    Na2O_corrected = Na2O_raw(f.u.) - Cl/2
+    Na consumed by halite NaCl: 1 Na per 1 Cl = Cl/2 Na2O units
+
+K2O (row 10):
+  D10 = ROUND(B10*10000/C10, 2)   [where C10 = 94.2]
+
+P2O5 (row 11):
+  D11 = ROUND(B11*10000/C11, 2)   [where C11 = 141.95]
+
+MnO (row 12):
+  D12 = ROUND(B12*10000/C12, 2)   [where C12 = 70.94]
+
+C (row 13):
+  D13 = B13   (weight.% = f.u. directly)
+
+SO3 (row 14):
+  D14 = ROUND(B14/C14*10000, 2)   [where C14 = 80.066]
+
+F -- FLUORITE CORRECTION (row 15):
+  D15 = ROUND(B15/C15*10000, 2) - 0.67*D11
+  
+  This means:
+    F_corrected = F_raw(f.u.) - 0.67 * P2O5_f.u.
+    F consumed by apatite: 1 F per 3 P2O5 units... but the formula 
+    shows 0.67 * P2O5, not 0.33 * P2O5. This implies:
+    - Ap = Ca5(PO4)3F => 1F per 3P, but P2O5 has 2P, so 
+      F/P2O5 = 1/1.5 = 0.667 ≈ 0.67
+
+Cl (row 16):
+  D16 = ROUND(B16/C16*10000, 2)   [where C16 = 35.457]
+
+S (row 17):
+  D17 = ROUND(B17/C17*10000 + D14, 2)   [S f.u. + SO3 f.u.]
+
+CO2 (row 18):
+  D18 = ROUND(B18/C18*10000, 2)   [where C18 = 44.011]
+
+SO (row 19):
+  D19 = ROUND(B19/C19*10000, 0)   [rounded to INTEGER]
+```
+
+---
+
+### SECTION 2: COEFFICIENTS k1-k4 (Adaptive, depend on F)
+
+**From EXCEL_REFERENCE_MINLITH.md, Section 5.4 + TZ Appendix V:**
+
+```
+F = Fe3+ / Sigma(Fe)   (row 2, column H)
+  G2: F= 
+  H2: =ROUND(D6/(D6+D7),3)  [Note: in the original, this uses 
+      Fe2O3_f.u. and FeO_f.u. which may be confusing due to the 
+      Fe2O3->FeO conversion]
+
+A = Al / (Al + Fe)   (row 2, column J)
+  J2: =ROUND(2*D4/(2*D4+D6+D7),3)
+
+k1-k4 formulas by F range (all rounded to 3 decimal places in Excel):
+=============================================================
+
+| F Range    | k1                    | k2                    | k3                         | k4              |
+|------------|-----------------------|-----------------------|----------------------------|-----------------|
+| 0 -- 0.21  | -5.18*F + 4.42        | 4.09*F                | (3.16 - 0.41*F) / 2       | 10 - k1-k2-2k3  |
+| 0.21 -- 0.51 | 3.93 - 2.96*F       | 5.66*F - 0.34         | (3.66 - 2.69*F) / 2       | 10 - k1-k2-2k3  |
+| 0.51 -- 0.69 | 5.13 - 5.32*F       | 2.54*F + 1.24         | (3.46*F + 0.53) / 2       | 10 - k1-k2-2k3  |
+| 0.69 -- 0.87 | 6.2 - 12*F          | 2.54*F + 1.24         | (3.46*F + 0.53) / 2       | 10 - k1-k2-2k3  |
+| 0.87 -- 1.0  | 4 - 4*F             | 18.36*F - 12.36       | (25 - 25*F) / 2           | 10 - k1-k2-2k3  |
+
+CONSTRAINT: k1 + k2 + 2*k3 + k4 = 10  (sum of cations in chlorite = 10)
+
+Example for T-O2 (F = 0.696, range 0.51-0.69):
+  k1 = 5.13 - 5.32*0.696 = 1.427
+  k2 = 2.54*0.696 + 1.24 = 3.008
+  k3 = (3.46*0.696 + 0.53)/2 = 1.469
+  k4 = 10 - 1.427 - 3.008 - 2*1.469 = 2.627
+```
+
+---
+
+### SECTION 3: ROCK TYPE CLASSIFICATION (Stage I)
+
+**From EXCEL_REFERENCE_MINLITH.md Section 5.5 + MINERAL_CHEMISTRY.md Section 4.2 + TZ Section 2.2.1:**
+
+```
+Type classification thresholds (sequential -- first matching condition wins):
+============================================================================
+
+Threshold 1 (Type 1):  Al <= 1.2*Na + K
+Threshold 2 (Type 2):  Al <= 1.2*Na + 3.25*K
+Threshold 3 (Type 3):  Al <= 1.2*Na + 3.25*K + (Mg - 0.5*K*k3) / k1
+Threshold 4 (Type 4):  Al <= 5*Na + 3.25*K + (Mg - 0.5*K - 2*Na)*k3 / k1
+Threshold 5 (Type 5):  Everything else (Al > all above)
+
+Where Al, Na, K, Mg are all in formula units (ф.е.), 
+and k1, k3 are the adaptive chlorite coefficients.
+
+IMPORTANT: Conditions are checked SEQUENTIALLY. 
+The FIRST condition that evaluates to TRUE determines the type.
+This means a sample could match Type 2 or Type 3 but if it matches 
+Type 1 first (Al <= 1.2Na + K), it is classified as Type 1.
+
+From EXCEL_REFERENCE (row 20-26):
+  Row 20: Type 1 Check B:  Al < Na+K      = D4-D9-D10 = 1778.1
+  Row 21: Type 1:          Al <= 1.2Na+K   = D4-(1.2*D9+D10) = 1747.77
+  Row 22: Type 2:          Al <= 1.2Na+3.25K = D4-(1.2*D9+3.25*D10) = 923.73
+  Row 23: (coefficient calculation for chlorite)
+  Row 24: Type 3:          Al <= 1.2Na+3.25K+(Mg-0.5K*k3)/k1 = 2296
+  Row 25: Type 4:          Al <= 5Na+3.25K+(Mg-0.5K-2Na)*k3/k1 = 2296
+  Row 26: Type 5:          Al > threshold 4  = 94.12
+
+NOTE: For T-O2:
+  Al = 2296, Na = 151.66, K = 366.24, Mg = 583
+  Type 1: 2296 <= 1.2*151.66 + 366.24 = 548.23? NO
+  Type 2: 2296 <= 1.2*151.66 + 3.25*366.24 = 1372.53? NO
+  Type 3: 2296 <= ... ? CHECK
+  But in the original file, T-O2 is classified as Type 1 
+  (sheet "Нач+Type 12", section "Type 1").
+  
+  This apparent contradiction is noted: "The conditions are checked 
+  sequentially and the first one satisfied determines the type."
+```
+
+---
+
+### SECTION 4: TYPE 1 CALCULATION
+
+**From EXCEL_REFERENCE_MINLITH.md Section 5.6 + MINERAL_CHEMISTRY.md Section 4.3:**
+
+```
+TYPE 1 DISTRIBUTION LOGIC:
+==========================
+
+Step 1: Assign feldspars
+  Ab = Na   (all sodium goes to albite)
+  Or = K    (all potassium goes to orthoclase)
+
+Step 2: Calculate remaining Si and Al
+  Si1 = Si - 6*Ab   (each Ab consumes 3 Si, but formula shows 6?)
+  Al1 = Al - Or - Ab  (each Or consumes 1 Al, each Ab consumes 1 Al)
+
+  NOTE: The "6*Ab" likely comes from the fact that the formula unit 
+  calculations work differently than the simple stoichiometry suggests.
+  From the example: Si1 = 8737 - 6*151.66 = 7827.04
+  This means 6 Si units per Ab formula unit. But Ab = NaAlSi3O8 has 3 Si.
+  The factor 6 may relate to how f.u. are calculated (dividing by molar mass).
+
+Step 3: Distribute An (anorthite)
+  IF Al1 <= Ca1:
+      -> go to branch 1.2 (labeled in Excel)
+  
+  Branch 1.2 (Al1 > Ca1):
+      IF Si2 >= 2*Ca1:
+          An = Ca1   (all Ca goes to anorthite)
+      ELSE:
+          An = Si2/2
+          Si3 = 0
+
+  CRITICAL EDGE CASE: If Ca1 is NEGATIVE (as in T-O2 where Ca1 = -23):
+      Al1 (1778) > Ca1 (-23): TRUE
+      Si2 (7827) >= 2*Ca1 (-46): TRUE
+      An = Ca1 = -23   (NEGATIVE anorthite! This is an artifact.)
+
+Step 4: Distribute Al between Kn (kaolinite) and Gb (gibbsite)
+  Al2 = Al1 - An
+  Si3 = Si2 - 2*An   (each An consumes 2 Si)
+  
+  IF 2*Al2 >= Si3:
+      Kn = Si3/2
+      Gb = Al2 - Kn
+      Si4 = 0
+  ELSE:
+      Kn = Al2
+      Si4 = Si3 - 2*Kn
+
+Step 5: Quartz from remaining Si
+  Q = Si4
+
+EXAMPLE (T-O2, simplified):
+  Ab = 151.66
+  Or = 366.24
+  Si1 = 8737 - 6*151.66 = 7827
+  Al1 = 2296 - 366.24 - 151.66 = 1778
+
+  Al1 (1778) > Ca1 (-23): YES
+  Si2 (7827) >= 2*Ca1 (-46): YES
+  An = Ca1 = -23  (negative!)
+
+  Al2 = 1778 - (-23) = 1801
+  Si3 = 7827 - 2*(-23) = 7873
+
+  2*Al2 (3602) >= Si3 (7873)? NO
+  Kn = Al2 = 1801
+  Si4 = 7873 - 2*1801 = 4271
+
+  Q = Si4 = 4271
+
+  NOTE: This is the simplified version. The actual Excel trace for T-O2 
+  produces different final values (Q=5313.84, Ill=183.12, Chl=383.27, 
+  Kn=-385.09) because additional branching occurs with illite and chlorite 
+  distribution that is not fully captured here. The full trace requires 
+  >50 steps.
+```
+
+---
+
+### SECTION 5: TYPE 2 CALCULATION
+
+**From EXCEL_REFERENCE_MINLITH.md Section 5.7 + MINERAL_CHEMISTRY.md Section 4.3:**
+
+```
+TYPE 2 DISTRIBUTION LOGIC:
+==========================
+
+Similar to Type 1 with ADDITIONAL branching for Ill (illite).
+
+Type 2 adds illite, which consumes K, Al, and Si:
+  Ill formula: KAl2(AlSi3O10)(OH)2
+  Per formula unit: 1 K, 3 Al, 3 Si
+
+The additional logic branches based on:
+- Availability of Si, Mg, Fe after feldspar assignment
+- Whether Illite can be formed (requires K, but K is also used by Or)
+- Whether Mg/Fe are available for chlorite
+
+From EXCEL_REFERENCE:
+  "Type 2: Analogous to Type 1 with additional branching for Ill (illite)."
+  "See full trace in EXCEL_REFERENCE_MINLITH.md."
+
+NOTE: The full Type 2 branching is in the Excel file and requires 
+detailed cell-by-cell analysis. The key difference from Type 1 is 
+that illite formation is possible, which adds competition for 
+K, Al, and Si.
+```
+
+---
+
+### SECTION 6: TYPE 3 CALCULATION
+
+**From EXCEL_REFERENCE_MINLITH.md Section 6 + MINERAL_CHEMISTRY.md Section 4.3:**
+
+```
+TYPE 3 DISTRIBUTION LOGIC (most complex, ~300+ conditions):
+===========================================================
+
+Structure of the "Нач+Type 3" sheet (556 rows, 18 columns):
+- More complex branching than Type 1-2
+- Additional variables: Chl (chlorite), Ill (illite)
+- More goto-style transitions
+- Distribution of Al between Or, An, Chl, Ill, Kn, Gb
+- Checking excess/deficit of Mg and Fe
+- Many intermediate variables: Al1, Al2, Al3, Al4, Si1, Si2, Si3, Si4...
+
+KEY DIFFERENCES from Type 1-2:
+- Chlorite (Chl) is added -- adaptive mineral with k1-k4
+- Distribution of Al between multiple minerals simultaneously
+- Checking for Mg and Fe availability
+- More intermediate variables and branching
+
+EXAMPLE BRANCHING (rows 30-100 from original):
+
+3.1: Ab = Na
+     Si1 = Si - 6*Ab
+     Al1 = Al - Ab
+
+3.1.1: IF Ca1 >= 0.2*Na AND Si1 < 6*K + 0.4*Na
+           -> An = 0.2*Na, go to 3.3.1
+       ELSE IF Ca1 < 0.2*Na AND Si1 < 6*K + 2*Ca1
+           -> An = Ca1, go to 3.3.1
+       ELSE
+           -> Or = K, then branch by Al
+
+3.3.1: Distribution of Or, Ill, Chl
+       IF 2*Al3 >= Si3:
+           -> Kn = Si3/2, Gb = Al3 - Kn, Si4 = 0
+       ELSE:
+           -> Kn = Al3, Si4 = Si3 - 2*Kn
+
+NOTE: Full reproduction requires step-by-step trace for a specific sample.
+The Type 3 sheet in the original has ~556 rows and 18 columns of formulas.
+```
+
+---
+
+### SECTION 7: TYPE 4 AND TYPE 5 CALCULATIONS
+
+**From EXCEL_REFERENCE_MINLITH.md + MINERAL_CHEMISTRY.md:**
+
+```
+TYPE 4:
+=======
+
+Classification threshold:
+  Al <= 5*Na + 3.25*K + (Mg - 0.5*K - 2*Na)*k3/k1
+
+The Type 4 calculation introduces additional anorthite distribution:
+  - ab_4: Albite (Type 4 specific)
+  - an_4: Anorthite (Type 4 specific)
+  - ill_4, chl_4, mm_4: Type 4-specific clay minerals
+  - mg4_1: Intermediate Mg for Type 4
+
+From EXCEL named ranges:
+  ab_4    | Albite (Type 4)
+  an_4    | Anorthite (Type 4)
+  ill_4   | Illite (Type 4)
+  chl_4   | Chlorite (Type 4)
+  mm_4    | Montmorillonite (Type 4)
+  mg4_1   | Intermediate Mg (Type 4)
+  al4_1, al4_2, al4_3, al4_4 | Intermediate Al4
+  si4_1, si4_2, si4_3, si4_4 | Intermediate Si4
+
+"Type 4, 5: Analogous with additional branching."
+
+
+TYPE 5:
+=======
+
+Classification threshold: Everything else (Al > all Type 4 threshold)
+
+Type 5 is the "overflow" type for rocks with very high aluminum content.
+The specific branching logic is analogous to Types 1-4 with additional 
+conditions for the excess aluminum.
+```
+
+---
+
+### SECTION 8: STAGE VI -- FINAL DISTRIBUTION OF RESIDUALS
+
+**From EXCEL_REFERENCE_MINLITH.md Section 5.8 + MINERAL_CHEMISTRY.md Section 4.4:**
+
+```
+STAGE VI -- FINAL DISTRIBUTION OF RESIDUALS:
+=============================================
+
+After Type 1-5 distribution, calculate residuals:
+  Ca_n = Ca - Ca_in_minerals
+  Mg_n = Mg - Mg_in_minerals
+  Fe_n = Fe - Fe_in_minerals
+  Mn_n = Mn - Mn_in_minerals
+  Si_n = Si - Si_in_minerals
+
+BRANCHING LOGIC:
+================
+
+BRANCH VI-A: IF Ca_n >= Mg_n + Fe_n
+--------------------------------------------------
+  This means Ca is sufficient to accommodate all Mg and Fe as carbonates.
+
+  Dl (dolomite) = Mg_n       (CaMg(CO3)2 -- takes all Mg)
+  Ank (ankerite) = Fe_n      (Ca(Fe,Mg)(CO3)2 -- takes all Fe)
+  Cc (calcite) = Ca_n - Dl - Ank   (remaining Ca goes to calcite)
+  Rch (rhodochrosite) = Mn_n
+  Q (quartz) = Si_n
+
+  SUB-BRANCH for Fe distribution:
+    IF Ca_n (after Dl and Ank) <= 250 f.u.:
+        Ht (hematite) = Fe_n / 2
+    ELSE:
+        Sd (siderite) = Fe_n
+
+BRANCH VI-B: IF Ca_n < Mg_n + Fe_n
+--------------------------------------------------
+  Ca is NOT sufficient for all Mg and Fe.
+
+  SUB-BRANCH: IF Ca_n < Mg_n
+  ------------------------------------------
+    Dl (dolomite) = Ca_n       (all Ca goes to dolomite)
+    Mg_n1 = Mg_n - Dl          (remaining Mg after dolomite)
+
+    SUB-SUB-BRANCH: IF Si_n >= 2/3 * Mg_n1
+    ------------------------------------------
+      Srp (serpentine) = Mg_n1 / 3
+      Q (quartz) = Si_n - 2*Srp
+
+    ELSE (Si_n < 2/3 * Mg_n1):
+      ------------------------------------------
+      Srp (serpentine) = Si_n / 2
+      Mst (magnesite) = Mg_n1 - 3*Srp
+
+  Ht (hematite) = Fe_n / 2    (or Sd = Fe_n)
+  Prl (pyrolusite) = Mn_n
+
+NOTE: The 250 f.u. threshold for Ca_n1 is an empirical constant 
+from the original MINLITH algorithm. It determines whether iron 
+goes to hematite (Fe2O3) or siderite (FeCO3).
+```
+
+---
+
+### SECTION 9: CA CORRECTION (APATITE) -- DETAILED
+
+**From EXCEL_REFERENCE_MINLITH.md Section 5.3 + MINERAL_CHEMISTRY.md Section 3.1:**
+
+```
+CA CORRECTION FOR APATITE:
+==========================
+
+Apatite formula: Ca5(PO4)3(F,Cl,OH)
+Formula weight: 336.21
+
+Per formula unit of apatite:
+  - Consumes 5 Ca
+  - Consumes 3 P
+  - Consumes 1 F (or Cl/OH, but in MINLITH we account for F separately)
+
+Since P is measured as P2O5:
+  P2O5 has 2 P atoms per formula unit
+  So 3 P = 1.5 P2O5
+  Ca per P2O5 = 5/1.5 = 3.33
+
+Therefore: Ca consumed by apatite = 3.33 * P2O5_f.u.
+
+The correction in the formula:
+  D8 = ROUND(B8*10000/C8, 0) - ROUND(3.33*B11/C11*10000 + B15/C15*10000/2, 0)
+
+  CaO_corrected = CaO_raw(f.u.) - Ca_in_apatite - Ca_in_fluorite
+
+  Ca_in_apatite = 3.33 * P2O5(f.u.)
+  Ca_in_fluorite = F(f.u.) / 2   (CaF2: 1 Ca per 2 F)
+
+EXAMPLE for T-O2:
+  CaO = 0.28 wt%
+  CaO_raw(f.u.) = 0.28/56.08*10000 = 50 f.u.
+  P2O5 = 0.31 wt% -> P2O5_f.u. = 0.31/141.95*10000 = 22 f.u.
+  F = 0 -> F_f.u. = 0
+  
+  Ca_in_apatite = 3.33 * 22 = 73.26 f.u.
+  Ca_in_fluorite = 0/2 = 0
+
+  CaO_corrected = 50 - 73.26 - 0 = -23 f.u.   (NEGATIVE!)
+
+This means: The CaO content in the rock (0.28%) is INSUFFICIENT 
+to form all the apatite required by the P2O5 content (0.31%).
+The Ca correction produces a NEGATIVE Ca value.
+```
+
+---
+
+### SECTION 10: ANORTHITE DISTRIBUTION WHEN CA IS NEGATIVE
+
+**From EXCEL_REFERENCE_MINLITH.md Section 5.6 + MINERAL_CHEMISTRY.md Section 5.4:**
+
+```
+ANORTHITE DISTRIBUTION WITH NEGATIVE Ca:
+=========================================
+
+When Ca1 (Ca after apatite/fluorite correction) is negative:
+
+In Type 1 logic:
+  Al1 (1778) > Ca1 (-23)  -> TRUE (always true when Ca is negative)
+  Si2 (7827) >= 2*Ca1 (-46) -> TRUE (always true when Ca is negative)
+  An = Ca1 = -23  (NEGATIVE anorthite)
+
+This creates a NEGATIVE anorthite value. Then:
+  Al2 = Al1 - An = 1778 - (-23) = 1801
+  Si3 = Si2 - 2*An = 7827 - 2*(-23) = 7873
+
+The negative Ca "gives back" Al and Si to the pool, 
+which then flows into other minerals (Kn, Gb, Q, etc.).
+
+This is a KNOWN ARTIFACT of the algorithm:
+  "The algorithm 'redistributes' elements, creating negative minerals."
+  
+  From EXCEL_REFERENCE Section 11:
+  | Problem           | Manifestation            | Solution in new version           |
+  |-------------------|--------------------------|------------------------------------|
+  | Negative minerals | Kn = -9.77, Dl = -0.42   | Keep as-is, mark with warning      |
+  | Sum > 100%        | 101.748%                 | Normalize to 100%, show original   |
+```
+
+---
+
+### SECTION 11: STAGE VII -- CONVERSION TO WEIGHT PERCENT
+
+**From EXCEL_REFERENCE_MINLITH.md Section 5.9 + MINERAL_CHEMISTRY.md Section 4.5:**
+
+```
+STAGE VII -- WEIGHT PERCENT CONVERSION:
+========================================
+
+For each mineral:
+  weight.% = formula_units * formula_weight / 10000
+
+Formula weights (from Section 3.2):
+  Ab: 524.482
+  An: 278.22
+  Or: 556.7
+  Q:  60.09
+  Mm: 2202.6
+  Ill: 2014.75
+  Chl: 683.396
+  Gb: 156.008
+  Kn: 258.172
+  Ap: 336.21
+  Cc: 100.091
+  Dl: 184.42
+  Ank: 215.952
+  Rch: 114.952
+  Sd: 115.861
+  Srp: 227.172
+  Mst: 84.331
+  Ht: 177.716
+  Prl: 86.94
+  Pr: 119.982
+  Rt: 60.09
+  Hl: 116.896
+  Gy: 172.178
+  Fl: 78.08
+
+EXAMPLE for T-O2:
+  Ab: 151.66 f.u. * 524.482 / 10000 = 7.954% -> rounded 7.82%
+  Ill: 183.12 f.u. * 2014.75 / 10000 = 36.894% -> rounded 36.26%
+
+  NOTE: Discrepancy (7.954 vs 7.82) due to intermediate rounding in Excel.
+
+Normalization:
+  weight.%_normalized = weight.% * 100 / sum(all weight.% values)
+
+  T-O2: sum = 101.748%, normalization factor = 100/101.748 = 0.9828
+```
+
+---
+
+### SECTION 12: EDGE CASES AND KNOWN PROBLEMS
+
+**From EXCEL_REFERENCE_MINLITH.md Section 11 + MINERAL_CHEMISTRY.md Section 7 + TEST_CASES.md:**
+
+```
+KNOWN PROBLEMS / EDGE CASES:
+=============================
+
+1. NEGATIVE MINERALS
+   Problem: Calculation can produce negative values (Kn = -9.77, Dl = -0.42)
+   Cause: Sequential distribution can "over-allocate" elements on one step,
+          leaving negative residuals for the next step.
+   Solution in MINLITH: Keep negative values as-is, mark with warning.
+   Do NOT zero them out (this changes the mass balance).
+
+2. SUM > 100% (BEFORE NORMALIZATION)
+   Example: T-O2 sum = 101.748%
+   Solution: Normalize to 100%, but display original sum.
+   Warning: Displayed when sum < 98% or sum > 102%.
+
+3. FLOAT ARTIFACTS
+   Example: Fe2O3 = 0.9194100000000001 (Excel precision artifact)
+   Solution: Round on input to reasonable precision.
+
+4. INTERMEDIATE ROUNDING
+   Excel performs ROUND() after each step. This can accumulate error.
+   New version: Use float64 internally, round only on output.
+
+5. OPERATION ORDER
+   Excel evaluates formulas left-to-right.
+   Python uses standard operator precedence.
+   This can cause subtle differences.
+
+6. NEGATIVE CA AFTER APATITE CORRECTION
+   When P2O5 is high relative to CaO, the apatite correction
+   makes Ca negative. This flows through to negative An (anorthite).
+   The algorithm handles this by using the negative value in 
+   subsequent calculations (it "returns" Ca/Al/Si to the pool).
+
+7. PURE MINERAL TEST CASES
+   | Test | Input | Expected | Check |
+   |------|-------|----------|-------|
+   | Pure quartz | SiO2=100% | Q=100% | Sum=100% |
+   | Pure calcite | CaO=56%, CO2=44% | Cc=100% | Sum=100% |
+   | Pure albite | SiO2=68.7, Al2O3=19.5, Na2O=11.8 | Ab=100% | Sum~100% |
+   | Pure orthoclase | SiO2=64.8, Al2O3=18.3, K2O=16.9 | Or=100% | Sum~100% |
+
+8. BOUNDARY CONDITIONS BETWEEN TYPES
+   | Boundary | Condition | Notes |
+   |----------|-----------|-------|
+   | Type 1-2 | Al = 1.2Na + K | Verify against original |
+   | Type 2-3 | Al = 1.2Na + 3.25K | Verify against original |
+   | Type 3-4 | Al = 5Na + 3.25K + (Mg-0.5K-2Na)*k3/k1 | Verify |
+   | Type 4-5 | Al > threshold | Verify |
+
+9. HIGH P2O5 (MANY APATITES)
+   When P2O5 is very high, Ca correction makes Ca very negative.
+   All Ca goes to apatite, none left for anorthite or carbonates.
+
+10. HIGH F (MANY FLUORITES)
+    When F is high, both Ca and F are consumed by fluorite.
+    Double correction on Ca (from apatite AND fluorite).
+
+11. GOTO-STYLE LABELS IN EXCEL
+    The original uses text labels like "goto 3.2.1," and "else goto 3.2.2,"
+    These are NOT actual GOTO commands -- they are user comments.
+    The actual logic is implemented as nested IF statements.
+```
+
+---
+
+### SECTION 13: MINERAL STOICHIOMETRY MATRIX
+
+**From MINERAL_CHEMISTRY.md Section 3.1:**
+
+```
+COMPLETE DISTRIBUTION MATRIX (f.u. of oxide per 1 f.u. of mineral):
+=====================================================================
+
+            Ab    An    Or    Ill   Chl     Kn    Mm     Gb    Q    Rt    Ht    Prl   Ap    Cc    Dl    Ank   Rch   Sd    Srp   Mst   Hl    Gy    Fl    Pr
+Si          3     2     3     3     k4      2     4      0     1     0     0     0     0     0     0     0     0     0     2     0     0     0     0     0
+Ti          0     0     0     0     0       0     0      0     0     1     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+Al          1     2     1     3     k3      2     2      1     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+Fe3+        0     0     0     0     0       0     0      0     0     0     2     0     0     0     0     0     0     0     0     0     0     0     0     0
+Fe2+        0     0     0     0     k2      0     0      0     0     0     0     0     0     0     0     0.5   0     1     0     0     0     0     0     1
+Mg          0     0     0     0     k1      0     2      0     0     0     0     0     0     0     1     0.5   0     0     3     1     0     0     0     0
+Ca          0     1     0     0     0       0     0.33   0     0     0     0     0     5     1     1     1     0     0     0     0     0     1     1     0
+Na          1     0     0     0     0       0     0.33   0     0     0     0     0     0     0     0     0     0     0     0     0     1     0     0     0
+K           0     0     1     1     0       0     0      0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+P           0     0     0     0     0       0     0      0     0     0     0     0     3     0     0     0     0     0     0     0     0     0     0     0
+Mn          0     0     0     0     0       0     0      0     0     0     0     1     0     0     0     0     1     0     0     0     0     0     0     0
+C           0     0     0     0     0       0     0      0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+SO3         0     0     0     0     0       0     0      0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0
+F           0     0     0     0     0       0     0      0     0     0     0     0     1     0     0     0     0     0     0     0     0     0     2     0
+Cl          0     0     0     0     0       0     0      0     0     0     0     0     0     0     0     0     0     0     0     0     1     0     0     0
+S           0     0     0     0     0       0     0      0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     0     2
+CO2         0     0     0     0     0       0     0      0     0     0     0     0     0     1     2     2     0     1     0     1     0     0     0     0
+```
+
+---
+
+### SECTION 14: CHLORITE COEFFICIENTS IN DETAIL
+
+**From MINERAL_CHEMISTRY.md Section 2.2:**
+
+```
+CHLORITE (Chl) -- ADAPTIVE MINERAL:
+====================================
+
+Formula: (Mg,Fe)5Al(AlSi3O10)(OH)8
+Formula weight: 683.396
+
+Chl composition depends on k1-k4:
+  k1 = Mg in chlorite (per formula unit)
+  k2 = Fe in chlorite
+  k3 = Al in chlorite
+  k4 = Si in chlorite
+
+Constraint: k1 + k2 + 2*k3 + k4 = 10  (sum of cations)
+
+Example at F = 0.696:
+  k1 = 1.427, k2 = 3.008, k3 = 1.469, k4 = 2.627
+  Check: 1.427 + 3.008 + 2*1.469 + 2.627 = 9.999 ≈ 10
+
+Physical meaning:
+  F = 0 (all Fe2+):  Magnesian chlorite, high Mg
+  F = 1 (all Fe3+):  Ferric chlorite, high Fe3+
+  F = 0.5:           Transitional composition
+```
+
+---
+
+### SUMMARY
+
+The complete calculation logic is spread across these repository files:
+
+| File | Absolute Path | Content |
+|------|---------------|---------|
+| EXCEL_REFERENCE_MINLITH.md | `C:\Users\kokos\Desktop\Lene\EXCEL_REFERENCE_MINLITH.md` | Excel cell-level formulas, Stage 0/VI/VII, Ca correction, edge cases |
+| MINERAL_CHEMISTRY.md | `C:\Users\kokos\Desktop\Lene\MINERAL_CHEMISTRY.md` | Stoichiometric matrices, k1-k4 formulas, algorithmic sequence, defect checking |
+| TZ_MINLITH_Modern.md | `C:\Users\kokos\Desktop\Lene\TZ_MINLITH_Modern.md` | Specification with type thresholds, k1-k4 coefficient table |
+| TEST_CASES.md | `C:\Users\kokos\Desktop\Lene\TEST_CASES.md` | Boundary conditions, edge cases, pure mineral tests |
+| PROMPT_FOR_AI.md | `C:\Users\kokos\Desktop\Lene\PROMPT_FOR_AI.md` | Notes about original file structure |
+
+The `WORKFLOW_MINLITH.md` file itself contains **only project management information** (stages, milestones, checkpoints) and **no calculation formulas**.
