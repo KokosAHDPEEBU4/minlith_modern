@@ -92,8 +92,11 @@ class InputPanel(QWidget):
     def get_name(self) -> str:
         return self._name_edit.text().strip() or "Sample"
 
+    def set_name(self, name: str) -> None:
+        self._name_edit.setText(name)
+
     def set_composition(self, comp: OxideComposition) -> None:
         """Fill editors from an OxideComposition."""
         for field, editor in self._editors.items():
             val = getattr(comp, field, 0.0)
-            editor.setText(str(val) if val else "")
+            editor.setText(str(round(val, 4)) if val else "")

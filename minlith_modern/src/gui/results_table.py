@@ -54,7 +54,7 @@ class ResultsTable(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self._header = QLabel("Results")
-        self._header.setStyleSheet("font-weight: bold; font-size: 14px; padding: 4px;")
+        self._header.setStyleSheet("font-weight: bold; font-size: 14px; padding: 4px; color: #e0e0e0; background: transparent;")
         layout.addWidget(self._header)
 
         self._table = QTableWidget()
