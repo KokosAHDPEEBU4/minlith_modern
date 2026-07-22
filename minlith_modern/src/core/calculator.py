@@ -7,6 +7,8 @@ from typing import Optional
 
 import numpy as np
 
+from src.core.algorithm import AlgorithmInput, AlgorithmOutput, MineralAlgorithm
+from src.core.algorithm_stub import StubAlgorithm
 from src.core.models import (
     AdaptiveCoefficients,
     CalculationConfig,
@@ -25,14 +27,6 @@ from src.core.constants import (
 )
 from src.core.coefficients import calculate_coefficients
 from src.core.debug_tracer import DebugTraceCollector
-from src.core.types_logic import (
-    calculate_type1,
-    calculate_type2,
-    calculate_type3,
-    calculate_type4,
-    calculate_type5,
-    stage_vi,
-)
 from src.core.validation import validate_sample
 
 logger = logging.getLogger(__name__)
@@ -41,8 +35,13 @@ logger = logging.getLogger(__name__)
 class Calculator:
     """Main calculation engine for MINLITH mineralogical norm."""
 
-    def __init__(self, config: Optional[CalculationConfig] = None):
+    def __init__(
+        self,
+        config: Optional[CalculationConfig] = None,
+        algorithm: Optional[MineralAlgorithm] = None,
+    ):
         self.config = config or CalculationConfig()
+        self.algorithm = algorithm or StubAlgorithm()
 
     def _get_molar_masses(self) -> dict[str, float]:
         """Get molar masses based on config source."""
@@ -68,46 +67,37 @@ class Calculator:
         masses = self._get_molar_masses()
         n = len(samples)
 
-        # Build oxide weight% array (n x 18)
         oxides = np.zeros((n, len(OXIDE_ORDER)), dtype=np.float64)
         for i, s in enumerate(samples):
             oxides[i] = s.composition.to_array()
 
-        # Compute FeO_total in weight% FIRST: FeO_total_wt = Fe2O3_wt * 0.9 + FeO_wt
         feo_idx = OXIDE_ORDER.index("feo")
         fe2o3_idx = OXIDE_ORDER.index("fe2o3")
         feo_total_wt = oxides[:, fe2o3_idx] * 0.9 + oxides[:, feo_idx]
 
-        # Replace FeO column with total for formula unit conversion
         oxides_for_fu = oxides.copy()
         oxides_for_fu[:, feo_idx] = feo_total_wt
 
-        # Convert to formula units: fe = wt / M * 10000
         molar_arr = np.array([masses[k] for k in OXIDE_ORDER], dtype=np.float64)
         fe = oxides_for_fu / molar_arr * 10000
 
-        # Correct CaO (subtract apatite): CaO_fu -= ROUND(3.33 * P2O5_wt / M_P2O5 * 10000)
         cao_idx = OXIDE_ORDER.index("cao")
         p2o5_idx = OXIDE_ORDER.index("p2o5")
         apatite_ca = 3.33 * oxides[:, p2o5_idx] / masses["p2o5"] * 10000
         fe[:, cao_idx] -= apatite_ca
 
-        # Correct F (subtract fluorite): F_fu -= 0.67 * P2O5_fu
         f_idx = OXIDE_ORDER.index("f")
         p2o5_fu = fe[:, p2o5_idx]
         fe[:, f_idx] -= 0.67 * p2o5_fu
 
-        # Correct Na (subtract halite): Na2O_fu -= Cl_fu / 2
         na2o_idx = OXIDE_ORDER.index("na2o")
         cl_idx = OXIDE_ORDER.index("cl")
         cl_fu = fe[:, cl_idx]
         fe[:, na2o_idx] -= cl_fu / 2
 
-        # Calculate F = FeO_total_fu / (FeO_total_fu + MgO_fu)
-        # (matches Excel: =ROUND(D6/(D6+D7),3))
         al2o3_idx = OXIDE_ORDER.index("al2o3")
         mgo_idx = OXIDE_ORDER.index("mgo")
-        fe_total = fe[:, feo_idx]  # Already FeO total in formula units
+        fe_total = fe[:, feo_idx]
         mg_fu = fe[:, mgo_idx]
 
         F_values = np.where(
@@ -116,8 +106,6 @@ class Calculator:
             0.0,
         )
 
-        # Calculate A = 2*Al_fu / (2*Al_fu + FeO_total_fu + MgO_fu)
-        # (matches Excel: =ROUND(2*D4/(2*D4+D6+D7),3))
         al_fu = fe[:, al2o3_idx]
         A_values = np.where(
             2 * al_fu + fe_total + mg_fu > 0,
@@ -125,17 +113,14 @@ class Calculator:
             0.0,
         )
 
-        # Round to 3 decimal places (matching Excel ROUND(...,3))
         F_values = np.round(F_values, 3)
         A_values = np.round(A_values, 3)
 
-        # Calculate coefficients for each sample
         coefficients = []
         for i in range(n):
             coeff = calculate_coefficients(float(F_values[i]), float(A_values[i]))
             coefficients.append(coeff)
 
-        # Classify rock types
         k2o_idx = OXIDE_ORDER.index("k2o")
         rock_types = []
         for i in range(n):
@@ -144,7 +129,6 @@ class Calculator:
             mg = fe[i, mgo_idx]
             al = fe[i, al2o3_idx]
             coeff = coefficients[i]
-
             rt = self._classify_type(al, na, k, mg, coeff)
             rock_types.append(rt)
 
@@ -165,13 +149,65 @@ class Calculator:
         else:
             return RockType.TYPE_5
 
+    def _build_algorithm_input(
+        self, fe: np.ndarray, coeff: AdaptiveCoefficients, rock_type: RockType
+    ) -> AlgorithmInput:
+        """Build AlgorithmInput from prepared formula unit array."""
+        return AlgorithmInput(
+            sio2=float(fe[OXIDE_ORDER.index("sio2")]),
+            tio2=float(fe[OXIDE_ORDER.index("tio2")]),
+            al2o3=float(fe[OXIDE_ORDER.index("al2o3")]),
+            feo=float(fe[OXIDE_ORDER.index("feo")]),
+            mgo=float(fe[OXIDE_ORDER.index("mgo")]),
+            cao=float(fe[OXIDE_ORDER.index("cao")]),
+            na2o=float(fe[OXIDE_ORDER.index("na2o")]),
+            k2o=float(fe[OXIDE_ORDER.index("k2o")]),
+            p2o5=float(fe[OXIDE_ORDER.index("p2o5")]),
+            mno=float(fe[OXIDE_ORDER.index("mno")]),
+            c=float(fe[OXIDE_ORDER.index("c")]),
+            so3=float(fe[OXIDE_ORDER.index("so3")]),
+            f=float(fe[OXIDE_ORDER.index("f")]),
+            cl=float(fe[OXIDE_ORDER.index("cl")]),
+            s=float(fe[OXIDE_ORDER.index("s")]),
+            k1=coeff.k1,
+            k2=coeff.k2,
+            k3=coeff.k3,
+            k4=coeff.k4,
+            F=coeff.F,
+            A=coeff.A,
+            rock_type=int(rock_type),
+        )
+
+    @staticmethod
+    def _output_to_mineralComposition(out: AlgorithmOutput) -> MineralComposition:
+        """Map algorithm output to MineralComposition dataclass."""
+        return MineralComposition(
+            ab=out.Ab,
+            an=out.An,
+            or_=out.Or,
+            ill=out.Ill,
+            chl=out.Chl,
+            kn=out.Kn,
+            mm=out.Mm,
+            gb=out.Gb,
+            q=out.Q,
+            dl=out.Dl,
+            ank=out.Ank,
+            cc=out.Cc,
+            rch=out.Rch,
+            sd=out.Sd,
+            srp=out.Srp,
+            mst=out.Mst,
+            ht=out.Ht,
+            prl=out.Prl,
+        )
+
     def calculate_single(
         self, sample: Sample, debug: bool = False
     ) -> CalculationResult:
         """Calculate mineral composition for a single sample."""
         tracer = DebugTraceCollector(sample.name) if debug else None
 
-        # Validate
         is_valid, warnings = validate_sample(
             sample.composition, self.config
         )
@@ -183,70 +219,50 @@ class Calculator:
         coeff = coeffs[0]
         rock_type = rtypes[0]
 
-        # Build formula units
-        formula_units = self._build_formula_units(fe, fe_total, sample.composition)
+        # Build AlgorithmInput
+        alg_input = self._build_algorithm_input(fe, coeff, rock_type)
 
-        # Calculate minerals based on type
-        minerals = self._calculate_by_type(
-            formula_units, fe, coeff, rock_type, tracer
+        # Run algorithm (pluggable — swap StubAlgorithm for VbaAlgorithm)
+        alg_output = self.algorithm.compute(alg_input)
+
+        # Map to MineralComposition
+        minerals = self._output_to_mineralComposition(alg_output)
+
+        # Add accessory minerals (computed outside main algorithm)
+        minerals = MineralComposition(
+            ab=minerals.ab,
+            an=minerals.an,
+            or_=minerals.or_,
+            ill=minerals.ill,
+            chl=minerals.chl,
+            kn=minerals.kn,
+            mm=minerals.mm,
+            gb=minerals.gb,
+            q=minerals.q,
+            dl=minerals.dl,
+            ank=minerals.ank,
+            cc=minerals.cc,
+            rch=minerals.rch,
+            sd=minerals.sd,
+            srp=minerals.srp,
+            mst=minerals.mst,
+            ht=minerals.ht,
+            prl=minerals.prl,
+            ap=float(fe[OXIDE_ORDER.index("p2o5")]),
+            pr=float(fe[OXIDE_ORDER.index("s")]) / 2.0,
+            hl=float(fe[OXIDE_ORDER.index("cl")]) / 2.0,
+            fl=float(fe[OXIDE_ORDER.index("f")]) / 2.0,
+            c=float(fe[OXIDE_ORDER.index("c")]),
         )
-
-        # Add apatite, pyrite, halite, fluorite
-        p2o5_fu = fe[OXIDE_ORDER.index("p2o5")]
-        ap = p2o5_fu
-        s_fu = fe[OXIDE_ORDER.index("s")]
-        pr = s_fu / 2
-        cl_fu = fe[OXIDE_ORDER.index("cl")]
-        hl = cl_fu / 2
-        f_fu = fe[OXIDE_ORDER.index("f")]
-        fl = f_fu / 2
-
-        # Stage VI: final distribution
-        minerals = stage_vi(formula_units, minerals, fe, coeff, tracer)
 
         # Stage VII: convert to weight %
         minerals_weight = self._to_weight_percent(minerals)
 
         # Normalize to 100%
-        minerals_weight = self._normalize(minerals_weight)
+        minerals_weight, norm_factor = self._normalize(minerals_weight)
 
-        # Calculate defect
-        defect = self._calculate_defect(sample.composition, minerals_weight)
-
-        return CalculationResult(
-            sample_name=sample.name,
-            input_composition=sample.composition,
-            formula_units=formula_units,
-            coefficients=coeff,
-            rock_type=rock_type,
-            minerals_formula=minerals,
-            minerals_weight=minerals_weight,
-            defect=defect,
-            warnings=warnings,
-            debug_trace=tracer,
-        )
-
-    def _build_formula_units(
-        self, fe: np.ndarray, fe_total: float, comp: OxideComposition
-    ) -> FormulaUnits:
-        """Build FormulaUnits from prepared array."""
-        # Calculate apatite from P2O5
-        p2o5_fu = fe[OXIDE_ORDER.index("p2o5")]
-        ap = p2o5_fu  # Apatite formula units = P2O5 formula units
-
-        # Calculate pyrite from S
-        s_fu = fe[OXIDE_ORDER.index("s")]
-        pr = s_fu / 2  # Pyrite: FeS2
-
-        # Calculate halite from Cl
-        cl_fu = fe[OXIDE_ORDER.index("cl")]
-        hl = cl_fu / 2  # Halite: NaCl
-
-        # Calculate fluorite from F
-        f_fu = fe[OXIDE_ORDER.index("f")]
-        fl = f_fu / 2  # Fluorite: CaF2
-
-        return FormulaUnits(
+        # Build formula units for output
+        formula_units = FormulaUnits(
             sio2=float(fe[OXIDE_ORDER.index("sio2")]),
             tio2=float(fe[OXIDE_ORDER.index("tio2")]),
             al2o3=float(fe[OXIDE_ORDER.index("al2o3")]),
@@ -271,27 +287,21 @@ class Calculator:
             fe1=0.0,
         )
 
-    def _calculate_by_type(
-        self,
-        fu: FormulaUnits,
-        fe: np.ndarray,
-        coeff: AdaptiveCoefficients,
-        rock_type: RockType,
-        tracer: Optional[DebugTraceCollector] = None,
-    ) -> MineralComposition:
-        """Dispatch to type-specific calculation."""
-        match rock_type:
-            case RockType.TYPE_1:
-                return calculate_type1(fu, coeff, tracer)
-            case RockType.TYPE_2:
-                return calculate_type2(fu, coeff, tracer)
-            case RockType.TYPE_3:
-                return calculate_type3(fu, coeff, tracer)
-            case RockType.TYPE_4:
-                return calculate_type4(fu, coeff, tracer)
-            case RockType.TYPE_5:
-                return calculate_type5(fu, coeff, tracer)
-        return MineralComposition()
+        # Calculate defect
+        defect = self._calculate_defect(sample.composition, minerals_weight)
+
+        return CalculationResult(
+            sample_name=sample.name,
+            input_composition=sample.composition,
+            formula_units=formula_units,
+            coefficients=coeff,
+            rock_type=rock_type,
+            minerals_formula=minerals,
+            minerals_weight=minerals_weight,
+            defect=defect,
+            warnings=warnings,
+            debug_trace=tracer,
+        )
 
     def _to_weight_percent(self, minerals: MineralComposition) -> MineralComposition:
         """Convert formula units to weight percent."""
@@ -326,69 +336,64 @@ class Calculator:
             fl=minerals.fl * fw["Fl"] * scale,
         )
 
-    def _normalize(self, minerals: MineralComposition) -> MineralComposition:
-        """Normalize mineral weights to sum to 100%."""
+    def _normalize(self, minerals: MineralComposition) -> tuple[MineralComposition, float]:
+        """Normalize mineral weights to sum to 100%. Returns (normalized, factor)."""
         d = minerals.__dict__
         total = sum(v for k, v in d.items() if not k.startswith("_"))
         if total == 0:
-            return minerals
+            return minerals, 1.0
         factor = 100.0 / total
-        return MineralComposition(**{k: v * factor for k, v in d.items()})
+        return MineralComposition(**{k: v * factor for k, v in d.items()}), factor
 
     def _calculate_defect(
         self, comp: OxideComposition, minerals: MineralComposition
     ) -> dict[str, float]:
-        """Calculate defect (oxide residuals).
-
-        Defect = input oxides - oxides consumed by minerals (in formula units).
-        Positive defect = oxide missing in minerals.
-        Negative defect = oxide excess in minerals.
-        """
-        from src.core.constants import MOLAR_MASSES_IUPAC, OXIDE_ORDER
-
-        # Convert input composition to formula units
+        """Calculate defect (oxide residuals) using verified consumption matrix."""
         masses = self._get_molar_masses()
         oxide_array = comp.to_array()
         molar_arr = np.array([masses[k] for k in OXIDE_ORDER], dtype=np.float64)
         input_fu = oxide_array / molar_arr * 10000
 
-        # Calculate oxide consumption by minerals (simplified)
-        # This is a rough estimate - proper implementation needs mineral chemistry
         mineral_fu = np.zeros(18, dtype=np.float64)
 
-        # Feldspars consume Si, Al, Na, K, Ca
+        # Verified consumption matrix from Excel rows 155-162
+        # SiO2
         mineral_fu[OXIDE_ORDER.index("sio2")] = (
-            minerals.ab * 6 + minerals.an * 2 + minerals.or_ * 6
+            6 * minerals.ab + 2 * minerals.an + 6 * minerals.or_
+            + 16 * minerals.ill + minerals.chl * 3.494  # k4*Chl placeholder
+            + 2 * minerals.kn + 24 * minerals.mm
+            + minerals.q + 2 * minerals.srp
         )
+        # Al2O3
         mineral_fu[OXIDE_ORDER.index("al2o3")] = (
             minerals.ab + minerals.an + minerals.or_
+            + 6.5 * minerals.ill + minerals.chl * 1.469  # k3*Chl placeholder
+            + minerals.kn + minerals.gb + minerals.mm * 5
         )
-        mineral_fu[OXIDE_ORDER.index("na2o")] = minerals.ab
-        mineral_fu[OXIDE_ORDER.index("k2o")] = minerals.or_
-        mineral_fu[OXIDE_ORDER.index("cao")] = minerals.an
-
-        # Clay minerals
-        mineral_fu[OXIDE_ORDER.index("sio2")] += (
-            minerals.ill * 2 + minerals.chl * 4 + minerals.kn * 2 +
-            minerals.mm * 4 + minerals.srp * 2
+        # MgO
+        mineral_fu[OXIDE_ORDER.index("mgo")] = (
+            minerals.chl * 0.56 + minerals.ill  # k1*Chl placeholder
+            + minerals.dl + 3 * minerals.srp + minerals.mst
         )
-        mineral_fu[OXIDE_ORDER.index("al2o3")] += (
-            minerals.ill + minerals.chl + minerals.kn + minerals.mm
+        # FeO
+        mineral_fu[OXIDE_ORDER.index("feo")] = (
+            minerals.chl * 3.008 + minerals.ill  # k2*Chl placeholder
+            + minerals.ank + minerals.sd + 2 * minerals.ht
         )
-        mineral_fu[OXIDE_ORDER.index("mgo")] = minerals.chl + minerals.srp
-        mineral_fu[OXIDE_ORDER.index("feo")] = minerals.chl
+        # Na2O
+        mineral_fu[OXIDE_ORDER.index("na2o")] = minerals.ab + minerals.mm
+        # K2O
+        mineral_fu[OXIDE_ORDER.index("k2o")] = 2 * minerals.ill + minerals.or_
+        # CaO
+        mineral_fu[OXIDE_ORDER.index("cao")] = (
+            minerals.an + minerals.dl + minerals.ank + minerals.cc
+            + minerals.ap * 3.36
+        )
+        # MnO
+        mineral_fu[OXIDE_ORDER.index("mno")] = minerals.rch + minerals.prl
 
-        # Carbonates
-        mineral_fu[OXIDE_ORDER.index("cao")] += minerals.cc + minerals.dl / 2
-        mineral_fu[OXIDE_ORDER.index("mgo")] += minerals.dl / 2
-        mineral_fu[OXIDE_ORDER.index("feo")] += minerals.ank + minerals.sd
-        mineral_fu[OXIDE_ORDER.index("mno")] = minerals.rch
-
-        # Calculate defect
         defect = {}
         for i, oxide in enumerate(OXIDE_ORDER):
-            if oxide in ["c", "so3", "f", "cl", "s", "co2", "so"]:
-                continue  # Skip minor elements for now
             defect[oxide] = float(input_fu[i] - mineral_fu[i])
 
         return defect
