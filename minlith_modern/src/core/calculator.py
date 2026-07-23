@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import logging
+import threading
 from typing import Optional
 
 import numpy as np
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput, MineralAlgorithm
 from src.core.algorithm_stub import StubAlgorithm
+from src.core.anomaly_detector import AnomalyDetector
 from src.core.models import (
     AdaptiveCoefficients,
     CalculationConfig,
@@ -30,6 +32,42 @@ from src.core.debug_tracer import DebugTraceCollector
 from src.core.validation import validate_sample
 
 logger = logging.getLogger(__name__)
+
+
+class CalculationTimeoutError(Exception):
+    """Raised when a calculation exceeds the time limit."""
+
+
+class _TimeoutWrapper:
+    """Cross-platform timeout wrapper using threading."""
+
+    def __init__(self, seconds: int):
+        self.seconds = seconds
+        self.result = None
+        self.exception = None
+
+    def run(self, func, *args, **kwargs):
+        if self.seconds <= 0:
+            raise CalculationTimeoutError(
+                f"Расчёт превысил лимит {self.seconds} сек"
+            )
+
+        def _target():
+            try:
+                self.result = func(*args, **kwargs)
+            except Exception as e:
+                self.exception = e
+
+        thread = threading.Thread(target=_target, daemon=True)
+        thread.start()
+        thread.join(timeout=self.seconds)
+        if thread.is_alive():
+            raise CalculationTimeoutError(
+                f"Расчёт превысил лимит {self.seconds} сек"
+            )
+        if self.exception:
+            raise self.exception
+        return self.result
 
 
 class Calculator:
@@ -80,6 +118,9 @@ class Calculator:
 
         molar_arr = np.array([masses[k] for k in OXIDE_ORDER], dtype=np.float64)
         fe = oxides_for_fu / molar_arr * 10000
+
+        # Original FeO (before correction) for FormulaUnits.fe1
+        feo_original = oxides[:, feo_idx] / masses["feo"] * 10000
 
         cao_idx = OXIDE_ORDER.index("cao")
         p2o5_idx = OXIDE_ORDER.index("p2o5")
@@ -136,7 +177,7 @@ class Calculator:
             rt = self._classify_type(al, na, k, mg, coeff)
             rock_types.append(rt)
 
-        return fe, fe_total, coefficients, rock_types
+        return fe, fe_total, coefficients, rock_types, feo_original
 
     def _classify_type(
         self, al: float, na: float, k: float, mg: float, coeff: AdaptiveCoefficients
@@ -217,19 +258,39 @@ class Calculator:
         is_valid, warnings = validate_sample(
             sample.composition, self.config
         )
+        if tracer:
+            tracer.record("Валидация", "is_valid", is_valid)
 
         # Stage 0: preparation
-        fe_arr, fe_total_arr, coeffs, rtypes = self._stage_0([sample], tracer)
+        fe_arr, fe_total_arr, coeffs, rtypes, feo_orig = self._stage_0([sample], tracer)
         fe = fe_arr[0]
         fe_total = fe_total_arr[0]
         coeff = coeffs[0]
         rock_type = rtypes[0]
 
+        if tracer:
+            tracer.record("Коэффициенты", "F", coeff.F)
+            tracer.record("Коэффициенты", "A", coeff.A)
+            tracer.record("Коэффициенты", "k1", coeff.k1)
+            tracer.record("Коэффициенты", "k2", coeff.k2)
+            tracer.record("Коэффициенты", "k3", coeff.k3)
+            tracer.record("Коэффициенты", "k4", coeff.k4)
+            tracer.record("Тип породы", "rock_type", rock_type.name)
+
         # Build AlgorithmInput
         alg_input = self._build_algorithm_input(fe, coeff, rock_type)
 
-        # Run algorithm (pluggable — swap StubAlgorithm for VbaAlgorithm)
-        alg_output = self.algorithm.compute(alg_input)
+        # Run algorithm with timeout
+        wrapper = _TimeoutWrapper(self.config.timeout_seconds)
+        alg_output = wrapper.run(self.algorithm.compute, alg_input)
+        if tracer:
+            tracer.record("Алгоритм", "Ab", alg_output.Ab)
+            tracer.record("Алгоритм", "An", alg_output.An)
+            tracer.record("Алгоритм", "Or", alg_output.Or)
+            tracer.record("Алгоритм", "Q", alg_output.Q)
+            tracer.record("Алгоритм", "Ill", alg_output.Ill)
+            tracer.record("Алгоритм", "Chl", alg_output.Chl)
+            tracer.record("Алгоритм", "Kn", alg_output.Kn)
 
         # Map to MineralComposition
         minerals = self._output_to_mineralComposition(alg_output)
@@ -266,6 +327,10 @@ class Calculator:
 
         # Normalize to 100%
         minerals_weight, norm_factor = self._normalize(minerals_weight)
+        if tracer:
+            tracer.record("Нормализация", "factor", norm_factor)
+            tracer.record("Нормализация", "Ab_м.д.%", minerals_weight.ab)
+            tracer.record("Нормализация", "Q_м.д.%", minerals_weight.q)
 
         # Build formula units for output
         formula_units = FormulaUnits(
@@ -290,11 +355,34 @@ class Calculator:
             cao_corrected=float(fe[OXIDE_ORDER.index("cao")]),
             na2o_corrected=float(fe[OXIDE_ORDER.index("na2o")]),
             fe_total=fe_total,
-            fe1=0.0,
+            fe1=float(feo_orig[0]),
         )
 
         # Calculate defect
         defect = self._calculate_defect(sample.composition, minerals_weight)
+
+        # Calculate geochemical parameters
+        from src.charts.built_in.parameters import compute_parameters
+        geo_params = compute_parameters(sample.composition)
+
+        # Build preliminary result for anomaly detection
+        _pre_result = CalculationResult(
+            sample_name=sample.name,
+            input_composition=sample.composition,
+            formula_units=formula_units,
+            coefficients=coeff,
+            rock_type=rock_type,
+            minerals_formula=minerals,
+            minerals_weight=minerals_weight,
+            defect=defect,
+            warnings=warnings,
+            debug_trace=tracer,
+            geo_params=geo_params,
+        )
+
+        # Detect anomalies
+        detector = AnomalyDetector()
+        anomalies = detector.analyze(_pre_result)
 
         return CalculationResult(
             sample_name=sample.name,
@@ -307,6 +395,8 @@ class Calculator:
             defect=defect,
             warnings=warnings,
             debug_trace=tracer,
+            geo_params=geo_params,
+            anomalies=anomalies,
         )
 
     def _to_weight_percent(self, minerals: MineralComposition) -> MineralComposition:

@@ -203,3 +203,5 @@ class CalculationResult:
     defect: dict[str, float]               # oxide residuals
     warnings: list[str]
     debug_trace: Optional[object] = None
+    geo_params: Optional[object] = None    # GeoParameters (CIA, ICV, PIA, ASI, AI)
+    anomalies: Optional[list] = None       # list[AnomalyHypothesis]

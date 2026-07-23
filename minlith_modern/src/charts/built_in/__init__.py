@@ -14,6 +14,7 @@ from src.charts.built_in.afm import AFMPlugin
 from src.charts.built_in.sio2_k2o import SiO2K2OPlugin
 from src.charts.built_in.bland_altman import BlandAltmanPlugin
 from src.charts.built_in.correlation import CorrelationPlugin
+from src.charts.built_in.kf_chart import KFChart
 
 BUILTIN_CHARTS: list = [
     BarChart(),
@@ -30,4 +31,5 @@ BUILTIN_CHARTS: list = [
     SiO2K2OPlugin(),
     BlandAltmanPlugin(),
     CorrelationPlugin(),
+    KFChart(),
 ]

@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import Optional
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
+    QApplication,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -56,12 +58,23 @@ class ResultsTable(QWidget):
         self._header.setStyleSheet("font-weight: bold; font-size: 14px; padding: 4px; color: #e0e0e0; background: transparent;")
         layout.addWidget(self._header)
 
+        self._search = QLineEdit()
+        self._search.setPlaceholderText("Поиск минерала...")
+        self._search.setStyleSheet("padding: 4px; margin-bottom: 4px;")
+        self._search.textChanged.connect(self._filter_rows)
+        layout.addWidget(self._search)
+
         self._table = QTableWidget()
         self._table.setAlternatingRowColors(True)
         self._table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self._table.verticalHeader().setVisible(False)
+        self._table.setSortingEnabled(True)
         layout.addWidget(self._table)
+
+        # Ctrl+C: copy selected cells
+        copy_shortcut = QShortcut(QKeySequence.StandardKey.Copy, self._table)
+        copy_shortcut.activated.connect(self._copy_selection)
 
         self._table.setColumnCount(4)
         self._table.setHorizontalHeaderLabels(["Минерал", "ФЕ", "м.д.%", "Полное название"])
@@ -117,3 +130,31 @@ class ResultsTable(QWidget):
     def clear(self) -> None:
         self._table.setRowCount(0)
         self._header.setText("Результаты")
+        self._search.clear()
+
+    def _filter_rows(self, text: str) -> None:
+        text_lower = text.lower()
+        for row in range(self._table.rowCount()):
+            match = False
+            for col in range(self._table.columnCount()):
+                item = self._table.item(row, col)
+                if item and text_lower in item.text().lower():
+                    match = True
+                    break
+            self._table.setRowHidden(row, not match)
+
+    def _copy_selection(self) -> None:
+        selection = self._table.selectedRanges()
+        if not selection:
+            return
+        sel = selection[0]
+        lines = []
+        for row in range(sel.topRow(), sel.bottomRow() + 1):
+            if self._table.isRowHidden(row):
+                continue
+            cells = []
+            for col in range(sel.leftColumn(), sel.rightColumn() + 1):
+                item = self._table.item(row, col)
+                cells.append(item.text() if item else "")
+            lines.append("\t".join(cells))
+        QApplication.clipboard().setText("\n".join(lines))

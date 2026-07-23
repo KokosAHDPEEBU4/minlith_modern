@@ -4,23 +4,29 @@ from __future__ import annotations
 
 import json
 import logging
+import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from src.utils.helpers import sha256_file, now_iso
 
 logger = logging.getLogger(__name__)
 
+# Default TTL: 7 days in seconds
+DEFAULT_TTL = 7 * 24 * 3600
+
 
 class ResultCache:
     """Cache calculation results by file SHA-256 hash."""
 
-    def __init__(self, cache_dir: Path | str | None = None) -> None:
+    def __init__(self, cache_dir: Path | str | None = None, ttl_seconds: int = DEFAULT_TTL) -> None:
         if cache_dir is None:
             cache_dir = Path.home() / ".minlith" / "cache"
         self._dir = Path(cache_dir)
         self._dir.mkdir(parents=True, exist_ok=True)
         self._index_path = self._dir / "index.json"
         self._index: dict[str, dict] = {}
+        self._ttl = ttl_seconds
         self._load_index()
 
     def _load_index(self) -> None:
@@ -35,7 +41,7 @@ class ResultCache:
             json.dumps(self._index, indent=2, ensure_ascii=False), encoding="utf-8")
 
     def get(self, file_path: Path | str) -> list[dict] | None:
-        """Return cached results for file if hash matches, else None."""
+        """Return cached results for file if hash matches and not expired."""
         file_path = Path(file_path)
         if not file_path.exists():
             return None
@@ -44,6 +50,18 @@ class ResultCache:
         entry = self._index.get(file_hash)
         if not entry:
             return None
+
+        # TTL check
+        if self._ttl > 0 and "timestamp" in entry:
+            try:
+                entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                age = time.time() - entry_time.timestamp()
+                if age > self._ttl:
+                    self.invalidate(file_path)
+                    logger.info("Cache expired for %s (age=%.0fs)", file_path.name, age)
+                    return None
+            except (ValueError, TypeError):
+                pass
 
         result_path = self._dir / entry["result_file"]
         if not result_path.exists():
@@ -121,4 +139,36 @@ class ResultCache:
         return {
             "entries": len(self._index),
             "cache_dir": str(self._dir),
+            "ttl_seconds": self._ttl,
         }
+
+    def cleanup_expired(self) -> int:
+        """Remove expired entries. Returns count removed."""
+        if self._ttl <= 0:
+            return 0
+        expired_keys = []
+        now = time.time()
+        for file_hash, entry in self._index.items():
+            try:
+                entry_time = datetime.fromisoformat(entry["timestamp"].replace("Z", "+00:00"))
+                age = now - entry_time.timestamp()
+                if age > self._ttl:
+                    expired_keys.append(file_hash)
+            except (ValueError, TypeError, KeyError):
+                continue
+        for key in expired_keys:
+            entry = self._index.pop(key, None)
+            if entry:
+                result_path = self._dir / entry.get("result_file", "")
+                if result_path.exists():
+                    result_path.unlink()
+        if expired_keys:
+            self._save_index()
+            logger.info("Cleaned up %d expired cache entries", len(expired_keys))
+        return len(expired_keys)
+
+    def invalidate_config(self) -> int:
+        """Invalidate all cache entries (e.g., when config changes)."""
+        count = self.clear()
+        logger.info("Invalidated entire cache (%d entries) due to config change", count)
+        return count

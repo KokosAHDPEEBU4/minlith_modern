@@ -77,7 +77,7 @@ class ResultsPage(QWidget):
         minerals = ["Ab", "An", "Or", "Q", "Ill", "Chl", "Kn", "Mm", "Gb", "Ap", "Cc", "Dl"]
         fields = ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb", "ap", "cc", "dl"]
 
-        cols = ["Образец", "Тип", "F", "A"] + minerals
+        cols = ["Образец", "Тип", "F", "A", "CIA", "ICV", "PIA", "ASI", "AI"] + minerals
         self._summary_table.setColumnCount(len(cols))
         self._summary_table.setHorizontalHeaderLabels(cols)
         h = self._summary_table.horizontalHeader()
@@ -97,7 +97,15 @@ class ResultsPage(QWidget):
             a_item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
             self._summary_table.setItem(i, 3, a_item)
 
-            for j, field in enumerate(fields, start=4):
+            # Geo parameters
+            geo = r.geo_params
+            for j, attr in enumerate(["CIA", "ICV", "PIA", "ASI", "AI"], start=4):
+                val = getattr(geo, attr, 0.0) if geo else 0.0
+                item = QTableWidgetItem(f"{val:.2f}")
+                item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                self._summary_table.setItem(i, j, item)
+
+            for j, field in enumerate(fields, start=9):
                 val = getattr(r.minerals_weight, field, 0.0)
                 item = QTableWidgetItem(f"{val:.2f}")
                 item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)

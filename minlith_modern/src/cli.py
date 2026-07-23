@@ -29,13 +29,28 @@ def cmd_calculate(args: argparse.Namespace) -> int:
     from src.io.excel import load_samples, save_results, save_results_json, save_results_csv
     from src.io.csv_handler import read_csv
     from src.io.zip_handler import load_samples_from_zip
-    from src.core.calculator import Calculator
+    from src.core.calculator import Calculator, CalculationTimeoutError
+    from src.core.models import CalculationConfig
     from src.database.engine import init_db
     from src.database.repository import SampleRepository
     from src.utils.cache import ResultCache
+    import json as json_mod
 
     init_db()
-    calc = Calculator()
+
+    # Build config from CLI args
+    config = CalculationConfig(timeout_seconds=args.timeout)
+    if args.config:
+        cfg_path = Path(args.config)
+        if cfg_path.exists():
+            with open(cfg_path, encoding="utf-8") as f:
+                cfg_data = json_mod.load(f)
+            config = CalculationConfig(**{
+                k: v for k, v in cfg_data.items()
+                if hasattr(config, k)
+            })
+
+    calc = Calculator(config=config)
     cache = ResultCache()
     all_results = []
 
@@ -88,7 +103,7 @@ def cmd_calculate(args: argparse.Namespace) -> int:
 
         for sample in samples:
             try:
-                result = calc.calculate_single(sample)
+                result = calc.calculate_single(sample, debug=args.verbose)
                 all_results.append(result)
                 print(f"  {sample.name:30s} -> {result.rock_type.name:8s} "
                       f"(F={result.coefficients.F:.3f}, Ab={result.minerals_weight.ab:.1f}%)")
@@ -99,6 +114,8 @@ def cmd_calculate(args: argparse.Namespace) -> int:
                     repo.save_result(result)
                 except Exception:
                     pass
+            except CalculationTimeoutError as e:
+                print(f"  ТАЙМАУТ: {sample.name}: {e}", file=sys.stderr)
             except Exception as e:
                 print(f"  ОШИБКА: {sample.name}: {e}", file=sys.stderr)
 
@@ -378,6 +395,40 @@ def cmd_list_templates(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backup(args: argparse.Namespace) -> int:
+    """Создать резервную копию БД."""
+    from src.database.engine import init_db
+    from src.database.repository import SampleRepository
+    init_db()
+    repo = SampleRepository()
+    dest = repo.backup(args.output or ".")
+    print(f"Резервная копия: {dest}")
+    return 0
+
+
+def cmd_export_db(args: argparse.Namespace) -> int:
+    """Экспорт результатов из БД в JSON."""
+    from src.database.engine import init_db
+    from src.database.repository import SampleRepository
+    init_db()
+    repo = SampleRepository()
+    output = Path(args.output) if args.output else Path("minlith_export.json")
+    repo.export_results_json(output)
+    print(f"Экспортировано в {output}")
+    return 0
+
+
+def cmd_import_db(args: argparse.Namespace) -> int:
+    """Импорт результатов из JSON в БД."""
+    from src.database.engine import init_db
+    from src.database.repository import SampleRepository
+    init_db()
+    repo = SampleRepository()
+    count = repo.import_results_json(args.input)
+    print(f"Импортировано {count} записей")
+    return 0
+
+
 def main_cli() -> int:
     # Fix Windows console encoding
     import io
@@ -389,7 +440,13 @@ def main_cli() -> int:
         prog="minlith",
         description="MINLITH Modern — Нормативный минералогический расчёт",
     )
-    parser.add_argument("--version", action="version", version="MINLITH Modern 0.2.0")
+    parser.add_argument("--version", action="version", version="MINLITH Modern 0.4.0")
+    parser.add_argument("--verbose", "-V", action="store_true",
+                        help="Подробный вывод (debug trace)")
+    parser.add_argument("--timeout", type=int, default=120,
+                        help="Таймаут расчёта на образец (сек)")
+    parser.add_argument("--config", type=str, default=None,
+                        help="Путь к файлу конфигурации JSON")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # calculate
@@ -397,7 +454,7 @@ def main_cli() -> int:
                                     help="Рассчитать минеральный состав")
     _add_common_args(p_calc)
     p_calc.add_argument("-o", "--output", help="Путь для выходного файла")
-    p_calc.add_argument("--template", "-t", choices=["brief", "standard", "full"],
+    p_calc.add_argument("--template", "-t", choices=["brief", "standard", "full", "core", "geochemical"],
                         default="standard", help="Шаблон отчёта (для pdf/docx/html)")
     p_calc.add_argument("--no-cache", action="store_true",
                         help="Не использовать кэш результатов")
@@ -433,7 +490,7 @@ def main_cli() -> int:
                                       help="Создать отчёт")
     _add_common_args(p_report)
     p_report.add_argument("-o", "--output", help="Путь для выходного файла")
-    p_report.add_argument("--template", "-t", choices=["brief", "standard", "full"],
+    p_report.add_argument("--template", "-t", choices=["brief", "standard", "full", "core", "geochemical"],
                           default="standard")
     p_report.set_defaults(func=cmd_report)
 
@@ -450,6 +507,24 @@ def main_cli() -> int:
     # gui
     p_gui = subparsers.add_parser("gui", help="Запустить графический интерфейс")
     p_gui.set_defaults(func=cmd_gui)
+
+    # backup
+    p_backup = subparsers.add_parser("backup", aliases=["b"],
+                                      help="Резервная копия БД")
+    p_backup.add_argument("-o", "--output", help="Путь для резервной копии")
+    p_backup.set_defaults(func=cmd_backup)
+
+    # export-db
+    p_export_db = subparsers.add_parser("export-db", aliases=["ed"],
+                                         help="Экспорт БД в JSON")
+    p_export_db.add_argument("-o", "--output", help="Путь для JSON")
+    p_export_db.set_defaults(func=cmd_export_db)
+
+    # import-db
+    p_import_db = subparsers.add_parser("import-db", aliases=["id"],
+                                         help="Импорт результатов из JSON в БД")
+    p_import_db.add_argument("input", help="Путь к JSON файлу")
+    p_import_db.set_defaults(func=cmd_import_db)
 
     args = parser.parse_args()
     if not args.command:

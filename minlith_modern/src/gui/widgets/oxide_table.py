@@ -13,6 +13,9 @@ from PyQt6.QtWidgets import (
 
 from src.core.models import OxideComposition
 
+# Valid characters for numeric input
+_VALID_CHARS = set("0123456789.,-+eE")
+
 OXIDE_COLUMNS: list[tuple[str, str]] = [
     ("SiO\u2082", "sio2"),
     ("TiO\u2082", "tio2"),
@@ -65,6 +68,16 @@ class OxideTable(QWidget):
 
     def _on_change(self, item) -> None:
         if item.column() == 1:
+            text = item.text().replace(",", ".")
+            # Strip leading/trailing whitespace
+            text = text.strip()
+            if text and not all(c in _VALID_CHARS for c in text):
+                # Revert to previous valid value
+                try:
+                    float(text)
+                except ValueError:
+                    item.setText("0.0")
+                    return
             self.value_changed.emit()
 
     def get_composition(self) -> OxideComposition:

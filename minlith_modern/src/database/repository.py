@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import logging
+import shutil
+from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from sqlalchemy import desc
@@ -125,7 +128,7 @@ class SampleRepository:
 
     def get_sample(self, sample_id: int) -> Optional[Sample]:
         session = self._session()
-        db_sample = session.query(SampleDB).get(sample_id)
+        db_sample = session.get(SampleDB, sample_id)
         if db_sample is None:
             return None
         oxide_data = {o.oxide: o.value for o in db_sample.oxides}
@@ -213,3 +216,58 @@ class SampleRepository:
             "samples": session.query(SampleDB).count(),
             "calculations": session.query(CalculationDB).count(),
         }
+
+    def backup(self, dest_path: Path | str) -> Path:
+        """Создать резервную копию БД."""
+        from src.database.engine import _DB_PATH as DB_PATH
+        dest = Path(dest_path)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.suffix != ".db":
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            dest = dest / f"minlith_backup_{ts}.db"
+        shutil.copy2(str(DB_PATH), str(dest))
+        logger.info("Backup created: %s", dest)
+        return dest
+
+    def export_results_json(self, dest_path: Path | str) -> None:
+        """Экспорт всех результатов в JSON."""
+        import json
+        results = self.get_recent_results(limit=10000)
+        with open(dest_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, ensure_ascii=False, indent=2)
+        logger.info("Exported %d results to %s", len(results), dest_path)
+
+    def import_results_json(self, src_path: Path | str) -> int:
+        """Импорт результатов из JSON. Возвращает количество импортированных."""
+        import json
+        with open(src_path, encoding="utf-8") as f:
+            data = json.load(f)
+        count = 0
+        for entry in data:
+            try:
+                if "minerals" in entry and "sample" in entry:
+                    from src.core.models import (
+                        CalculationResult, OxideComposition, MineralComposition,
+                        AdaptiveCoefficients, RockType,
+                    )
+                    result = CalculationResult(
+                        sample_name=entry["sample"],
+                        input_composition=OxideComposition(),
+                        formula_units=None,
+                        coefficients=AdaptiveCoefficients(
+                            k1=entry.get("k1", 0), k2=entry.get("k2", 0),
+                            k3=entry.get("k3", 0), k4=entry.get("k4", 0),
+                            F=entry.get("F", 0), A=entry.get("A", 0),
+                        ),
+                        rock_type=RockType(entry.get("rock_type", 5)),
+                        minerals_formula=None,
+                        minerals_weight=MineralComposition(**entry.get("minerals", {})),
+                        defect={},
+                        warnings=[],
+                    )
+                    self.save_result(result)
+                    count += 1
+            except Exception as e:
+                logger.warning("Import failed for entry: %s", e)
+        logger.info("Imported %d results from %s", count, src_path)
+        return count

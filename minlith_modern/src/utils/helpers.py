@@ -39,11 +39,11 @@ def fmt_oxide_name(field: str) -> str:
 def fmt_mineral_name(name: str) -> str:
     """Capitalize mineral name."""
     _map = {
-        "q": "Quartz", "ab": "Albite", "an": "Anorthite", "or": "Orthoclase",
+        "q": "Quartz", "ab": "Albite", "an": "Anorthite", "or_": "Orthoclase",
         "ill": "Illite", "chl": "Chlorite", "kn": "Kaolinite", "dl": "Dickite",
         "gb": "Gibbsite", "srp": "Serpentine", "prl": "Pyrophyllite",
         "act": "Actinolite", "hb": "Hornblende", "di": "Diopside",
-        "cc": "Calcite", "dol": "Dolomite", "ms": "Muscovite", "bt": "Biotite",
+        "cc": "Calcite", "dl": "Dolomite", "ms": "Muscovite", "bt": "Biotite",
     }
     return _map.get(name.lower(), name.capitalize())
 

@@ -22,8 +22,12 @@ def main() -> None:
     app.setApplicationName("MINLITH Modern")
     app.setOrganizationName("MINLITH")
 
-    # Load QSS stylesheet
-    qss_path = Path(__file__).resolve().parent / "gui" / "styles" / "default.qss"
+    # Load QSS stylesheet based on theme
+    config = ConfigManager()
+    theme = config.get("theme", "dark")
+    qss_path = Path(__file__).resolve().parent / "gui" / "styles" / f"{theme}.qss"
+    if not qss_path.exists():
+        qss_path = Path(__file__).resolve().parent / "gui" / "styles" / "default.qss"
     if qss_path.exists():
         app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
 

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from src.core.models import AdaptiveCoefficients
 
 
+@lru_cache(maxsize=1024)
 def calculate_coefficients(F: float, A: float) -> AdaptiveCoefficients:
     """
     Calculate adaptive coefficients k1-k4 based on F (Fe3+/ΣFe).

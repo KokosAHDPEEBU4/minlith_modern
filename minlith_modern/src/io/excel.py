@@ -295,6 +295,22 @@ def save_results(
                     val = result.defect.get(oxide, 0.0)
                     ws_d.cell(r, i, round(val, 2))
 
+    # ── GeoParameters sheet ──
+    ws_geo = wb.create_sheet("GeoParams")
+    ws_geo.cell(1, 1, "Parameter")
+    for i, result in enumerate(results, start=2):
+        ws_geo.cell(1, i, result.sample_name)
+
+    geo_fields = [
+        ("CIA", "CIA"), ("ICV", "ICV"), ("PIA", "PIA"),
+        ("ASI", "ASI"), ("AI", "AI"),
+    ]
+    for r, (label, attr) in enumerate(geo_fields, start=2):
+        ws_geo.cell(r, 1, label)
+        for i, result in enumerate(results, start=2):
+            val = getattr(result.geo_params, attr, 0.0) if result.geo_params else 0.0
+            ws_geo.cell(r, i, round(val, 4))
+
     wb.save(str(path))
 
     # Auto-fit column widths

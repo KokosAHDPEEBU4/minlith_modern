@@ -148,8 +148,35 @@ def template_full() -> ReportTemplate:
     return t
 
 
+def template_core_report() -> ReportTemplate:
+    """Отчёт по керну: оксиды + минералы + параметры (без диаграмм)."""
+    t = ReportTemplate(name="Керн")
+    t.add_block(BlockType.HEADER, title="MINLITH — Отчёт по керну")
+    t.add_block(BlockType.OXIDE_TABLE, title="Химический состав (вес.%)")
+    t.add_block(BlockType.MINERAL_TABLE, title="Минеральный состав (вес.%)")
+    t.add_block(BlockType.PARAMETERS, title="Параметры расчёта")
+    t.add_block(BlockType.DEFECT, title="Дефект")
+    return t
+
+
+def template_geochemical_passport() -> ReportTemplate:
+    """Геохимический паспорт месторождения: сводная + параметры + диаграммы."""
+    t = ReportTemplate(name="Геохимический паспорт")
+    t.add_block(BlockType.HEADER, title="Геохимический паспорт")
+    t.add_block(BlockType.TEXT, title="Описание",
+                text_content="Геохимический паспорт месторождения (автоматически)")
+    t.add_block(BlockType.OXIDE_TABLE, title="Средний химический состав")
+    t.add_block(BlockType.MINERAL_TABLE, title="Средний минеральный состав", min_wt_percent=0.5)
+    t.add_block(BlockType.PARAMETERS, title="Средние коэффициенты")
+    t.add_block(BlockType.CHART, title="Минеральный состав", chart_type="bar")
+    t.add_block(BlockType.CHART, title="Круговая диаграмма", chart_type="pie")
+    return t
+
+
 PREDEFINED_TEMPLATES: dict[str, ReportTemplate] = {
     "brief": template_brief,
     "standard": template_standard,
     "full": template_full,
+    "core": template_core_report,
+    "geochemical": template_geochemical_passport,
 }
