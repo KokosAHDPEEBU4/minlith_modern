@@ -1,9 +1,9 @@
 # API REFERENCE
 # Публичный интерфейс MINLITH Modern
 
-**Версия:** 1.0
-**Дата:** 2026-07-17
-**Статус:** Проектный (уточняется по мере реализации)
+**Версия:** 2.0
+**Дата:** 2026-07-24
+**Статус:** Актуальный (v0.5.0)
 
 ---
 
@@ -13,21 +13,34 @@
 
 ```python
 # Основной движок
-from minlith.core.models import OxideComposition, CalculationResult
-from minlith.core.calculator import Calculator
+from src.core.models import OxideComposition, Sample, CalculationResult, CalculationConfig
+from src.core.calculator import Calculator
 
 # Ввод-вывод
-from minlith.io.excel_reader import ExcelReader
-from minlith.io.excel_writer import ExcelWriter
+from src.io.excel import read_excel, write_excel
+from src.io.csv_handler import read_csv, write_csv
+from src.io.xrf_importer import read_xrf
 
 # База данных
-from minlith.database.repository import SampleRepository
+from src.database.repository import SampleRepository, CalculationRepository
+from src.database.engine import get_engine, get_session
 
 # Диаграммы
-from minlith.charts.built_in.bar_chart import BarChart
+from src.charts.built_in.bar_chart import BarChart
 
 # Отчёты
-from minlith.reports.pdf_generator import PDFGenerator
+from src.reports.pdf_generator import PDFGenerator
+from src.reports.latex_exporter import LaTeXExporter
+from src.reports.template_builder import TemplateBuilder
+
+# Калибровка
+from src.core.calibrator import Calibrator, save_calibration_config, load_calibration_config
+
+# Аномалии
+from src.core.anomaly_detector import AnomalyDetector
+
+# Объяснения
+from src.core.explainer import Explainer
 ```
 
 ### 1.2. Типизация
@@ -39,10 +52,8 @@ Frozen dataclasses для неизменяемых данных.
 
 | Исключение | Условие | Обработка |
 |-----------|---------|-----------|
-| `ValidationError` | Некорректные входные данные | QMessageBox + подсветка |
-| `CalculationError` | Ошибка в расчёте одного образца | Пропустить, записать в лог |
-| `IOError` | Файл занят/не найден | Retry + QMessageBox |
-| `ConfigError` | Некорректные настройки | Загрузить defaults |
+| `CalculationTimeoutError` | Расчёт превысил лимит | Пропустить образец, лог |
+| `ValueError` | Некорректные входные данные | Пропустить, записать в лог |
 
 ---
 
@@ -55,16 +66,16 @@ Frozen dataclasses для неизменяемых данных.
 ```python
 @dataclass(frozen=True)
 class OxideComposition:
-    sio2: float
-    tio2: float
-    al2o3: float
-    fe2o3: float
-    feo: float
-    mgo: float
-    cao: float
-    na2o: float
-    k2o: float
-    p2o5: float
+    sio2: float = 0.0
+    tio2: float = 0.0
+    al2o3: float = 0.0
+    fe2o3: float = 0.0
+    feo: float = 0.0
+    mgo: float = 0.0
+    cao: float = 0.0
+    na2o: float = 0.0
+    k2o: float = 0.0
+    p2o5: float = 0.0
     mno: float = 0.0
     c: float = 0.0
     so3: float = 0.0
@@ -75,7 +86,7 @@ class OxideComposition:
     so: float = 0.0
 
     def sum(self) -> float: ...
-    def to_array(self) -> np.ndarray: ...
+    def to_array(self) -> np.ndarray: ...  # shape (18,)
     @classmethod
     def from_dict(cls, data: dict[str, float]) -> OxideComposition: ...
 ```
@@ -93,33 +104,44 @@ print(comp.sum())  # 99.95
 
 ---
 
+#### `Sample`
+
+```python
+@dataclass(frozen=True)
+class Sample:
+    name: str
+    composition: OxideComposition
+```
+
+---
+
 #### `FormulaUnits`
 
 ```python
 @dataclass(frozen=True)
 class FormulaUnits:
-    sio2: float      # Si°
-    tio2: float      # Ti°
-    al2o3: float     # Al°
-    fe2o3: float     # Fe3+°
-    feo: float       # Fe2+°
-    mgo: float       # Mg°
-    cao: float       # Ca°
-    na2o: float      # Na°
-    k2o: float       # K°
-    p2o5: float      # P°
-    mno: float       # Mn°
-    c: float
-    so3: float
-    f: float
-    cl: float
-    s: float
-    co2: float
-    so: float
-    cao_corrected: float
-    na2o_corrected: float
-    fe_total: float
-    fe1: float
+    sio2: float = 0.0
+    tio2: float = 0.0
+    al2o3: float = 0.0
+    fe2o3: float = 0.0
+    feo: float = 0.0
+    mgo: float = 0.0
+    cao: float = 0.0
+    na2o: float = 0.0
+    k2o: float = 0.0
+    p2o5: float = 0.0
+    mno: float = 0.0
+    c: float = 0.0
+    so3: float = 0.0
+    f: float = 0.0
+    cl: float = 0.0
+    s: float = 0.0
+    co2: float = 0.0
+    so: float = 0.0
+    cao_corrected: float = 0.0
+    na2o_corrected: float = 0.0
+    fe_total: float = 0.0
+    fe1: float = 0.0
 ```
 
 **Примечание:** Поля `*_corrected` содержат значения после вычета апатита, флюорита, галита.
@@ -139,7 +161,7 @@ class AdaptiveCoefficients:
     A: float    # Al/(Al+Fe)
 
     @classmethod
-    def from_F(cls, F: float, A: float, 
+    def from_F(cls, F: float, A: float,
                mass_source: str = "iupac") -> AdaptiveCoefficients: ...
 ```
 
@@ -193,20 +215,8 @@ class MineralComposition:
     gy: float = 0.0    # Гипс
     fl: float = 0.0    # Флюорит
 
-    # Производные группы
-    fsp: float = 0.0      # Полевые шпаты
-    pel: float = 0.0       # Глинистые
-    pel_fsp: float = 0.0    # Глинистые + полевые
-    carsd: float = 0.0     # Карбонаты
-    ill_kn: float = 0.0    # Ill + Kn
-    chl_mm_srp: float = 0.0 # Chl + Mm + Srp
-
-    def to_weight_percent(self, weights: MineralWeights) -> MineralComposition: ...
     def sum_formula_units(self) -> float: ...
-    def sum_weight_percent(self, weights: MineralWeights) -> float: ...
 ```
-
-**Примечание:** `pl = ab + an`, `fsp = ab + an + or_`, `pel = ill + chl + kn + mm + gb` и т.д.
 
 ---
 
@@ -224,7 +234,9 @@ class CalculationResult:
     minerals_weight: MineralComposition      # в вес.%
     defect: dict[str, float]               # остатки оксидов
     warnings: list[str]
-    debug_trace: Optional[dict] = None
+    debug_trace: Optional[object] = None
+    geo_params: Optional[object] = None    # GeoParameters (CIA, ICV, PIA, ASI, AI)
+    anomalies: Optional[list] = None       # list[AnomalyHypothesis]
 ```
 
 ---
@@ -248,7 +260,11 @@ class RockType(IntEnum):
 
 ```python
 class Calculator:
-    def __init__(self, config: Optional[CalculationConfig] = None): ...
+    def __init__(
+        self,
+        config: Optional[CalculationConfig] = None,
+        algorithm: Optional[MineralAlgorithm] = None,
+    ): ...
 
     def calculate(
         self,
@@ -261,31 +277,27 @@ class Calculator:
         sample: Sample,
         debug: bool = False
     ) -> CalculationResult: ...
-
-    def calculate_vectorized(
-        self,
-        samples: list[Sample]
-    ) -> list[CalculationResult]: ...
 ```
 
 **Пример:**
 ```python
-from minlith.core.calculator import Calculator
-from minlith.core.models import Sample
+from src.core.calculator import Calculator
+from src.core.models import Sample, OxideComposition
 
 calc = Calculator()
 
-samples = [
-    Sample(name="БК-1", composition=comp1),
-    Sample(name="T-O2", composition=comp2),
-]
+comp = OxideComposition(
+    sio2=52.5, al2o3=23.41, fe2o3=1.71, feo=8.06,
+    mgo=2.35, cao=0.28, na2o=0.94, k2o=3.45,
+)
+sample = Sample(name="T-O2", composition=comp)
+result = calc.calculate_single(sample)
 
-results = calc.calculate(samples, debug=True)
-
-for r in results:
-    print(f"{r.sample_name}: Type {r.rock_type}")
-    print(f"  Ab: {r.minerals_weight.ab:.2f}%")
-    print(f"  Q:  {r.minerals_weight.q:.2f}%")
+print(result.rock_type)          # RockType.TYPE_5
+print(result.minerals_weight.ab) # 7.82
+print(result.minerals_weight.q)  # 31.38
+print(result.defect)             # oxide residuals
+print(result.anomalies)          # list[AnomalyHypothesis]
 ```
 
 ---
@@ -305,20 +317,31 @@ class CalculationConfig:
     include_defect: bool = True
     include_parameters: bool = True
     timeout_seconds: int = 120
-    batch_size: Union[int, str] = "auto"     # int или "auto"
+    batch_size: int | str = "auto"
 ```
 
 ---
 
-### 2.3. DebugTrace
+### 2.3. Coefficients
 
-#### `DebugTraceCollector`
+```python
+from src.core.coefficients import calculate_coefficients
+
+coeff = calculate_coefficients(F=0.5, A=0.7)
+# Returns AdaptiveCoefficients with k1, k2, k3, k4, F, A
+```
+
+Кэшируется через `@lru_cache(1024)`.
+
+---
+
+### 2.4. DebugTrace
 
 ```python
 class DebugTraceCollector:
     def __init__(self, sample_name: str): ...
 
-    def record(self, step: str, variable: str, 
+    def record(self, step: str, variable: str,
                value: float, comment: str = ""): ...
 
     def record_condition(self, step: str, condition: str,
@@ -329,26 +352,14 @@ class DebugTraceCollector:
     def export_json(self, path: Path): ...
 ```
 
-**Пример вывода:**
-```
-Шаг 5.1: Ab = Na° = 151.66
-Шаг 5.2: Si1 = Si° - 6*Ab = 7827.04
-Шаг 5.3: Or = K° = 366.24
-Шаг 5.4: An = (Si1 - 6*Or)/2 = 3913.52
-Шаг 5.5: Gb = Al1 - Or - An = -1769.18  ⚠️ < 0!
-Шаг 5.6: Переход к 3.2.1.
-```
-
 ---
 
-### 2.4. Validation
-
-#### `validate_sample`
+### 2.5. Validation
 
 ```python
 def validate_sample(
     composition: OxideComposition,
-    config: ValidationConfig
+    config: CalculationConfig
 ) -> tuple[bool, list[str]]:
     """
     Возвращает: (is_valid, warnings)
@@ -359,88 +370,91 @@ def validate_sample(
 - Сумма в диапазоне [98, 102]
 - Нет отрицательных значений
 - Нет NaN / inf
-- Обязательные оксиды присутствуют (SiO2, Al2O3, ...)
+
+---
+
+### 2.6. AnomalyDetector
+
+```python
+from src.core.anomaly_detector import AnomalyDetector
+
+detector = AnomalyDetector()
+anomalies = detector.analyze(result)  # CalculationResult -> list[AnomalyHypothesis]
+```
+
+**10 правил детекции:**
+1. Гипс (SO3 > 5%)
+2. Низкая сумма оксидов (< 98%)
+3. Высокая сумма оксидов (> 102%)
+4. Железистая порода (FeO + Fe2O3 > 15%)
+5. Апатит (P2O5 > 2%)
+6. Критический дефект (> 10%)
+7. Карбонатная порода (CaO + MgO > 20%)
+8. Аномальный полевой шпат (Ab + An + Or > 90%)
+9. Фосфор (P2O5 > 0.5%)
+10. Отрицательные минералы (Kn < 0 или Dl < 0)
+
+---
+
+### 2.7. Explainer
+
+```python
+from src.core.explainer import Explainer
+
+explainer = Explainer()
+text = explainer.explain(result)  # CalculationResult -> str (Russian)
+```
+
+Генерирует человекочитаемое объяснение процесса расчёта на русском языке.
 
 ---
 
 ## 3. IO — ВВОД/ВЫВОД
 
-### 3.1. ExcelReader
+### 3.1. Excel
 
 ```python
-class ExcelReader:
-    """Чтение Excel-файлов с автоматическим определением формата."""
+from src.io.excel import read_excel, write_excel
 
-    def __init__(self, aliases: Optional[dict] = None): ...
+# Чтение
+samples = read_excel(Path("input.xlsx"), sheet_name=None)
 
-    def read(
-        self,
-        path: Path,
-        sheet_name: Optional[str] = None,
-        format_hint: Optional[str] = None   # "auto" | "classic" | "transposed"
-    ) -> list[Sample]: ...
-
-    def read_open_file(self, path: Path) -> list[Sample]:
-        """Читает файл, открытый в Excel (read_only)."""
-        ...
-
-    def preview(self, path: Path, max_rows: int = 10) -> pd.DataFrame: ...
-
-    def detect_format(self, path: Path) -> str:
-        """Возвращает 'classic' или 'transposed'."""
-        ...
+# Запись результатов
+write_excel(Path("output.xlsx"), results)
 ```
 
-**Пример:**
-```python
-reader = ExcelReader()
-samples = reader.read(Path("data.xlsx"))
-
-for s in samples:
-    print(f"{s.name}: SiO2={s.composition.sio2}%")
-```
+**Поддерживаемые форматы:**
+- MINLITH original (ИСХ ДАННЫЕ стиль): строки 2-19 — оксиды
+- Транспонированный (Копия ИД): колонки B+ — данные
+- .xls (old Excel 97-2003) — через xlrd
 
 ---
 
-### 3.2. ExcelWriter
+### 3.2. CSV
 
 ```python
-class ExcelWriter:
-    """Запись результатов в Excel."""
+from src.io.csv_handler import read_csv, write_csv
 
-    def write_results(
-        self,
-        results: list[CalculationResult],
-        path: Path,
-        mode: str = "new_file",     # "new_file" | "new_sheet" | "in_place"
-        sheet_name: str = "Результаты",
-        sections: Optional[list[str]] = None
-    ): ...
+# Чтение
+samples = read_csv(Path("data.csv"), separator=None)  # автоопределение
 
-    def write_combined(
-        self,
-        all_results: dict[str, list[CalculationResult]],  # filename -> results
-        path: Path
-    ): ...
+# Запись
+write_csv(Path("out.csv"), results, separator=";")
 ```
 
-**Режимы:**
-- `new_file` — создать новый файл
-- `new_sheet` — добавить лист в существующий (копия)
-- `in_place` — добавить лист в исходный файл (копия)
+**Автоопределение:** разделитель (`;` или `,`), кодировка (`utf-8`, `cp1251`).
 
 ---
 
-### 3.3. LegacyImport
+### 3.3. XRF Import
 
 ```python
-class LegacyImport:
-    """Импорт из старого MINLITH1.xlsx."""
+from src.io.xrf_importer import read_xrf
 
-    def read_legacy(self, path: Path) -> list[Sample]: ...
+samples = read_xrf(Path("spectrum.csv"))
 ```
 
-Читает лист "ИСХ ДАННЫЕ" и возвращает список Sample для пересчёта.
+**Поддерживаемые форматы:** Bruker, Panalytical, Rigaku (CSV/TXT).
 
 ---
 
@@ -449,67 +463,28 @@ class LegacyImport:
 ### 4.1. Engine
 
 ```python
-from minlith.database.engine import get_engine, get_session
+from src.database.engine import get_engine, get_session
 
-engine = get_engine(db_path: Optional[Path] = None)
-# По умолчанию: %APPDATA%/MINLITH/minlith.db
+engine = get_engine()  # %APPDATA%/MINLITH/minlith.db
+session = get_session()
 ```
 
 ---
 
 ### 4.2. Repository
 
-#### `SampleRepository`
-
 ```python
-class SampleRepository:
-    def __init__(self, session: Session): ...
+from src.database.repository import SampleRepository, CalculationRepository
 
-    def create(self, sample: Sample) -> int: ...
-    def get_by_id(self, id: int) -> Optional[SampleDB]: ...
-    def get_by_name(self, name: str) -> list[SampleDB]: ...
-    def search(self, query: str) -> list[SampleDB]: ...
-    def list_all(self, limit: int = 100, offset: int = 0) -> list[SampleDB]: ...
-    def delete(self, id: int) -> bool: ...
-```
+# Работа с образцами
+repo = SampleRepository(session)
+sample_id = repo.create(sample)
+all_samples = repo.list_all()
 
-#### `CalculationRepository`
-
-```python
-class CalculationRepository:
-    def __init__(self, session: Session): ...
-
-    def save(self, result: CalculationResult) -> int: ...
-    def get_by_sample(self, sample_id: int) -> list[CalculationDB]: ...
-    def get_latest(self, sample_id: int) -> Optional[CalculationDB]: ...
-    def invalidate_by_version(self, version_hash: str): ...
-    def get_invalid(self) -> list[CalculationDB]: ...
-```
-
----
-
-### 4.3. VersionTracker
-
-```python
-class VersionTracker:
-    """Отслеживание версий алгоритма."""
-
-    @staticmethod
-    def compute_hash(source_file: Path) -> str:
-        """SHA-256 от исходного кода types_logic.py."""
-        ...
-
-    @staticmethod
-    def get_current_version() -> str:
-        """Возвращает '1.11.5F' из __version__."""
-        ...
-
-    def check_calculations(self) -> tuple[int, int]:
-        """
-        Возвращает: (valid_count, invalid_count)
-        Предлагает пересчитать invalid.
-        """
-        ...
+# Работа с расчётами
+calc_repo = CalculationRepository(session)
+calc_repo.save(result)
+latest = calc_repo.get_latest(sample_id)
 ```
 
 ---
@@ -519,261 +494,208 @@ class VersionTracker:
 ### 5.1. Base
 
 ```python
-from abc import ABC, abstractmethod
-from matplotlib.figure import Figure
+from src.charts.base import ChartPlugin
 
-class ChartPlugin(ABC):
-    @abstractmethod
+class MyChart(ChartPlugin):
     def get_name(self) -> str: ...
-
-    @abstractmethod
     def get_description(self) -> str: ...
-
     @property
-    @abstractmethod
     def requires_minerals(self) -> bool: ...
-
     @property
-    @abstractmethod
     def requires_oxides(self) -> bool: ...
-
-    @abstractmethod
-    def render(
-        self,
-        data: ChartData,
-        engine: str = "matplotlib",  # "matplotlib" | "plotly"
-        **kwargs
-    ) -> Figure: ...
-
-    @abstractmethod
-    def export(
-        self,
-        data: ChartData,
-        path: Path,
-        format: str = "png",  # "png" | "svg" | "pdf"
-        **kwargs
-    ): ...
+    def render(self, data, engine="matplotlib", **kwargs) -> Figure: ...
+    def export(self, data, path, format="png", **kwargs): ...
 ```
 
 ---
 
-### 5.2. Built-in Charts
+### 5.2. Built-in Charts (15)
+
+| Chart | Тип | Требует |
+|-------|-----|---------|
+| `BarChart` | Столбчатая | минералы |
+| `PieChart` | Круговая | минералы |
+| `DefectChart` | Дефект | оксиды |
+| `QAPFChart` | QAPF треугольник | минералы |
+| `TASChart` | TAS | оксиды |
+| `ACNKChart` | A-CN-K | оксиды |
+| `AFMChart` | A-F-M | оксиды |
+| `HeatmapChart` | Тепловая карта | минералы |
+| `RockTypeChart` | Тип породы | минералы |
+| `FeldsparTriangle` | Полевые шпаты | минералы |
+| `HarkerChart` | Харкера | оксиды |
+| `SiO2K2OChart` | SiO2-K2O | оксиды |
+| `BlandAltmanChart` | Bland-Altman | минералы |
+| `CorrelationChart` | Корреляция | минералы |
+| `KFChart` | k1-k4 vs F | коэффициенты |
 
 ```python
-from minlith.charts.built_in.bar_chart import BarChart
-from minlith.charts.built_in.pie_chart import PieChart
-from minlith.charts.built_in.qapf import QAPFChart
-from minlith.charts.built_in.acnk import ACNKChart
-from minlith.charts.built_in.afm import AFMChart
-from minlith.charts.built_in.tas import TASChart
-```
+from src.charts.built_in.bar_chart import BarChart
 
-**Пример:**
-```python
 chart = BarChart()
 fig = chart.render(data, engine="matplotlib")
-fig.savefig("output.png", dpi=150)
-```
-
----
-
-### 5.3. Custom Charts
-
-```python
-from minlith.charts.base import ChartPlugin
-
-class MyScatterChart(ChartPlugin):
-    def get_name(self) -> str:
-        return "Мой scatter"
-
-    def render(self, data, engine="matplotlib", **kwargs):
-        # Реализация
-        ...
-
-# Сохранить в charts/custom/my_scatter.py
-# Автоподхват при старте
+fig.savefig("minerals.png", dpi=150)
 ```
 
 ---
 
 ## 6. REPORTS — ОТЧЁТЫ
 
-### 6.1. TemplateBuilder
+### 6.1. TemplateBuilder (5 шаблонов)
 
 ```python
-class TemplateBuilder:
-    """Конструктор отчётов drag-and-drop."""
+from src.reports.template_builder import TemplateBuilder
 
-    def __init__(self): ...
-
-    def add_block(self, block: ReportBlock, position: int = -1): ...
-    def remove_block(self, position: int): ...
-    def move_block(self, from_pos: int, to_pos: int): ...
-    def configure_block(self, position: int, config: dict): ...
-
-    def save_template(self, name: str): ...
-    def load_template(self, name: str) -> ReportTemplate: ...
-
-    def generate(
-        self,
-        results: list[CalculationResult],
-        format: str = "pdf"  # "pdf" | "docx" | "html"
-    ) -> Path: ...
+builder = TemplateBuilder()
+path = builder.generate(results, format="pdf")  # "pdf" | "docx" | "html"
 ```
 
-### 6.2. ReportBlock
+| Шаблон | Назначение |
+|--------|-----------|
+| `brief` | Краткий отчёт (1 страница) |
+| `standard` | Стандартный отчёт |
+| `full` | Полный отчёт со всеми диаграммами |
+| `core` | Отчёт по керну |
+| `geochemical` | Геохимический паспорт |
+
+---
+
+### 6.2. PDF Generator
 
 ```python
-@dataclass
-class ReportBlock:
-    type: str  # "mineral_table" | "chart" | "parameters" | 
-               # "defect" | "description"
-    config: dict = field(default_factory=dict)
+from src.reports.pdf_generator import PDFGenerator
+
+pdf = PDFGenerator()
+pdf.generate(results, Path("report.pdf"), template="full")
 ```
 
 ---
 
-## 7. GUI — ПОЛЬЗОВАТЕЛЬСКИЙ ИНТЕРФЕЙС
-
-### 7.1. MainWindow
+### 6.3. LaTeX Exporter
 
 ```python
-class MainWindow(QMainWindow):
-    """Главное окно приложения."""
+from src.reports.latex_exporter import LaTeXExporter
 
-    def __init__(self): ...
-
-    def show_page(self, page_name: str): ...
-    def show_welcome(self): ...
-    def show_files(self): ...
-    def show_settings(self): ...
-    def show_results(self): ...
-    def show_charts(self): ...
-    def show_compare(self): ...
-    def show_database(self): ...
-    def show_logs(self): ...
+latex = LaTeXExporter()
+latex.export_table(results, Path("table.tex"), table_type="minerals")
 ```
 
-### 7.2. CalculationDialog
+Генерирует публикационные таблицы с `booktabs`, `\textsubscript`.
+
+---
+
+## 7. CALIBRATION — КАЛИБРОВКА
+
+### 7.1. Calibrator
 
 ```python
-class CalculationDialog(QDialog):
-    """Диалог расчёта с прогресс-баром."""
+from src.core.calibrator import Calibrator
 
-    def __init__(self, worker: CalculationWorker): ...
+sample, expected = read_expected_from_excel(Path("MINLITH1.xlsx"))
+calibrator = Calibrator(sample, expected)
+result = calibrator.calibrate(maxiter=1000, seed=42)
 
-    def start(self): ...
-    def cancel(self): ...
-
-    # Сигналы
-    progress = pyqtSignal(int, str)
-    finished = pyqtSignal(list)
-    cancelled = pyqtSignal(int)
+print(result.rmse_before)  # 66.15
+print(result.rmse_after)   # 0.09
+print(result.params)       # calibrated parameters
+print(result.report)       # human-readable report
 ```
 
-### 7.3. Pages
+### 7.2. Save/Load Config
 
 ```python
-# src/gui/pages/
-WelcomePage      # Приветствие, быстрый старт
-FilesPage        # Drag-drop, превью, список файлов
-SettingsPage     # Настройки расчёта, отображения, путей
-ResultsPage      # Таблица результатов, фильтры, экспорт
-ChartsPage       # Диаграммы, выбор образцов, настройки
-ComparePage      # Сравнение результатов, статистика
-DatabasePage     # История расчётов, поиск, фильтры
-LogsPage         # Логи, фильтр по уровню, поиск
+from src.core.calibrator import save_calibration_config, load_calibration_config
+
+save_calibration_config(result.params, Path("calibration_config.json"))
+params = load_calibration_config(Path("calibration_config.json"))
+```
+
+### 7.3. CLI
+
+```bash
+python calibrate.py --input MINLITH1.xlsx --output calibration_config.json --maxiter 1000
 ```
 
 ---
 
-## 8. WORKERS — ПАРАЛЛЕЛЬНОСТЬ
-
-### 8.1. CalculationWorker
+## 8. CACHE — КЭШИРОВАНИЕ
 
 ```python
-class CalculationWorker(QObject):
-    """QThread + ProcessPoolExecutor."""
+from src.utils.cache import ResultCache
 
-    progress = pyqtSignal(int, str)      # (percent, message)
-    sample_done = pyqtSignal(int, object)  # (index, result)
-    finished = pyqtSignal(list)           # [CalculationResult, ...]
-    error = pyqtSignal(str, Exception)
-    cancelled = pyqtSignal(int)           # processed_count
+cache = ResultCache(cache_dir=Path("~/.minlith/cache"), ttl_seconds=7*24*3600)
 
-    def __init__(
-        self,
-        samples: list[Sample],
-        config: CalculationConfig,
-        batch_size: Union[int, str] = "auto"
-    ): ...
+# Проверка кэша
+cached = cache.get(file_path)
 
-    def run(self): ...
-    def cancel(self): ...
+# Сохранение
+cache.put(file_path, results)
+
+# Инвалидация
+cache.invalidate(file_path)
+cache.clear()  # удалить всё
+
+# Статистика
+stats = cache.stats()  # {"entries": 5, "cache_dir": "...", "ttl_seconds": 604800}
+
+# Очистка устаревших
+removed = cache.cleanup_expired()
 ```
 
 ---
 
-## 9. UTILS — УТИЛИТЫ
+## 9. CLI — КОМАНДЫ
 
-### 9.1. Config
+```bash
+# Расчёт
+python -m src calculate input.xlsx -o results.xlsx
 
-```python
-class ConfigManager:
-    """Управление настройками JSON."""
+# С подробным выводом
+python -m src calculate input.xlsx -V --timeout 300
 
-    def __init__(self, path: Optional[Path] = None):
-        # По умолчанию: %APPDATA%/MINLITH/settings.json
-        ...
+# Диаграмма
+python -m src chart input.xlsx --type tas -o chart.png
 
-    def get(self, key: str, default: Any = None) -> Any: ...
-    def set(self, key: str, value: Any): ...
-    def save(self): ...
-    def load(self): ...
-    def export(self, path: Path): ...
-    def import_(self, path: Path): ...
-    def reset_to_defaults(self): ...
-```
+# Отчёт
+python -m src report input.xlsx --template full -o report.pdf
 
-### 9.2. Logger
+# Резервная копия
+python -m src backup -o backups/
 
-```python
-class GUILogHandler(logging.Handler):
-    """Handler для вывода логов в GUI."""
+# Экспорт БД
+python -m src export-db -o export.json
 
-    def __init__(self, widget: QTextEdit): ...
-    def emit(self, record: logging.LogRecord): ...
+# Валидация
+python -m src validate input.xlsx
 
-def setup_logging(
-    level: str = "INFO",
-    log_file: Optional[Path] = None,
-    gui_handler: Optional[GUILogHandler] = None
-) -> logging.Logger: ...
+# Список диаграмм
+python -m src list-charts
+
+# Список шаблонов
+python -m src list-templates
 ```
 
 ---
 
 ## 10. ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ
 
-### 10.1. Быстрый старт (CLI)
+### 10.1. Быстрый старт
 
 ```python
+from src.core.models import OxideComposition, Sample
+from src.core.calculator import Calculator
+from src.io.excel import read_excel, write_excel
 from pathlib import Path
-from minlith.io.excel_reader import ExcelReader
-from minlith.core.calculator import Calculator
-from minlith.io.excel_writer import ExcelWriter
 
 # Чтение
-reader = ExcelReader()
-samples = reader.read(Path("input.xlsx"))
+samples = read_excel(Path("input.xlsx"))
 
 # Расчёт
 calc = Calculator()
 results = calc.calculate(samples)
 
 # Запись
-writer = ExcelWriter()
-writer.write_results(results, Path("output.xlsx"))
+write_excel(Path("output.xlsx"), results)
 ```
 
 ### 10.2. С отладкой
@@ -790,28 +712,37 @@ for r in results:
 ### 10.3. С базой данных
 
 ```python
-from minlith.database.engine import get_session
-from minlith.database.repository import CalculationRepository
+from src.database.engine import get_session
+from src.database.repository import CalculationRepository
 
 session = get_session()
 repo = CalculationRepository(session)
 
 for r in results:
     repo.save(r)
-
-# Проверка устаревших
-invalid = repo.get_invalid()
-print(f"Устаревших расчётов: {len(invalid)}")
 ```
 
-### 10.4. С диаграммой
+### 10.4. С калибровкой
 
 ```python
-from minlith.charts.built_in.bar_chart import BarChart
+from src.core.calibrator import Calibrator, save_calibration_config
 
-chart = BarChart()
-fig = chart.render(results, engine="matplotlib")
-fig.savefig("minerals.png", dpi=150)
+sample, expected = read_expected_from_excel(Path("MINLITH1.xlsx"))
+calibrator = Calibrator(sample, expected)
+result = calibrator.calibrate(maxiter=1000)
+save_calibration_config(result.params, Path("calibration_config.json"))
+```
+
+### 10.5. С аномалиями
+
+```python
+from src.core.anomaly_detector import AnomalyDetector
+
+detector = AnomalyDetector()
+for r in results:
+    anomalies = detector.analyze(r)
+    for a in anomalies:
+        print(f"⚠️ {a.rule}: {a.message}")
 ```
 
 ---
@@ -820,6 +751,7 @@ fig.savefig("minerals.png", dpi=150)
 
 | Версия | Изменение |
 |--------|-----------|
+| 2.0 | Импорты `src.core.*`, калибровка, аномалии, XRF, LaTeX |
 | 1.0 | Начальная версия |
 
 ---
@@ -831,3 +763,4 @@ fig.savefig("minerals.png", dpi=150)
 - Все даты — `datetime.datetime` (timezone-aware)
 - Все проценты — 0-100 (не 0-1)
 - Все вес.% — округление только на выводе
+- Отрицательные минералы (Kn, Dl) — валидные артефакты

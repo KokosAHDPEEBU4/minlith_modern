@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0] — 2026-07-24
+
+### Added
+- **Auto-calibration system** (`src/core/calibrator.py`, `calibrate.py`) — reverse-engineers VBA algorithm parameters via `scipy.optimize.differential_evolution`
+- `calibration_config.json` — saved calibrated parameters (RMSE 66.15 → 0.09)
+- Property-based tests with Hypothesis (26 tests, `tests/test_property.py`)
+- Coverage-boost tests for calibrator, cache, CSV, types_logic (`tests/test_coverage_boost.py`)
+- pytest-cov integration for coverage measurement
+
+### Fixed
+- `src/utils/cache.py`: `time.fromisoformat()` → `datetime.fromisoformat()` (Python has no `time.fromisoformat`)
+- `src/database/repository.py:222`: `import DB_PATH` → `import _DB_PATH as DB_PATH` (private variable)
+- `src/cli.py:457,493`: `--template` now accepts core/geochemical (was only brief/standard/full)
+- `src/core/calculator.py:49`: `timeout=0` now raises `CalculationTimeoutError` (was silently ignored)
+
 ## [0.4.0] — 2026-07-23
 
 ### Added

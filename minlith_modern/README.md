@@ -1,4 +1,4 @@
-# MINLITH Modern v0.3.0
+# MINLITH Modern v0.5.0
 
 Нормативный минералогический расчёт из химического состава горных пород.
 
@@ -9,28 +9,35 @@ MINLITH Modern — это перезапись легендарной Excel-пр
 ## Возможности
 
 - Полная реализация алгоритма MINLITH (типы 1-5, ~500+ условий ветвления)
+- Auto-calibration — автоматическое восстановление параметров алгоритма из Excel через scipy
 - PyQt6 GUI с drag-and-drop, предпросмотром, прогресс-барами
 - SQLite база данных с версионированием
-- 14 типов диаграмм (bar, pie, QAPF, A-CN-K, A-F-M, TAS, defect, heatmap, feldspar, harker, afm, sio2_k2o, bland_altman, correlation)
+- 15 типов диаграмм (bar, pie, QAPF, A-CN-K, A-F-M, TAS, defect, heatmap, feldspar, harker, afm, sio2_k2o, bland_altman, correlation, k1-k4)
 - 4 интерактивные диаграммы (Plotly HTML): bar, tas, harker, pie
 - Генератор отчётов (PDF, Word, HTML) с встроенными диаграммами
+- 5 шаблонов отчётов: brief, standard, full, core, geochemical
 - Параллельный расчёт через ProcessPoolExecutor
-- Экспорт в Excel (с листом GeoParams), CSV, JSON
+- Экспорт в Excel (с листом GeoParams), CSV, JSON, LaTeX
+- Импорт XRF (Bruker/Panalytical/Rigaku)
 - Геохимические параметры: CIA, ICV, PIA, ASI, AI
+- AnomalyDetector (10 правил: гипс, сумма, Fe, апатит, дефект, карбонат, полевой шпат, P, отрицательные минералы)
+- Explainer — человекочитаемые объяснения расчёта на русском языке
 - Резервное копирование и импорт базы данных
 - Кэширование с TTL (7 дней)
 - Таймаут расчёта на образец
 - Debug trace collector
+- Property-based тестирование (Hypothesis)
 - Светлая и тёмная темы
 
 ## Стек технологий
 
 - Python 3.12+
 - PyQt6
-- numpy, pandas, openpyxl
+- numpy, pandas, openpyxl, scipy
 - SQLAlchemy + Alembic
 - matplotlib + plotly
 - reportlab + python-docx + jinja2
+- hypothesis (property-based testing)
 
 ## Установка
 
@@ -65,6 +72,8 @@ python -m src chart input.xlsx --type tas --interactive -o chart.html
 
 # Отчёт
 python -m src report input.xlsx --template full -o report.pdf
+python -m src report input.xlsx --template core -o report.pdf
+python -m src report input.xlsx --template geochemical -o report.pdf
 
 # Резервная копия
 python -m src backup -o backups/
@@ -77,6 +86,19 @@ python -m src list-charts
 
 # Список шаблонов
 python -m src list-templates
+
+# Валидация
+python -m src validate input.xlsx
+
+# Инфо об образце
+python -m src info input.xlsx
+```
+
+### Авто-калибровка
+
+```bash
+# Запуск калибровки из Excel
+python calibrate.py --input MINLITH1.xlsx --output calibration_config.json --maxiter 1000
 ```
 
 ### Флаги CLI
@@ -88,18 +110,88 @@ python -m src list-templates
 | `--config FILE` | Путь к JSON конфигурации |
 | `--no-cache` | Не использовать кэш |
 | `--format`, `-f` | Формат вывода (xlsx, csv, json, pdf, docx, html) |
-| `--template`, `-t` | Шаблон отчёта (brief, standard, full) |
+| `--template`, `-t` | Шаблон отчёта (brief, standard, full, core, geochemical) |
 | `--dpi N` | Разрешение диаграммы |
 | `--interactive` | Экспорт в интерактивный HTML (Plotly) |
+
+### Python API
+
+```python
+from src.core.models import OxideComposition, Sample
+from src.core.calculator import Calculator
+
+comp = OxideComposition(
+    sio2=52.5, al2o3=23.41, fe2o3=1.71, feo=8.06,
+    mgo=2.35, cao=0.28, na2o=0.94, k2o=3.45,
+)
+sample = Sample(name="T-O2", composition=comp)
+calc = Calculator()
+result = calc.calculate_single(sample)
+
+print(result.rock_type)          # RockType.TYPE_5
+print(result.minerals_weight.ab) # 7.82
+print(result.defect)             # oxide residuals
+print(result.anomalies)          # list[AnomalyHypothesis]
+```
 
 ## Сборка
 
 ```bash
 python build.py
+# или
+pyinstaller minlith.spec
 ```
 
 ## Тесты
 
 ```bash
+# Все тесты (184)
 python -m pytest tests/ -v
+
+# С покрытием
+python -m pytest tests/ --cov=src --cov-report=term-missing
+
+# Только property-based тесты
+python -m pytest tests/test_property.py -v
+
+# Scenario тесты
+python -m pytest tests/test_scenarios.py -v
+```
+
+## Структура проекта
+
+```
+minlith_modern/
+├── src/
+│   ├── core/           # Расчётный движок
+│   │   ├── calculator.py       # Оркестратор
+│   │   ├── algorithm_stub.py   # Заглушка VBA
+│   │   ├── algorithm.py        # Протокол алгоритма
+│   │   ├── models.py           # Датаклассы
+│   │   ├── coefficients.py     # k1-k4 коэффициенты
+│   │   ├── constants.py        # Молярные массы
+│   │   ├── validation.py       # Валидация
+│   │   ├── types_logic.py      # Логика типов 1-5
+│   │   ├── calibrator.py       # Авто-калибровка
+│   │   ├── anomaly_detector.py # Детектор аномалий
+│   │   ├── explainer.py        # Объяснения
+│   │   └── debug_tracer.py     # Trace collector
+│   ├── io/             # Ввод-вывод
+│   │   ├── excel.py            # Excel reader/writer
+│   │   ├── csv_handler.py      # CSV reader/writer
+│   │   └── xrf_importer.py     # XRF импорт
+│   ├── charts/         # Диаграммы
+│   ├── reports/        # Генераторы отчётов
+│   ├── database/       # SQLite + ORM
+│   ├── gui/            # PyQt6 GUI
+│   ├── utils/          # Кэш, конфиг, логгер
+│   └── cli.py          # CLI интерфейс
+├── tests/              # 184 тестов
+│   ├── test_property.py       # Hypothesis property-based
+│   ├── test_scenarios.py      # 75 scenario тестов
+│   ├── test_coverage_boost.py # Покрытие калибратора/кэша
+│   └── ...
+├── calibrate.py        # CLI для калибровки
+├── calibration_config.json
+└── minlith.spec        # PyInstaller
 ```

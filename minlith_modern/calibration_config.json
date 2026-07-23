@@ -1,0 +1,18 @@
+{
+  "calibrated": true,
+  "parameters": {
+    "ab_scale": 1.1133697466084254,
+    "an_ca_ratio": 0.3416468314383405,
+    "chl_mg_k1": 4.162830332216313,
+    "ill_k_consumption": 1.246957268413476,
+    "ill_al_ratio": 11.999999986276901,
+    "ill_si_ratio": 9.829048214382919,
+    "kn_al_ratio": 0.987878572945295,
+    "dl_ca_ratio": 1.7885256065868025,
+    "ht_feo_ratio": 0.006875153540571306,
+    "srp_mg_ratio": 0.1352972583376459,
+    "chl_fe_ratio": 1.4565398460319077,
+    "ill_fe_ratio": 1.7057076268249658
+  },
+  "description": "Auto-calibrated algorithm parameters from MINLITH Excel"
+}
