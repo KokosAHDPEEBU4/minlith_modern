@@ -1,4 +1,4 @@
-"""Mineral table widget — display-only table for mineral results."""
+"""Таблица минералов — виджет для отображения минерального состава."""
 
 from __future__ import annotations
 
@@ -14,35 +14,34 @@ from PyQt6.QtWidgets import (
 
 from src.core.models import MineralComposition
 
-# (display, field, full_name)
 MINERAL_COLUMNS: list[tuple[str, str, str]] = [
-    ("Ab", "ab", "Albite"),
-    ("An", "an", "Anorthite"),
-    ("Or", "or_", "Orthoclase"),
-    ("Q", "q", "Quartz"),
-    ("Ill", "ill", "Illite"),
-    ("Chl", "chl", "Chlorite"),
-    ("Kn", "kn", "Kaolinite"),
-    ("Mm", "mm", "Montmorillonite"),
-    ("Gb", "gb", "Gibbsite"),
-    ("Ap", "ap", "Apatite"),
-    ("Cc", "cc", "Calcite"),
-    ("Dl", "dl", "Dolomite"),
-    ("Ank", "ank", "Ankerite"),
-    ("Rch", "rch", "Rhodochrosite"),
-    ("Sd", "sd", "Siderite"),
-    ("Srp", "srp", "Serpentine"),
-    ("Mst", "mst", "Magnesite"),
-    ("Ht", "ht", "Hematite"),
-    ("Prl", "prl", "Pyrolusite"),
-    ("Pr", "pr", "Pyrite"),
-    ("Hl", "hl", "Halite"),
-    ("Fl", "fl", "Fluorite"),
+    ("Ab", "ab", "Альбит"),
+    ("An", "an", "Анортит"),
+    ("Or", "or_", "Ортоклаз"),
+    ("Q", "q", "Кварц"),
+    ("Ill", "ill", "Иллит"),
+    ("Chl", "chl", "Хлорит"),
+    ("Kn", "kn", "Каолинит"),
+    ("Mm", "mm", "Монтмориллонит"),
+    ("Gb", "gb", "Гиббсит"),
+    ("Ap", "ap", "Апатит"),
+    ("Cc", "cc", "Кальцит"),
+    ("Dl", "dl", "Доломит"),
+    ("Ank", "ank", "Анкерит"),
+    ("Rch", "rch", "Родохрозит"),
+    ("Sd", "sd", "Сидерит"),
+    ("Srp", "srp", "Серпентин"),
+    ("Mst", "mst", "Магнезит"),
+    ("Ht", "ht", "Гематит"),
+    ("Prl", "prl", "Пиролюзит"),
+    ("Pr", "pr", "Пирит"),
+    ("Hl", "hl", "Галит"),
+    ("Fl", "fl", "Флюорит"),
 ]
 
 
 class MineralTable(QWidget):
-    """Read-only table showing mineral formula units and weight percent."""
+    """Таблица минералов (ФЕ и м.д. %)."""
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -57,7 +56,7 @@ class MineralTable(QWidget):
         self._table.setAlternatingRowColors(True)
 
         self._table.setColumnCount(4)
-        self._table.setHorizontalHeaderLabels(["Mineral", "FU", "wt%", "Full name"])
+        self._table.setHorizontalHeaderLabels(["Минерал", "ФЕ", "м.д.%", "Полное название"])
         h = self._table.horizontalHeader()
         h.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         h.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)

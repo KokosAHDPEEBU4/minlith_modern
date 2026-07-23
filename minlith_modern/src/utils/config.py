@@ -84,8 +84,14 @@ class ConfigManager:
         self.save()
 
     def reset(self) -> None:
-        """Reset all settings to defaults."""
+        """Reset settings to defaults, preserving recent files and window state."""
+        recent_files = self._data.get("recent_files", [])
+        window_geometry = self._data.get("window_geometry")
+        window_state = self._data.get("window_state")
         self._data = dict(DEFAULT_CONFIG)
+        self._data["recent_files"] = recent_files
+        self._data["window_geometry"] = window_geometry
+        self._data["window_state"] = window_state
         self.save()
 
     def export_settings(self, path: Path | str) -> None:

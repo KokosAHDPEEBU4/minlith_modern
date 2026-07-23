@@ -1,4 +1,4 @@
-"""Log widget — displays log messages from GUILogHandler."""
+"""Виджет журнала — вывод логов приложения."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ _LEVEL_COLORS = {
 
 
 class LogWidget(QWidget):
-    """Widget for displaying application logs."""
+    """Виджет для отображения логов приложения."""
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -34,21 +34,19 @@ class LogWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Toolbar
         toolbar = QHBoxLayout()
-        self._level_label = QLabel("Level:")
+        self._level_label = QLabel("Уровень:")
         toolbar.addWidget(self._level_label)
 
         self._filter_level = logging.INFO
         toolbar.addStretch()
 
-        self._btn_clear = QPushButton("Clear")
+        self._btn_clear = QPushButton("Очистить")
         self._btn_clear.clicked.connect(self._clear)
         toolbar.addWidget(self._btn_clear)
 
         layout.addLayout(toolbar)
 
-        # Text area
         self._text = QPlainTextEdit()
         self._text.setReadOnly(True)
         self._text.setMaximumBlockCount(5000)
@@ -67,9 +65,8 @@ class LogWidget(QWidget):
         cursor.movePosition(QTextCursor.MoveOperation.End)
         self._text.setTextCursor(cursor)
 
-        # Insert colored text
         self._text.setReadOnly(False)
-        cursor.insertText(line, )
+        cursor.insertText(line)
         self._text.setReadOnly(True)
 
         self._text.verticalScrollBar().setValue(self._text.verticalScrollBar().maximum())

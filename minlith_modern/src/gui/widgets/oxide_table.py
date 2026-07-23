@@ -1,4 +1,4 @@
-"""Oxide table widget — reusable table for oxide compositions."""
+"""Таблица оксидов — редактируемая таблица для состава оксидов."""
 
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from PyQt6.QtWidgets import (
 
 from src.core.models import OxideComposition
 
-# (display label, field name)
 OXIDE_COLUMNS: list[tuple[str, str]] = [
     ("SiO\u2082", "sio2"),
     ("TiO\u2082", "tio2"),
@@ -37,7 +36,7 @@ OXIDE_COLUMNS: list[tuple[str, str]] = [
 
 
 class OxideTable(QWidget):
-    """Editable table for oxide compositions (one sample)."""
+    """Редактируемая таблица оксидов (один образец)."""
 
     value_changed = pyqtSignal()
 
@@ -49,7 +48,7 @@ class OxideTable(QWidget):
 
         self._table = QTableWidget()
         self._table.setColumnCount(2)
-        self._table.setHorizontalHeaderLabels(["Oxide", "Value (%)"])
+        self._table.setHorizontalHeaderLabels(["Оксид", "Значение (%)"])
         self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self._table.verticalHeader().setVisible(False)

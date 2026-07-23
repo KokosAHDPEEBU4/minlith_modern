@@ -43,7 +43,7 @@ MOLAR_MASSES_MINLITH: dict[str, float] = {
     "cl": 35.457,
     "s": 32.066,
     "co2": 44.011,
-    "so": 80.066,
+    "so": 48.064,
 }
 
 # Formula weights for minerals

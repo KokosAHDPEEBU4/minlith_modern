@@ -1,4 +1,4 @@
-"""Files page — import files, drag-drop, recent files list."""
+"""Страница файлов — импорт, drag-drop, список последних файлов."""
 
 from __future__ import annotations
 
@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 
 class FilesPage(QWidget):
-    """Page for importing and managing input files."""
+    """Страница импорта и управления файлами."""
 
-    samples_loaded = pyqtSignal(list)  # emits list[Sample]
+    samples_loaded = pyqtSignal(list)
 
     def __init__(self, config=None, parent=None) -> None:
         super().__init__(parent)
@@ -44,7 +44,6 @@ class FilesPage(QWidget):
 
         splitter = QSplitter(Qt.Orientation.Vertical)
 
-        # Top: drag-drop area + buttons
         top = QWidget()
         top_layout = QVBoxLayout(top)
 
@@ -66,14 +65,13 @@ class FilesPage(QWidget):
 
         splitter.addWidget(top)
 
-        # Bottom: file list
         bottom = QWidget()
         bottom_layout = QVBoxLayout(bottom)
 
         list_header = QHBoxLayout()
-        list_header.addWidget(QLabel("Loaded samples:"))
+        list_header.addWidget(QLabel("Загруженные образцы:"))
         list_header.addStretch()
-        self._btn_clear = QPushButton("Clear all")
+        self._btn_clear = QPushButton("Очистить всё")
         self._btn_clear.clicked.connect(self._clear_list)
         list_header.addWidget(self._btn_clear)
         bottom_layout.addLayout(list_header)
@@ -98,11 +96,11 @@ class FilesPage(QWidget):
                 self._load_file(path)
 
     def _load_folder(self, folder: Path) -> None:
-        """Recursively load all .xlsx/.csv files from a folder."""
+        """Рекурсивная загрузка всех .xlsx/.csv файлов из папки."""
         extensions = {".xlsx", ".csv"}
         files = sorted(f for f in folder.rglob("*") if f.suffix.lower() in extensions)
         if not files:
-            QMessageBox.information(self, "Import", f"No .xlsx/.csv files found in {folder.name}")
+            QMessageBox.information(self, "Импорт", f"Файлы .xlsx/.csv не найдены в {folder.name}")
             return
         for f in files:
             self._load_file(str(f))
@@ -110,8 +108,8 @@ class FilesPage(QWidget):
     def _on_import_click(self) -> None:
         from PyQt6.QtWidgets import QFileDialog
         paths, _ = QFileDialog.getOpenFileNames(
-            self, "Import files", "",
-            "Excel Files (*.xlsx);;CSV Files (*.csv);;All Files (*)",
+            self, "Импорт файлов", "",
+            "Excel (*.xlsx);;CSV (*.csv);;Все файлы (*)",
         )
         for path in paths:
             self._load_file(path)
@@ -119,8 +117,8 @@ class FilesPage(QWidget):
     def _on_import_csv(self) -> None:
         from PyQt6.QtWidgets import QFileDialog
         path, _ = QFileDialog.getOpenFileName(
-            self, "Import CSV", "",
-            "CSV Files (*.csv);;All Files (*)",
+            self, "Импорт CSV", "",
+            "CSV (*.csv);;Все файлы (*)",
         )
         if path:
             self._load_csv(path)
@@ -129,7 +127,7 @@ class FilesPage(QWidget):
         try:
             samples = load_samples(path)
             if not samples:
-                QMessageBox.information(self, "Import", f"No samples found in {Path(path).name}")
+                QMessageBox.information(self, "Импорт", f"Образцы не найдены в {Path(path).name}")
                 return
             self._loaded_samples.extend(samples)
             for s in samples:
@@ -137,13 +135,12 @@ class FilesPage(QWidget):
             if self._config:
                 self._config.add_recent_file(path)
             self.samples_loaded.emit(samples)
-            logger.info("Loaded %d sample(s) from %s", len(samples), Path(path).name)
+            logger.info("Загружено %d образцов из %s", len(samples), Path(path).name)
         except Exception as e:
-            QMessageBox.critical(self, "Import Error", str(e))
-            logger.error("Failed to load %s: %s", path, e)
+            QMessageBox.critical(self, "Ошибка импорта", str(e))
+            logger.error("Ошибка загрузки %s: %s", path, e)
 
     def _load_csv(self, path: str) -> None:
-        """Load samples from CSV (semicolon-separated)."""
         try:
             import csv
             samples = []
@@ -166,9 +163,9 @@ class FilesPage(QWidget):
             for s in samples:
                 self._file_list.addItem(f"{s.name}  ({Path(path).name})")
             self.samples_loaded.emit(samples)
-            logger.info("Loaded %d sample(s) from CSV", len(samples))
+            logger.info("Загружено %d образцов из CSV", len(samples))
         except Exception as e:
-            QMessageBox.critical(self, "CSV Import Error", str(e))
+            QMessageBox.critical(self, "Ошибка импорта CSV", str(e))
 
     def _on_item_double_clicked(self, item: QListWidgetItem) -> None:
         row = self._file_list.row(item)

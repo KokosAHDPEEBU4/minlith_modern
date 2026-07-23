@@ -59,8 +59,10 @@ def _deserialize_result(data: dict) -> CalculationResult:
     comp = OxideComposition(**data["input_composition"])
     fu = FormulaUnits(**{k: v for k, v in data.get("minerals_fu", {}).items()
                          if hasattr(FormulaUnits, k)})
-    minerals = MineralComposition(**{k: v for k, v in data["minerals_wt"].items()
-                                     if hasattr(MineralComposition, k)})
+    minerals_wt = MineralComposition(**{k: v for k, v in data["minerals_wt"].items()
+                                       if hasattr(MineralComposition, k)})
+    minerals_fu = MineralComposition(**{k: v for k, v in data["minerals_fu"].items()
+                                       if hasattr(MineralComposition, k)})
     coeff = AdaptiveCoefficients(
         k1=data["k1"], k2=data["k2"], k3=data["k3"], k4=data["k4"],
         F=data["F"], A=data["A"],
@@ -71,8 +73,8 @@ def _deserialize_result(data: dict) -> CalculationResult:
         formula_units=fu,
         coefficients=coeff,
         rock_type=RockType(data["rock_type"]),
-        minerals_formula=minerals,
-        minerals_weight=minerals,
+        minerals_formula=minerals_fu,
+        minerals_weight=minerals_wt,
         defect=data["defect"],
         warnings=data["warnings"],
     )

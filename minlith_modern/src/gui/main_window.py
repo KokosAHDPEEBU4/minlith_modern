@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern v0.2.0 — Normative Mineralogy")
+        self.setWindowTitle("MINLITH Modern v0.2.0 — Нормативный минералогический расчёт")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
@@ -165,8 +165,8 @@ class MainWindow(QMainWindow):
             return
         from PyQt6.QtWidgets import QFileDialog
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export results", "minlith_results.xlsx",
-            "Excel Files (*.xlsx);;CSV (*.csv);;JSON (*.json)",
+            self, "Экспорт результатов", "minlith_results.xlsx",
+            "Excel (*.xlsx);;CSV (*.csv);;JSON (*.json)",
         )
         if not path:
             return

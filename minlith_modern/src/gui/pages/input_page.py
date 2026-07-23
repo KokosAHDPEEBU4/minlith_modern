@@ -1,4 +1,4 @@
-"""Input page — oxide composition form + calculate button."""
+"""Страница ввода — форма оксидов и кнопка расчёта."""
 
 from __future__ import annotations
 
@@ -24,9 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 class InputPage(QWidget):
-    """Page for manual oxide input and calculation."""
+    """Страница ручного ввода оксидов и расчёта."""
 
-    calculation_done = pyqtSignal(object)  # emits CalculationResult
+    calculation_done = pyqtSignal(object)
 
     def __init__(self, calculator: Calculator, parent=None) -> None:
         super().__init__(parent)
@@ -39,7 +39,6 @@ class InputPage(QWidget):
         header.setStyleSheet("font-size: 18px; font-weight: bold; padding: 8px;")
         layout.addWidget(header)
 
-        # Sample name
         name_row = QHBoxLayout()
         name_row.addWidget(QLabel("Название образца:"))
         self._name_edit = QLineEdit("Образец")
@@ -49,11 +48,9 @@ class InputPage(QWidget):
         name_row.addStretch()
         layout.addLayout(name_row)
 
-        # Oxide table
         self._oxide_table = OxideTable()
         layout.addWidget(self._oxide_table)
 
-        # Sum display
         self._sum_label = QLabel("Сумма: 0.00%")
         self._sum_label.setStyleSheet("padding: 4px; font-weight: bold;")
         self._sum_label.setToolTip("Сумма оксидов должна быть в диапазоне 98-102%")
@@ -61,7 +58,6 @@ class InputPage(QWidget):
 
         self._oxide_table.value_changed.connect(self._update_sum)
 
-        # Buttons
         btn_row = QHBoxLayout()
         self._btn_calculate = QPushButton("  Рассчитать (F5)  ")
         self._btn_calculate.clicked.connect(self._on_calculate)
@@ -100,16 +96,16 @@ class InputPage(QWidget):
             result = self._calculator.calculate_single(sample)
             self._last_result = result
             self.calculation_done.emit(result)
-            logger.info("Calculated %s → %s", name, result.rock_type.name)
+            logger.info("Расчёт %s -> %s", name, result.rock_type.name)
         except Exception as e:
-            QMessageBox.critical(self, "Calculation Error", str(e))
-            logger.error("Calculation failed: %s", e)
+            QMessageBox.critical(self, "Ошибка расчёта", str(e))
+            logger.error("Ошибка расчёта: %s", e)
 
     def _on_export(self) -> None:
         from PyQt6.QtWidgets import QFileDialog
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export results", "minlith_results.xlsx",
-            "Excel Files (*.xlsx)",
+            self, "Экспорт результатов", "minlith_results.xlsx",
+            "Excel (*.xlsx)",
         )
         if not path:
             return
@@ -118,7 +114,7 @@ class InputPage(QWidget):
             try:
                 save_results(path, [self._last_result])
             except Exception as e:
-                QMessageBox.critical(self, "Export Error", str(e))
+                QMessageBox.critical(self, "Ошибка экспорта", str(e))
 
     def set_composition(self, comp: OxideComposition, name: str = "") -> None:
         self._oxide_table.set_composition(comp)
@@ -130,4 +126,4 @@ class InputPage(QWidget):
         return self._oxide_table.get_composition()
 
     def get_name(self) -> str:
-        return self._name_edit.text().strip() or "Sample"
+        return self._name_edit.text().strip() or "Образец"

@@ -49,7 +49,28 @@ def cmd_calculate(args: argparse.Namespace) -> int:
         cached = cache.get(p)
         if cached and not args.no_cache:
             print(f"Из кэша: {p.name} ({len(cached)} образцов)")
-            print(f"Загружено {len(cached)} образцов из кэша: {p.name}")
+            # Deserialize cached dicts to CalculationResult objects
+            from src.core.models import (
+                CalculationResult, OxideComposition, MineralComposition,
+                AdaptiveCoefficients, RockType,
+            )
+            for cd in cached:
+                result = CalculationResult(
+                    sample_name=cd["sample_name"],
+                    input_composition=OxideComposition(**cd.get("input_composition", {})),
+                    formula_units=None,
+                    coefficients=AdaptiveCoefficients(
+                        k1=cd.get("k1", 0), k2=cd.get("k2", 0),
+                        k3=cd.get("k3", 0), k4=cd.get("k4", 0),
+                        F=cd["F"], A=cd["A"],
+                    ),
+                    rock_type=RockType(cd["rock_type"]),
+                    minerals_formula=None,
+                    minerals_weight=MineralComposition(**cd.get("minerals", {})),
+                    defect=cd.get("defect", {}),
+                    warnings=cd.get("warnings", []),
+                )
+                all_results.append(result)
             continue
 
         if p.suffix.lower() == ".zip":
@@ -301,7 +322,7 @@ def cmd_report(args: argparse.Namespace) -> int:
         print("Нет данных для отчёта.", file=sys.stderr)
         return 1
 
-    fmt = args.format or Path(args.output).suffix.lstrip(".") if args.output else "pdf"
+    fmt = args.format or (Path(args.output).suffix.lstrip(".") if args.output else "pdf")
     output = Path(args.output) if args.output else Path(f"minlith_report.{fmt}")
 
     template = PREDEFINED_TEMPLATES.get(args.template, PREDEFINED_TEMPLATES["standard"])()

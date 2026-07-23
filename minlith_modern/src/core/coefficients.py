@@ -42,13 +42,13 @@ def calculate_coefficients(F: float, A: float) -> AdaptiveCoefficients:
 
     # Range 4: F = 0.70 — 0.87
     elif F < 0.87:
-        k1 = 6.2 - 12 * F
+        k1 = max(6.2 - 12 * F, 0.0)
         k2 = 2.54 * F + 1.24
         k3 = (3.46 * F + 0.53) / 2
 
     # Range 5: F = 0.87 — 1.0
     else:
-        k1 = 4 - 4 * F
+        k1 = max(4 - 4 * F, 0.0)
         k2 = 18.36 * F - 12.36
         k3 = (25 - 25 * F) / 2
 

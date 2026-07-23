@@ -83,7 +83,7 @@ class Calculator:
 
         cao_idx = OXIDE_ORDER.index("cao")
         p2o5_idx = OXIDE_ORDER.index("p2o5")
-        apatite_ca = 3.33 * oxides[:, p2o5_idx] / masses["p2o5"] * 10000
+        apatite_ca = 3.36 * oxides[:, p2o5_idx] / masses["p2o5"] * 10000
         fe[:, cao_idx] -= apatite_ca
 
         f_idx = OXIDE_ORDER.index("f")
@@ -94,6 +94,9 @@ class Calculator:
         cl_idx = OXIDE_ORDER.index("cl")
         cl_fu = fe[:, cl_idx]
         fe[:, na2o_idx] -= cl_fu / 2
+
+        # Clamp negative formula units to 0
+        np.clip(fe, 0, None, out=fe)
 
         al2o3_idx = OXIDE_ORDER.index("al2o3")
         mgo_idx = OXIDE_ORDER.index("mgo")
@@ -143,12 +146,14 @@ class Calculator:
             return RockType.TYPE_1
         elif al <= 1.2 * na + 3.25 * k:
             return RockType.TYPE_2
-        elif al <= 1.2 * na + 3.25 * k + (mg - 0.5 * k * coeff.k3) / coeff.k1:
+        k1 = coeff.k1 if coeff.k1 != 0 else 1e-10
+        t3 = 1.2 * na + 3.25 * k + (mg - 0.5 * k * coeff.k3) / k1
+        if al <= t3:
             return RockType.TYPE_3
-        elif al <= 5 * na + 3.25 * k + (mg - 0.5 * k - 2 * na) * coeff.k3 / coeff.k1:
+        t4 = 5 * na + 3.25 * k + (mg - 0.5 * k - 2 * na) * coeff.k3 / k1
+        if al <= t4:
             return RockType.TYPE_4
-        else:
-            return RockType.TYPE_5
+        return RockType.TYPE_5
 
     def _build_algorithm_input(
         self, fe: np.ndarray, coeff: AdaptiveCoefficients, rock_type: RockType
@@ -325,7 +330,7 @@ class Calculator:
             sd=minerals.sd * fw["Sd"] * scale,
             q=minerals.q * fw["Q"] * scale,
             ap=minerals.ap * fw["Ap"] * scale,
-            c=minerals.c,
+            c=minerals.c * 12.011 * scale,  # Carbon: molar mass 12.011
             srp=minerals.srp * fw["Srp"] * scale,
             mst=minerals.mst * fw["Mst"] * scale,
             ht=minerals.ht * fw["Ht"] * scale,

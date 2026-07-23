@@ -1,0 +1,581 @@
+Now I have all the information needed for a thorough audit. Let me compile the complete findings.
+
+---
+
+## Complete Bug Audit Report
+
+### FILE 1: `C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\calculator.py`
+
+**BUG 1 — Division by zero in `_classify_type` (line 146)**
+```python
+elif al <= 1.2 * na + 3.25 * k + (mg - 0.5 * k * coeff.k3) / coeff.k1:
+```
+`coeff.k1` can be exactly `0.0` when `F=1.0` (see coefficients.py line 51: `k1 = 4 - 4 * F`). This produces a `ZeroDivisionError` at runtime. No guard exists.
+
+**BUG 2 — Division by zero in `_classify_type` (line 148)**
+```python
+elif al <= 5 * na + 3.25 * k + (mg - 0.5 * k - 2 * na) * coeff.k3 / coeff.k1:
+```
+Same root cause as Bug 1. Division by `coeff.k1` with no zero-check.
+
+**BUG 3 — Negative `k1` used in classification (lines 146, 148)**
+In coefficient range 4 (F = 0.70–0.87), the formula `k1 = 6.2 - 12 * F` yields negative values:
+- At F=0.70: k1 = -2.2
+- At F=0.78: k1 = -3.16
+- At F=0.87: k1 = -4.24
+
+A negative `k1` used as a divisor in the classification thresholds silently produces incorrect rock-type classification. The sign of the fractional term `(mg - ...) / k1` flips, producing nonsensical threshold comparisons.
+
+**BUG 4 — Inconsistent apatite CaO coefficient (line 86 vs. line 391)**
+- Line 86: `apatite_ca = 3.33 * oxides[:, p2o5_idx] / masses["p2o5"] * 10000` — uses **3.33**
+- Line 391: `minerals.ap * 3.36` — uses **3.36**
+
+The stage-0 CaO correction subtracts Ca based on coefficient 3.33, but the defect calculation assumes 3.36 was consumed. This creates a systematic error of `-0.03 * ap` in the CaO defect for every sample. The values should be identical.
+
+**BUG 5 — Carbon not converted to weight percent (line 328)**
+```python
+c=minerals.c,
+```
+In `_to_weight_percent`, every mineral is multiplied by its formula weight and scaled (`mineral * fw["X"] * scale`), but carbon is assigned raw formula units with no conversion:
+```python
+c=minerals.c,  # BUG: no fw["C"] * scale applied
+```
+Furthermore, `"C"` does not exist in `FORMULA_WEIGHTS` (constants.py), so even attempting `fw["C"]` would raise a `KeyError`. The carbon value in `minerals_weight` is in formula units while all other minerals are in weight percent. This corrupts the subsequent `_normalize` call (line 263), which sums all fields including `c` to compute the normalization factor.
+
+**BUG 6 — Defect calculation uses original composition without stage-0 corrections (lines 354–356)**
+```python
+oxide_array = comp.to_array()
+molar_arr = np.array([masses[k] for k in OXIDE_ORDER], dtype=np.float64)
+input_fu = oxide_array / molar_arr * 10000
+```
+`_calculate_defect` computes `input_fu` from the **raw** `OxideComposition` (weight %), not from the corrected formula units produced by `_stage_0`. The stage-0 corrections (Fe2O3→FeO total, CaO−apatite, F−fluorite, Na2O−halite) are not reflected. The resulting defect values are therefore "polluted" by the corrections — e.g., CaO defect will include the apatite correction residual rather than representing true mineral consumption mismatch.
+
+**BUG 7 — Defect matrix does not account for accessory mineral consumption (lines 362–394)**
+The consumption matrix in `_calculate_defect` only covers 8 oxides (sio2, al2o3, mgo, feo, na2o, k2o, cao, mno). Accessory minerals (fluorite `fl`, halite `hl`, pyrite `pr`) consume F, Cl, and S respectively, but the defect matrix has no entries for them (indices 13, 14, 15). Their defects will always equal the full input formula units, even though significant portions were consumed.
+
+**BUG 8 — Apatite defect double-counts P2O5 (line 362–394)**
+P2O5 (`p2o5_idx`) has no entry in the consumption matrix, so `mineral_fu[p2o5_idx] = 0`. The defect for P2O5 will be the full input formula units, even though apatite consumes all P2O5. The defect should subtract `minerals.ap` (or `minerals.ap * some_coefficient`).
+
+**BUG 9 — `fe_total` is a view, not a copy (line 100)**
+```python
+fe_total = fe[:, feo_idx]
+```
+`fe_total` is a NumPy array view into `fe`. If `fe` were modified later at index `feo_idx`, `fe_total` would change silently. Currently no such mutation occurs after line 100, but this is a latent bug. Should be `fe[:, feo_idx].copy()`.
+
+**BUG 10 — No guard against negative formula units after corrections (lines 87, 91, 96)**
+Subtractions can make formula units negative:
+- Line 87: `fe[:, cao_idx] -= apatite_ca` — if apatite_ca > CaO, CaO goes negative
+- Line 91: `fe[:, f_idx] -= 0.67 * p2o5_fu` — if P is high relative to F, F goes negative
+- Line 96: `fe[:, na2o_idx] -= cl_fu / 2` — if Cl is high relative to Na, Na2O goes negative
+
+Negative formula units cascade into `_classify_type` (lines 128–134) and `_build_algorithm_input` (lines 157–180), feeding corrupted values into the algorithm and classification logic. No clamping or warning is produced.
+
+---
+
+### FILE 2: `C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\models.py`
+
+**BUG 11 — `MineralComposition.pl`, derived group fields never populated (lines 123, 151–156)**
+```python
+pl: float = 0.0       # Plagioclase (Ab+An)
+fsp: float = 0.0      # Feldspars
+pel: float = 0.0      # Pelitic (clay)
+pel_fsp: float = 0.0  # Pelitic + feldspars
+carsd: float = 0.0    # Carbonates
+ill_kn: float = 0.0   # Ill + Kn
+chl_mm_srp: float = 0.0  # Chl + Mm + Srp
+```
+These fields exist in `MineralComposition` but are **never set** anywhere in `calculator.py`. They remain at their default `0.0` in both `minerals_formula` and `minerals_weight` output. The `pl` (Plagioclase = Ab + An) is particularly important for petrological analysis and its absence is a functional gap. If any downstream consumer reads these fields, it will get zeros.
+
+**BUG 12 — `rt` (Rutile) and `gy` (Gypsum) never computed (lines 146, 148)**
+`AlgorithmOutput` (algorithm.py) has no `Rt` or `Gy` fields. `_output_to_mineralComposition` does not map them. `calculate_single` does not add them. These fields in `MineralComposition` are permanently zero. If the algorithm is supposed to produce them, the pipeline is broken.
+
+---
+
+### FILE 3: `C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\validation.py`
+
+**BUG 13 — Validation does not set `is_valid = False` for sum-out-of-range (lines 24–27)**
+```python
+if total < lo:
+    warnings.append(...)
+elif total > hi:
+    warnings.append(...)
+```
+When the oxide sum is outside the tolerance range, a warning is appended but `is_valid` remains `True`. Compare with the negative-value check (line 34) and NaN/inf check (line 41) which both set `is_valid = False`. An out-of-range sum is arguably more severe than a single negative value, yet it does not invalidate the sample. This is inconsistent and likely a logic error — the caller (`calculate_single` at calculator.py line 212) receives `is_valid=True` even for compositions summing to, say, 60%.
+
+---
+
+### FILE 4: `C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\coefficients.py`
+
+**BUG 14 — Range 4 produces negative k1 values (line 45)**
+```python
+k1 = 6.2 - 12 * F
+```
+For F in [0.70, 0.87), this produces:
+- F=0.70: k1 = -2.2
+- F=0.75: k1 = -2.8
+- F=0.80: k1 = -3.4
+- F=0.869: k1 = -4.228
+
+`k1` is described as "Mg in chlorite" (AdaptiveCoefficients docstring, models.py line 102). A negative Mg content in chlorite is physically impossible. The formula is almost certainly wrong — likely a coefficient error (e.g., should be `6.2 - 4.2*F` or `6.2 - 2*F`).
+
+**BUG 15 — Range 5 produces k1=0 at F=1.0 (line 51)**
+```python
+k1 = 4 - 4 * F
+```
+At F=1.0: k1 = 0. This triggers **division by zero** in `calculator.py:_classify_type` (lines 146, 148). The validation at line 22 allows F=1.0 (`F > 1.0` raises ValueError, but F=1.0 is accepted).
+
+**BUG 16 — Range 4 k2 and k3 are identical to Range 3 (lines 46–47 vs. 40–41)**
+```python
+# Range 3 (F = 0.51–0.70):
+k2 = 2.54 * F + 1.24
+k3 = (3.46 * F + 0.53) / 2
+
+# Range 4 (F = 0.70–0.87):
+k2 = 2.54 * F + 1.24    # IDENTICAL to Range 3
+k3 = (3.46 * F + 0.53) / 2  # IDENTICAL to Range 3
+```
+While it is *possible* the formulas are intentionally the same for adjacent ranges, this is suspicious and likely a copy-paste error during implementation. Range 4 has a drastically different k1 formula, so it would be unusual for k2 and k3 to be unchanged.
+
+---
+
+### FILE 5: `C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\constants.py`
+
+**BUG 17 — `MOLAR_MASSES_MINLITH["so"]` is wrong (line 46)**
+```python
+"so": 80.066,
+```
+The value `80.066` is the molar mass of **SO₃** (sulfur trioxide), not SO (sulfur monoxide, ~48.06 g/mol). Compare with:
+- Line 41: `"so3": 80.066` — SO₃ entry is correct
+- Line 24 (IUPAC): `"so": 48.064` — IUPAC entry is correct
+
+This is a copy-paste error. When `molar_mass_source == "minlith"`, the formula unit calculation for "so" will be off by a factor of ~1.67 (`80.066 / 48.064`), corrupting the "so" column throughout the entire calculation pipeline.
+
+**BUG 18 — `FORMULA_WEIGHTS` missing entries for accessory minerals (lines 50–75)**
+The following minerals appear in `MineralComposition` but have no formula weight:
+- **C** (Carbon) — no `"C"` key. This causes `calculator.py` line 328 to skip conversion (`c=minerals.c` raw).
+- There is no explicit issue for `Ap`, `Pr`, `Rt`, `Hl`, `Gy`, `Fl` since they DO have entries. But the absence of `"C"` is the root cause of Bug 5.
+
+---
+
+### SUMMARY OF ALL BUGS
+
+| # | Severity | File:Line | Description |
+|---|----------|-----------|-------------|
+| 1 | **CRITICAL** | calculator.py:146 | Division by zero when `coeff.k1 == 0` (F=1.0) |
+| 2 | **CRITICAL** | calculator.py:148 | Division by zero when `coeff.k1 == 0` (F=1.0) |
+| 3 | **HIGH** | calculator.py:146,148 | Negative `k1` from coefficients.py:45 corrupts classification |
+| 4 | **MEDIUM** | calculator.py:86 vs 391 | Inconsistent apatite coefficient (3.33 vs 3.36) |
+| 5 | **HIGH** | calculator.py:328 | Carbon not converted to weight percent; no formula weight exists |
+| 6 | **MEDIUM** | calculator.py:354-356 | Defect uses raw composition, ignoring stage-0 corrections |
+| 7 | **MEDIUM** | calculator.py:362-394 | Defect matrix missing F, Cl, S consumption by accessory minerals |
+| 8 | **LOW** | calculator.py:394+ | P2O5 defect always equals full input (no consumption entry) |
+| 9 | **LOW** | calculator.py:100 | `fe_total` is a NumPy view, not a copy (latent mutation risk) |
+| 10 | **MEDIUM** | calculator.py:87,91,96 | No clamping of negative formula units after corrections |
+| 11 | **MEDIUM** | models.py:123,151-156 | Derived fields (`pl`, `fsp`, `pel`, etc.) never populated |
+| 12 | **LOW** | models.py:146,148 | `rt` and `gy` minerals never computed by pipeline |
+| 13 | **MEDIUM** | validation.py:24-27 | Sum out of range does not set `is_valid = False` (inconsistent) |
+| 14 | **HIGH** | coefficients.py:45 | Range 4 formula yields physically impossible negative k1 |
+| 15 | **CRITICAL** | coefficients.py:51 | k1=0 at F=1.0, causes division by zero |
+| 16 | **LOW** | coefficients.py:46-47 | Range 4 k2/k3 identical to Range 3 (probable copy-paste) |
+| 17 | **HIGH** | constants.py:46 | MOLAR_MASSES_MINLITH["so"] = 80.066 (SO3 mass, not SO) |
+| 18 | **MEDIUM** | constants.py:50-75 | FORMULA_WEIGHTS missing "C" entry for carbon |
+
+
+
+Now I have a complete picture of the codebase. Here is the comprehensive audit report.
+
+---
+
+# Comprehensive Bug Audit Report
+
+## 1. `src/cli.py`
+
+### BUG 1 — `cli.py:214` — `AttributeError`: `args.type` may not exist on all subcommands
+The `cmd_chart` function accesses `args.type` (line 250), but the `--type` argument is only defined on the `chart` subparser (line 402). If the code path were ever reached without it, it would raise `AttributeError`. This is a latent issue -- fine as long as only the chart subcommand calls `cmd_chart`, but fragile by design.
+
+### BUG 2 — `cli.py:260` — `AttributeError`: `args.interactive` may not exist
+`args.interactive` is referenced on line 260 but `--interactive` is only defined on the chart subparser (line 406). Same fragility as above.
+
+### BUG 3 — `cli.py:270` — `AttributeError`: `args.dpi` may not exist
+`args.dpi` is referenced on line 270 but only defined on the chart subparser (line 405).
+
+### BUG 4 — `cli.py:49-50` — `args.no_cache` may not exist
+`args.no_cache` is referenced in `cmd_calculate` on line 50, but the `--no-cache` argument is only added to the `calculate` subparser (line 381). If `cmd_calculate` were ever called without this attribute, it would crash. Same fragility pattern.
+
+### BUG 5 — `cli.py:304` — Operator precedence bug in `fmt` assignment
+```python
+fmt = args.format or Path(args.output).suffix.lstrip(".") if args.output else "pdf"
+```
+This parses as:
+```python
+fmt = (args.format or Path(args.output).suffix.lstrip(".")) if args.output else "pdf"
+```
+Due to `or` vs ternary `if` precedence. The intent is likely:
+```python
+fmt = args.format or (Path(args.output).suffix.lstrip(".") if args.output else "pdf")
+```
+If `args.format` is `None` and `args.output` is provided, this works correctly by accident. But if `args.format` is truthy and `args.output` is `None`, the `Path(args.output)` would still be evaluated on the left side of `or` -- actually it would not because short-circuit evaluation prevents it. However, if `args.format` is `None` and `args.output` is `None`, then it hits `pdf` correctly. The real issue is if `args.format` is `None` and `args.output` is `""` (empty string, which is falsy) -- the ternary evaluates `Path(args.output)` which is `Path("")` and `.suffix` is `""`, so fmt becomes `""`, which is wrong. In practice the argument parser returns `None` when absent, so this is a **logic smell** that will produce `""` as format in edge cases.
+
+### BUG 6 — `cli.py:307` — Dead code: `template` variable unused
+Line 307 creates `template = PREDEFINED_TEMPLATES.get(...)()` but this variable is never used. Line 309 calls `_export_report` which independently fetches the template internally. This is dead code.
+
+### BUG 7 — `cli.py:50-53` — When using cache, results are not added to `all_results`
+When a file is found in the cache (line 49), the code does `continue` (line 53), skipping the file entirely. The cached results are never appended to `all_results`. This means the export section (lines 84-119) may find no results to export even though data was loaded from cache. This is a **logic error**: cached results are silently discarded and never exported.
+
+---
+
+## 2. `src/io/excel.py`
+
+### BUG 8 — `excel.py:80` — Conditional expression on line 80/82 has operator precedence issue
+```python
+if str(cell_a2).strip() == "SiO2" if cell_a2 else False:
+```
+This parses as:
+```python
+if (str(cell_a2).strip() == "SiO2") if cell_a2 else False:
+```
+This is actually correct behavior (if `cell_a2` is falsy, evaluate to `False`). But if `cell_a2` is the integer `0` (which is falsy in Python), it would short-circuit to `False` even though the cell is not empty. The same issue exists on line 82 and 107, 109. For Excel cells, `0` is a legitimate value that should not be treated as "no value".
+
+### BUG 9 — `excel.py:250` — Incorrect field mapping logic for "Or"
+Line 250:
+```python
+field = code.lower().replace("or", "or_").replace("ill", "ill")
+```
+The second `.replace("ill", "ill")` is a no-op (replaces "ill" with "ill"). But the first `.replace("or", "or_")` would also match partial occurrences. For example, code "Or" -> "or" -> "or_". But the field_map (lines 252-258) already has the correct mapping. The `field` variable on line 250 is computed but then overridden on line 260 by `attr = field_map.get(code, code.lower())`. So lines 250-251 are **dead code** -- the computed `field` variable is never used.
+
+### BUG 10 — `excel.py:198` — Truthiness check on row number can be wrong
+```python
+if row:
+    fields[field] = _safe_float(ws.cell(row, c).value)
+```
+If `row` is `0` (falsy), this would skip the lookup even though row 0 is a valid Excel row. In practice, rows start at 2 in this function, so row 0 is not a valid result, but this is a **latent bug** if the logic ever changes. Contrast with line 146 in `_load_transposed_xls` which correctly uses `if row is not None`.
+
+---
+
+## 3. `src/io/csv_handler.py`
+
+### BUG 11 — `csv_handler.py:47` — `UnboundLocalError`: `first_line` may be unbound
+```python
+if separator is None:
+    separator = ";" if ";" in first_line else ","
+```
+If the `for` loop at line 35 never executes its body (empty `encodings` tuple -- not the case here), or if every encoding fails and falls through to the `else` clause, `first_line` is never assigned but is still referenced on line 47. In practice, the `else` clause sets `enc = "utf-8-sig"` but does **not** set `first_line`. So if all encodings fail, `first_line` is unbound, and line 47 would raise `UnboundLocalError`.
+
+### BUG 12 — `csv_handler.py:60` — Redundant/incorrect condition
+```python
+oxide_data[field] = float(str(val).replace(",", ".")) if val else 0.0
+```
+If `val` is `0` (integer) or `0.0` (float), the `if val` check treats it as falsy and returns `0.0`. This is correct for the zero case, but the `str(val)` conversion is done unnecessarily if `val` is already a numeric type. More importantly, `val` could be `"0"` (string "0" from CSV), which is truthy and would work correctly. The logic is technically correct but fragile.
+
+---
+
+## 4. `src/io/zip_handler.py`
+
+No critical bugs found. The code is clean.
+
+---
+
+## 5. `src/io/legacy_import.py`
+
+### BUG 13 — `legacy_import.py:47` — Same precedence issue as excel.py
+```python
+if str(cell_a2).strip() == "SiO2" if cell_a2 else False:
+```
+Same issue as BUG 8 — treats `0` as empty.
+
+### BUG 14 — `legacy_import.py:80` — `NameError`: `_OXIDE_FIELDS` used before definition
+Line 80 references `_OXIDE_FIELDS`, but it is defined at the bottom of the file (line 104-107). Due to `from __future__ import annotations` on line 3, this is fine for **type annotations**, but `_OXIDE_FIELDS` at line 80 is used at **runtime** (it's a variable reference in the `else` branch). The function `import_from_minlith` is defined at line 23, but `_OXIDE_FIELDS` is at line 104. However, the function is only **called** at runtime, not at module load time, so `_OXIDE_FIELDS` will be defined before the function is called. This is technically fine but is a **code smell** -- if the function is ever called before module-level code at line 104 executes, it would fail. In practice, since it's all module-level, it works.
+
+### BUG 15 — `legacy_import.py:81` — Incorrect unicode normalization logic
+```python
+row = label_rows.get(field.upper().replace("2", "₂").replace("3", "₃"))
+```
+`_OXIDE_FIELDS` contains lowercase field names like `"sio2"`, `"al2o3"`, etc. `field.upper()` converts them to `"SIO2"`, `"AL2O3"`, etc. Then `.replace("2", "₂")` replaces ALL occurrences of "2", including in "AL2O3" -> "AL₂O₃". But `"SIO2"` becomes `"SIO₂"`. However, the label_rows dictionary was built from Excel cell values which might use regular "2" and "3", not subscript Unicode. So this lookup will almost always fail (return `None`), and the code falls through to the fallback loop on lines 84-87. This means the primary lookup is **dead code** for the common case.
+
+---
+
+## 6. `src/gui/main_window.py`
+
+### BUG 16 — `main_window.py:136` — Accessing private method of FilesPage
+```python
+QShortcut(QKeySequence("Ctrl+O"), self, self._files_page._on_import_click)
+```
+This accesses `_on_import_click` which is a private method (by convention, prefixed with `_`). This is a **code smell** / fragile coupling. If the method is renamed, this shortcut breaks silently.
+
+### BUG 17 — `main_window.py:143` — Accessing private method of InputPage
+```python
+QShortcut(QKeySequence("F5"), self, self._input_page._on_calculate)
+```
+Same issue as BUG 16 — accessing a private method directly.
+
+### BUG 18 — `main_window.py:163` — Accessing private attribute `_results` of ResultsPage
+```python
+results = self._results_page._results
+```
+Directly accessing a private attribute. Should use a public method or property.
+
+### BUG 19 — `main_window.py:196` — `build_data_from_results` called on ChartsPage but results may be incomplete
+```python
+chart_data = self._charts_page.build_data_from_results(self._results_page._results)
+```
+If `_on_calculation_done` is called (single calculation), `self._results_page._results` only contains the single just-calculated result (plus any previously added). The `build_data_from_results` builds ChartData from all accumulated results, not just the new one. This is not a bug per se, but the chart data includes ALL results, which might be unexpected if the user wanted to see just the new result.
+
+---
+
+## 7. `src/gui/pages/files_page.py`
+
+### BUG 20 — `files_page.py:138` — `AttributeError`: `config.add_recent_file` may not exist
+```python
+if self._config:
+    self._config.add_recent_file(path)
+```
+The `_config` parameter is `None` by default, and if a `ConfigManager` is passed, it does have `add_recent_file`. However, looking at the constructor signature (line 34), `config` is not typed as `Optional[ConfigManager]`. The check `if self._config` works correctly in practice.
+
+### BUG 21 — `files_page.py:156-157` — `__dataclass_fields__` usage
+```python
+if k.lower() in OxideComposition.__dataclass_fields__:
+```
+This relies on the internal `__dataclass_fields__` attribute. While this works, it's accessing a private/internal attribute. The code would be more robust with `hasattr(OxideComposition, k.lower())`.
+
+---
+
+## 8. `src/gui/pages/input_page.py`
+
+### BUG 22 — `input_page.py:92` — Incorrect validation: SiO2 == 0 is not necessarily invalid
+```python
+if comp.sio2 == 0:
+    QMessageBox.warning(self, "Ошибка ввода", "SiO2 должен быть больше нуля.")
+    return
+```
+This blocks calculation if SiO2 is exactly 0.0. However, some sample types (e.g., pure carbonates) might legitimately have 0 SiO2. This is a **logic error** -- the check is too restrictive.
+
+---
+
+## 9. `src/gui/pages/results_page.py`
+
+### BUG 23 — `results_page.py:54` — Potential crash if selectionModel returns None
+```python
+self._summary_table.selectionModel().selectionChanged.connect(self._on_selection_changed)
+```
+If `_summary_table` has not been properly initialized (e.g., no model set yet), `selectionModel()` could return `None`, and calling `.selectionChanged.connect(...)` on `None` would crash. In practice, `QTableWidget` always has a selection model, so this works, but it's fragile.
+
+---
+
+## 10. `src/gui/pages/history_page.py`
+
+### BUG 24 — `history_page.py:108` — `KeyError` if dict missing "sample" key
+```python
+filtered = [r for r in self._results if text.lower() in r["sample"].lower()]
+```
+If any record in `self._results` is missing the `"sample"` key, this will raise `KeyError`. The `_populate_table` method (line 94) also accesses `r["sample"]` without `.get()`, which would crash similarly.
+
+### BUG 25 — `history_page.py:120-121` — `delete_sample` called with sample name, but signature expects int
+```python
+self._repo.delete_sample(self._results[row]["sample"])
+```
+Looking at `repository.py:142`:
+```python
+def delete_sample(self, sample_id: int) -> None:
+```
+The method expects an `int` (sample ID), but `self._results[row]["sample"]` is a **string** (the sample name). This will either cause a SQLAlchemy error or silently fail because `session.query(SampleDB).get("some_string")` will not find a match (it expects an integer primary key). This is a **type mismatch bug** -- deletion will silently do nothing.
+
+---
+
+## 11. `src/gui/pages/charts_page.py`
+
+### BUG 26 — `charts_page.py:96` — `int(r.rock_type)` conversion may fail
+```python
+data.rock_types = [int(r.rock_type) for r in results]
+```
+`r.rock_type` is already a `RockType(IntEnum)`, so `int()` is redundant but safe. No bug.
+
+### BUG 27 — `charts_page.py:138-142` — Scaled pixmap may be zero-sized
+```python
+scaled = pixmap.scaled(
+    self._chart_label.size(),
+    ...
+)
+```
+If `self._chart_label.size()` is `QSize(0, 0)` (e.g., before the widget is laid out), the scaled pixmap will be empty. The label might show nothing. This is a **layout timing issue**.
+
+---
+
+## 12. `src/gui/pages/reports_page.py`
+
+### BUG 28 — `reports_page.py:23` — Import of `template_brief`, `template_standard`, `template_full` is redundant
+The import at line 23 imports these functions, but the `_get_template` method at line 81 calls them directly. No bug, just unnecessary imports (they could be imported locally). However, they ARE used in `_get_template` (lines 84, 85, 87), so the import is actually needed.
+
+---
+
+## 13. `src/gui/pages/settings_page.py`
+
+### BUG 29 — `settings_page.py:110-113` — `float()` conversion of user input may crash
+```python
+self._config["sum_tolerance"] = [
+    float(self._sum_lo.text()),
+    float(self._sum_hi.text()),
+]
+```
+If the user enters non-numeric text (e.g., letters) in the sum range fields, `float()` will raise `ValueError` and the settings will not be saved. There is no error handling or validation. This is an **unhandled exception**.
+
+---
+
+## 14. `src/gui/pages/logs_page.py`
+
+No bugs found.
+
+---
+
+## 15. `src/gui/widgets/oxide_table.py`
+
+### BUG 30 — `oxide_table.py:67-69` — `itemChanged` signal fires during `set_composition` despite `blockSignals`
+The `_on_change` method (line 67) is connected to `itemChanged`. The `set_composition` method (line 81) calls `blockSignals(True)` before modifying items and `blockSignals(False)` after. This is correct. However, `blockSignals(True)` on `QTableWidget` blocks ALL signals including `itemChanged`, so the `value_changed` signal won't be emitted during programmatic set. This is intentional and correct. No bug.
+
+### BUG 31 — `oxide_table.py:85` — `self._table.item(i, 1)` could be None
+```python
+self._table.item(i, 1).setText(str(round(val, 4)) if val else "0")
+```
+If the item at `(i, 1)` is `None` (which should not happen since items are created in `__init__`), this would raise `AttributeError`. In practice, the items are created in `__init__`, so this is safe.
+
+---
+
+## 16. `src/gui/widgets/mineral_table.py`
+
+No critical bugs found.
+
+---
+
+## 17. `src/reports/pdf_generator.py`
+
+### BUG 32 — `pdf_generator.py:176` — Sum row includes derived/composite fields
+```python
+data.append(["Σ"] + [f"{sum(r.minerals_weight.__dict__.values()):.1f}" for r in self._results])
+```
+`r.minerals_weight.__dict__.values()` includes ALL fields in `MineralComposition`, including `pl` (plagioclase = Ab+An), `fsp` (feldspars), `pel` (pelitic), etc. This means the sum includes derived group fields **and** their components, double-counting. The sum will be inflated. This is a **logic error**. The sum should only include base mineral fields, not derived groups.
+
+---
+
+## 18. `src/reports/word_generator.py`
+
+### BUG 33 — `word_generator.py:144` — Same double-counting issue as BUG 32
+```python
+total = sum(v for k, v in r.minerals_weight.__dict__.items() if not k.startswith("_"))
+```
+Same issue -- `__dict__` includes derived fields like `pl`, `fsp`, `pel`, `pel_fsp`, `carsd`, `ill_kn`, `chl_mm_srp`, which are sums of other fields already counted.
+
+---
+
+## 19. `src/reports/html_generator.py`
+
+### BUG 34 — `html_generator.py:176` — Variable `block_htmls` computed but never used
+```python
+block_htmls = [_block_html(b, self._results) for b in blocks]
+```
+This list is computed but never referenced. The template rendering on line 182 uses a lambda instead. This is **dead code**.
+
+---
+
+## 20. `src/workers/calculation_worker.py`
+
+### BUG 35 — `calculation_worker.py:74` — `minerals_formula` and `minerals_weight` set to the same object
+```python
+minerals_formula=minerals,
+minerals_weight=minerals,
+```
+In `_deserialize_result`, both `minerals_formula` and `minerals_weight` are assigned the same `minerals` object (a `MineralComposition`). This means the result's formula units and weight percent are identical, which is **always incorrect**. The actual formula units and weight percents are different values. The serialization (line 44) separately stores `minerals_wt` and `minerals_fu`, but deserialization ignores this distinction and reuses the same object for both. This is a **critical data corruption bug** for the parallel execution path.
+
+### BUG 36 — `calculation_worker.py:132` — `timeout_seconds` config key may not exist on `CalculationConfig`
+```python
+"timeout_seconds": self._calculator.config.timeout_seconds,
+```
+Looking at `CalculationConfig` in `models.py:188`, `timeout_seconds` is defined as a field. However, the `__init__` of `Calculator` (line 38-44 in calculator.py) takes an optional `config` parameter. If someone passes a `CalculationConfig` with custom values, `timeout_seconds` should always exist. No actual bug.
+
+### BUG 37 — `calculation_worker.py:152` — `executor.shutdown(wait=False, cancel_futures=True)` may raise TypeError
+```python
+executor.shutdown(wait=False, cancel_futures=True)
+```
+`cancel_futures` parameter was added in Python 3.9. If running on Python 3.8 or earlier, this would raise `TypeError`. However, since the project uses `from __future__ import annotations` and modern Python features, this is unlikely to be an issue.
+
+---
+
+## 21. `src/database/repository.py`
+
+### BUG 38 — `repository.py:45` — Type confusion: `_session_factory` can be a Session instance or callable
+```python
+def __init__(self, session: Session | None = None) -> None:
+    self._session_factory = session or get_session
+```
+If a `Session` object is passed, `_session_factory` is a `Session` instance. The `_session()` method (line 47-50) checks `if callable(self._session_factory)`. A `Session` instance is **callable** in SQLAlchemy (it acts as a context manager and session factory in some versions), so `callable()` returns `True`, causing `self._session_factory()` to be called on the Session instance, which would attempt to **call** the Session as a function. This would likely create a new Session via `__call__` if supported, or raise `TypeError`. The type annotation says `session: Session | None` but the logic treats it as a sessionmaker/factory. This is a **type mismatch**.
+
+### BUG 39 — `repository.py:128` — `.get()` is deprecated in SQLAlchemy 2.0
+```python
+db_sample = session.query(SampleDB).get(sample_id)
+```
+`Query.get()` is deprecated in SQLAlchemy 2.0. The recommended replacement is `session.get(SampleDB, sample_id)`. Same issue on line 144. This will generate deprecation warnings and may break in future SQLAlchemy versions.
+
+### BUG 40 — `repository.py:142-146` — `delete_sample` accepts `int` but is called with `str` from history_page
+As noted in BUG 25, `delete_sample(sample_id: int)` is called with a string sample name from `history_page.py:123`. The `session.query(SampleDB).get(sample_id)` with a string will not match any integer primary key, so the deletion silently does nothing. This is a **cross-file type mismatch**.
+
+### BUG 41 — `repository.py:194-196` — Potential empty `in_()` clause
+```python
+old_calcs = session.query(CalculationDB).filter(
+    ~CalculationDB.id.in_(keep_ids)
+).all()
+```
+If `keep_ids` is empty (e.g., no calculations exist), `CalculationDB.id.in_([])` generates `WHERE id IN ()` which is invalid SQL in some databases. SQLite handles this gracefully (returns empty result), so it works in practice.
+
+---
+
+## 22. `src/utils/cache.py`
+
+### BUG 42 — `cache.py:97-98` — `sha256_file` called on non-existent file path
+```python
+def invalidate(self, file_path: Path | str) -> bool:
+    file_path = Path(file_path)
+    file_hash = sha256_file(file_path) if file_path.exists() else None
+```
+If `file_path.exists()` is `False`, `file_hash` is `None`, and the method returns `False`. This is correct.
+
+### BUG 43 — `cache.py:69-80` — Cached data is incomplete for full reconstruction
+The `put` method serializes results with only `sample_name`, `rock_type`, `F`, `A`, `minerals`, `defect`. But the `get` method returns the raw JSON dict. In `cli.py:49-53`, the cached data is loaded and treated as if it were full `CalculationResult` objects, but it's actually a list of dicts. The code `len(cached)` works (counts list items), and `print(f"Загружено {len(cached)} образцов из кэша: {p.name}")` works. But the cached data is never actually used as calculation results -- the `continue` on line 53 skips processing. So the cache is effectively broken: it prevents recalculation but the cached results are **never added to `all_results`**, meaning nothing is exported. (This is the same as BUG 7.)
+
+---
+
+## 23. `src/utils/helpers.py`
+
+### BUG 44 — `helpers.py:34` — Incorrect mapping: `"sr": "SrO"` is wrong
+```python
+"sr": "SrO",
+```
+The field name `"sr"` does not appear in `OxideComposition`. The field name for strontium oxide is not in the model at all. This mapping entry is dead/incorrect -- it will never be used because there is no `"sr"` field in `OxideComposition`. If it were ever used, it would display "SrO" which is correct chemically, but the field name `"sr"` is inconsistent with the rest of the codebase which doesn't include SrO.
+
+### BUG 45 — `helpers.py:44` — `"or": "Orthoclase"` maps "or" but the field is `"or_"`
+```python
+_map = {
+    ...
+    "or": "Orthoclase",
+    ...
+}
+```
+The `MineralComposition` dataclass uses the field name `"or_"` (with trailing underscore to avoid Python keyword conflict). The mapping has `"or"` without underscore. If `fmt_mineral_name("or_")` is called, it won't find `"or_"` in the map and will fall through to `name.capitalize()` which returns `"Or_"`. This is a **minor display bug**.
+
+### BUG 46 — `helpers.py:46` — `"dol"` mapped to "Dolomite" but field is `"dl"`
+```python
+"dol": "Dolomite",
+```
+The `MineralComposition` field for dolomite is `"dl"`, not `"dol"`. So `fmt_mineral_name("dl")` won't find `"dl"` in the map and will return `"Dl"` (capitalize). This is a **display mapping error**.
+
+---
+
+## Summary of Critical/High-Severity Bugs
+
+| # | File:Line | Severity | Description |
+|---|-----------|----------|-------------|
+| 7 | `cli.py:49-53` | **CRITICAL** | Cache results loaded but never added to `all_results`; export produces nothing for cached files |
+| 25 | `history_page.py:123` | **HIGH** | `delete_sample()` called with string name instead of int ID -- deletion silently fails |
+| 35 | `calculation_worker.py:74-75` | **CRITICAL** | `minerals_formula` and `minerals_weight` set to same object in deserialization -- parallel path produces corrupted results |
+| 32/33 | `pdf_generator.py:176`, `word_generator.py:144` | **HIGH** | Mineral sum row double-counts derived group fields (`pl`, `fsp`, `pel`, etc.) |
+| 38 | `repository.py:44-50` | **MEDIUM** | Type confusion: `_session_factory` can be a Session instance; `callable()` check may behave unexpectedly |
+| 11 | `csv_handler.py:42-47` | **MEDIUM** | `first_line` unbound if all encoding attempts fail |
+| 34 | `html_generator.py:176` | **LOW** | Dead code: `block_htmls` computed but never used |
+| 6/30 | `cli.py:307`, `excel.py:250-251` | **LOW** | Dead code: unused variables |

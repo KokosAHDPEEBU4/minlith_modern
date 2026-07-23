@@ -70,7 +70,7 @@ class HistoryPage(QWidget):
         self._table.verticalHeader().setVisible(False)
         self._table.setColumnCount(7)
         self._table.setHorizontalHeaderLabels([
-            "Sample", "Type", "F", "A", "Ab%", "Q%", "Date",
+            "Образец", "Тип", "F", "A", "Ab%", "Q%", "Дата",
         ])
         h = self._table.horizontalHeader()
         for c in range(7):
@@ -120,7 +120,9 @@ class HistoryPage(QWidget):
             for row in rows:
                 if row < len(self._results):
                     try:
-                        self._repo.delete_sample(self._results[row]["sample"])
+                        sample_id = self._results[row].get("sample_id")
+                        if sample_id:
+                            self._repo.delete_sample(sample_id)
                     except Exception as e:
                         logger.warning("Delete failed: %s", e)
             self._load_data()
@@ -135,7 +137,7 @@ class HistoryPage(QWidget):
         import csv
         with open(path, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.writer(f, delimiter=";")
-            writer.writerow(["Sample", "Type", "F", "A", "Ab%", "Q%", "Date"])
+            writer.writerow(["Образец", "Тип", "F", "A", "Ab%", "Q%", "Дата"])
             for r in self._results:
                 minerals = r.get("minerals", {})
                 writer.writerow([

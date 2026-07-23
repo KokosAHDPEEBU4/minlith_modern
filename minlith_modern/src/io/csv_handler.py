@@ -32,6 +32,7 @@ def read_csv(path: Path, separator: str | None = None) -> list[Sample]:
     samples = []
 
     # Auto-detect encoding
+    first_line = ""
     for enc in ("utf-8-sig", "utf-8", "cp1251", "latin-1"):
         try:
             with open(path, "r", encoding=enc) as f:

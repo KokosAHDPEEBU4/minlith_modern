@@ -1,4 +1,4 @@
-"""Results page — displays calculation results with mineral table."""
+"""Страница результатов — таблица результатов расчёта."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class ResultsPage(QWidget):
-    """Page showing calculation results."""
+    """Страница отображения результатов расчёта."""
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -35,17 +35,16 @@ class ResultsPage(QWidget):
         layout = QVBoxLayout(self)
 
         header = QHBoxLayout()
-        header.addWidget(QLabel("Results"))
+        header.addWidget(QLabel("Результаты"))
         header.addStretch()
 
-        self._btn_export_all = QPushButton("Export All .xlsx")
+        self._btn_export_all = QPushButton("Экспорт всех в .xlsx")
         self._btn_export_all.clicked.connect(self._on_export_all)
         header.addWidget(self._btn_export_all)
         layout.addLayout(header)
 
         splitter = QSplitter(Qt.Orientation.Vertical)
 
-        # Summary table (all samples)
         self._summary_table = QTableWidget()
         self._summary_table.setAlternatingRowColors(True)
         self._summary_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -54,7 +53,6 @@ class ResultsPage(QWidget):
         self._summary_table.selectionModel().selectionChanged.connect(self._on_selection_changed)
         splitter.addWidget(self._summary_table)
 
-        # Detail: mineral table for selected sample
         self._detail = MineralTable()
         splitter.addWidget(self._detail)
 
@@ -79,7 +77,7 @@ class ResultsPage(QWidget):
         minerals = ["Ab", "An", "Or", "Q", "Ill", "Chl", "Kn", "Mm", "Gb", "Ap", "Cc", "Dl"]
         fields = ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb", "ap", "cc", "dl"]
 
-        cols = ["Sample", "Type", "F", "A"] + minerals
+        cols = ["Образец", "Тип", "F", "A"] + minerals
         self._summary_table.setColumnCount(len(cols))
         self._summary_table.setHorizontalHeaderLabels(cols)
         h = self._summary_table.horizontalHeader()
@@ -115,12 +113,12 @@ class ResultsPage(QWidget):
 
     def _on_export_all(self) -> None:
         if not self._results:
-            QMessageBox.information(self, "Export", "No results to export.")
+            QMessageBox.information(self, "Экспорт", "Нет результатов для экспорта.")
             return
         from PyQt6.QtWidgets import QFileDialog
         path, _ = QFileDialog.getSaveFileName(
-            self, "Export results", "minlith_results.xlsx",
-            "Excel Files (*.xlsx)",
+            self, "Экспорт результатов", "minlith_results.xlsx",
+            "Excel (*.xlsx)",
         )
         if not path:
             return
@@ -128,4 +126,4 @@ class ResultsPage(QWidget):
         try:
             save_results(path, self._results)
         except Exception as e:
-            QMessageBox.critical(self, "Export Error", str(e))
+            QMessageBox.critical(self, "Ошибка экспорта", str(e))

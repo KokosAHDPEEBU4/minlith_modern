@@ -141,7 +141,7 @@ class SampleRepository:
 
     def delete_sample(self, sample_id: int) -> None:
         session = self._session()
-        db_sample = session.query(SampleDB).get(sample_id)
+        db_sample = session.query(SampleDB).filter(SampleDB.id == sample_id).first()
         if db_sample:
             session.delete(db_sample)
             session.commit()
@@ -150,17 +150,18 @@ class SampleRepository:
         """Get recent calculation results with sample names."""
         session = self._session()
         rows = (
-            session.query(CalculationDB, SampleDB.name)
+            session.query(CalculationDB, SampleDB.name, SampleDB.id)
             .join(SampleDB, CalculationDB.sample_id == SampleDB.id)
             .order_by(desc(CalculationDB.created_at))
             .limit(limit)
             .all()
         )
         results = []
-        for calc, name in rows:
+        for calc, name, sample_id in rows:
             minerals = {m.mineral: m.weight_percent for m in calc.minerals}
             results.append({
                 "id": calc.id,
+                "sample_id": sample_id,
                 "sample": name,
                 "rock_type": calc.rock_type,
                 "F": calc.F,

@@ -1,4 +1,4 @@
-"""Results table — right side of the main window."""
+"""Таблица результатов — правая часть главного окна."""
 
 from __future__ import annotations
 
@@ -17,35 +17,34 @@ from PyQt6.QtWidgets import (
 
 from src.core.models import CalculationResult, MineralComposition
 
-# Minerals to display, in order (matches Excel row 286)
 DISPLAY_MINERALS: list[tuple[str, str, str]] = [
-    ("Ab", "ab", "Albite"),
-    ("An", "an", "Anorthite"),
-    ("Or", "or_", "Orthoclase"),
-    ("Q", "q", "Quartz"),
-    ("Ill", "ill", "Illite"),
-    ("Chl", "chl", "Chlorite"),
-    ("Kn", "kn", "Kaolinite"),
-    ("Mm", "mm", "Montmorillonite"),
-    ("Gb", "gb", "Gibbsite"),
-    ("Ap", "ap", "Apatite"),
-    ("Cc", "cc", "Calcite"),
-    ("Dl", "dl", "Dolomite"),
-    ("Ank", "ank", "Ankerite"),
-    ("Rch", "rch", "Rhodochrosite"),
-    ("Sd", "sd", "Siderite"),
-    ("Srp", "srp", "Serpentine"),
-    ("Mst", "mst", "Magnesite"),
-    ("Ht", "ht", "Hematite"),
-    ("Prl", "prl", "Pyrolusite"),
-    ("Pr", "pr", "Pyrite"),
-    ("Hl", "hl", "Halite"),
-    ("Fl", "fl", "Fluorite"),
+    ("Ab", "ab", "Альбит"),
+    ("An", "an", "Анортит"),
+    ("Or", "or_", "Ортоклаз"),
+    ("Q", "q", "Кварц"),
+    ("Ill", "ill", "Иллит"),
+    ("Chl", "chl", "Хлорит"),
+    ("Kn", "kn", "Каолинит"),
+    ("Mm", "mm", "Монтмориллонит"),
+    ("Gb", "gb", "Гиббсит"),
+    ("Ap", "ap", "Апатит"),
+    ("Cc", "cc", "Кальцит"),
+    ("Dl", "dl", "Доломит"),
+    ("Ank", "ank", "Анкерит"),
+    ("Rch", "rch", "Родохрозит"),
+    ("Sd", "sd", "Сидерит"),
+    ("Srp", "srp", "Серпентин"),
+    ("Mst", "mst", "Магнезит"),
+    ("Ht", "ht", "Гематит"),
+    ("Prl", "prl", "Пиролюзит"),
+    ("Pr", "pr", "Пирит"),
+    ("Hl", "hl", "Галит"),
+    ("Fl", "fl", "Флюорит"),
 ]
 
 
 class ResultsTable(QWidget):
-    """Table showing calculation results."""
+    """Таблица результатов расчёта."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -53,7 +52,7 @@ class ResultsTable(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self._header = QLabel("Results")
+        self._header = QLabel("Результаты")
         self._header.setStyleSheet("font-weight: bold; font-size: 14px; padding: 4px; color: #e0e0e0; background: transparent;")
         layout.addWidget(self._header)
 
@@ -64,9 +63,8 @@ class ResultsTable(QWidget):
         self._table.verticalHeader().setVisible(False)
         layout.addWidget(self._table)
 
-        # Set column headers
         self._table.setColumnCount(4)
-        self._table.setHorizontalHeaderLabels(["Mineral", "FU", "wt%", "Full name"])
+        self._table.setHorizontalHeaderLabels(["Минерал", "ФЕ", "м.д.%", "Полное название"])
         header = self._table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
@@ -74,7 +72,6 @@ class ResultsTable(QWidget):
         header.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
 
     def set_result(self, result: CalculationResult) -> None:
-        """Populate table from a CalculationResult."""
         minerals = result.minerals_weight
         fu = result.minerals_formula
 
@@ -105,7 +102,6 @@ class ResultsTable(QWidget):
 
             self._table.setItem(i, 3, QTableWidgetItem(full_name))
 
-        # Add defect section
         defect_start = len(rows)
         self._table.setRowCount(defect_start + len(result.defect))
         for i, (oxide, val) in enumerate(result.defect.items()):
@@ -120,4 +116,4 @@ class ResultsTable(QWidget):
 
     def clear(self) -> None:
         self._table.setRowCount(0)
-        self._header.setText("Results")
+        self._header.setText("Результаты")

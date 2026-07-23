@@ -1,4 +1,4 @@
-"""Reports page — generate PDF, Word, HTML reports."""
+"""Страница отчётов — генерация PDF, Word, HTML."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReportsPage(QWidget):
-    """Page for generating reports in PDF, Word, HTML."""
+    """Страница генерации отчётов в PDF, Word, HTML."""
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -36,39 +36,36 @@ class ReportsPage(QWidget):
         layout = QVBoxLayout(self)
 
         header = QHBoxLayout()
-        header.addWidget(QLabel("Reports"))
+        header.addWidget(QLabel("Отчёты"))
         header.addStretch()
         layout.addLayout(header)
 
-        # Template selection
         tmpl_row = QHBoxLayout()
-        tmpl_row.addWidget(QLabel("Template:"))
+        tmpl_row.addWidget(QLabel("Шаблон:"))
         self._tmpl_combo = QComboBox()
-        self._tmpl_combo.addItems(["Brief", "Standard", "Full"])
+        self._tmpl_combo.addItems(["Краткий", "Стандартный", "Полный"])
         self._tmpl_combo.setCurrentIndex(1)
         tmpl_row.addWidget(self._tmpl_combo)
         tmpl_row.addStretch()
         layout.addLayout(tmpl_row)
 
-        # Template preview
         self._preview = QListWidget()
         self._preview.setMaximumHeight(150)
         layout.addWidget(self._preview)
         self._tmpl_combo.currentIndexChanged.connect(self._update_preview)
         self._update_preview()
 
-        # Export buttons
         btn_row = QHBoxLayout()
 
-        self._btn_pdf = QPushButton("Export PDF")
+        self._btn_pdf = QPushButton("Экспорт PDF")
         self._btn_pdf.clicked.connect(lambda: self._export("pdf"))
         btn_row.addWidget(self._btn_pdf)
 
-        self._btn_word = QPushButton("Export Word")
+        self._btn_word = QPushButton("Экспорт Word")
         self._btn_word.clicked.connect(lambda: self._export("docx"))
         btn_row.addWidget(self._btn_word)
 
-        self._btn_html = QPushButton("Export HTML")
+        self._btn_html = QPushButton("Экспорт HTML")
         self._btn_html.clicked.connect(lambda: self._export("html"))
         btn_row.addWidget(self._btn_html)
 
@@ -94,13 +91,13 @@ class ReportsPage(QWidget):
 
     def _export(self, fmt: str) -> None:
         if not self._results:
-            QMessageBox.information(self, "Export", "No results to export. Calculate first.")
+            QMessageBox.information(self, "Экспорт", "Нет результатов для экспорта. Сначала выполните расчёт.")
             return
 
         ext_map = {"pdf": "PDF (*.pdf)", "docx": "Word (*.docx)", "html": "HTML (*.html)"}
         path, _ = QFileDialog.getSaveFileName(
-            self, f"Export {fmt.upper()}", f"minlith_report.{fmt}",
-            ext_map.get(fmt, "All Files (*)"),
+            self, f"Экспорт {fmt.upper()}", f"minlith_report.{fmt}",
+            ext_map.get(fmt, "Все файлы (*)"),
         )
         if not path:
             return
@@ -120,7 +117,7 @@ class ReportsPage(QWidget):
                 gen = HTMLGenerator(self._results)
                 gen.generate(path, tmpl)
 
-            QMessageBox.information(self, "Export", f"Report exported:\n{path}")
+            QMessageBox.information(self, "Экспорт", f"Отчёт экспортирован:\n{path}")
         except Exception as e:
-            QMessageBox.critical(self, "Export Error", str(e))
-            logger.error("Report export failed: %s", e)
+            QMessageBox.critical(self, "Ошибка экспорта", str(e))
+            logger.error("Ошибка экспорта отчёта: %s", e)
