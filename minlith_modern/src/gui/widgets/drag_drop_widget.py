@@ -19,7 +19,7 @@ class DragDropWidget(QWidget):
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self._label = QLabel("Drop .xlsx or .csv files here\nor use Import button")
+        self._label = QLabel("Перетащите файлы .xlsx или .csv сюда\nили используйте кнопку Импорт")
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._label.setStyleSheet("""
             QLabel {

@@ -23,20 +23,39 @@ OXIDE_LABELS = {
 }
 
 
-def read_csv(path: Path, separator: str = ";") -> list[Sample]:
+def read_csv(path: Path, separator: str | None = None) -> list[Sample]:
     """Read samples from CSV file.
 
-    Expected format: first column = Name, then oxide columns.
+    Автоопределение: разделитель (; или ,), кодировка (utf-8, cp1251).
+    Поддержка кириллических названий колонок.
     """
     samples = []
-    with open(path, "r", encoding="utf-8-sig") as f:
+
+    # Auto-detect encoding
+    for enc in ("utf-8-sig", "utf-8", "cp1251", "latin-1"):
+        try:
+            with open(path, "r", encoding=enc) as f:
+                first_line = f.readline()
+            break
+        except (UnicodeDecodeError, UnicodeError):
+            continue
+    else:
+        enc = "utf-8-sig"
+
+    # Auto-detect separator
+    if separator is None:
+        separator = ";" if ";" in first_line else ","
+
+    with open(path, "r", encoding=enc) as f:
         reader = csv.DictReader(f, delimiter=separator)
         for row in reader:
-            name = row.get("Name", row.get("name", row.get("Образец", "")))
+            name = row.get("Name", row.get("name", row.get("Образец", row.get("Sample", ""))))
             oxide_data = {}
             for field in OXIDE_FIELDS:
                 label = OXIDE_LABELS[field]
-                val = row.get(field, row.get(label, "0"))
+                # Try multiple column name variants
+                val = (row.get(field) or row.get(label) or
+                       row.get(field.upper()) or row.get(field.lower()) or "0")
                 try:
                     oxide_data[field] = float(str(val).replace(",", ".")) if val else 0.0
                 except (ValueError, TypeError):

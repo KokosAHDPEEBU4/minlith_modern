@@ -44,9 +44,22 @@ class WordGenerator:
     def _default_blocks(self) -> list[ReportBlock]:
         return [
             ReportBlock(BlockType.HEADER, title="MINLITH Report"),
+            ReportBlock(BlockType.TEXT, text_content=self._build_summary_text()),
+            ReportBlock(BlockType.OXIDE_TABLE, title="Input Composition"),
             ReportBlock(BlockType.MINERAL_TABLE, title="Mineral Composition"),
-            ReportBlock(BlockType.PARAMETERS, title="Parameters"),
+            ReportBlock(BlockType.PARAMETERS, title="Coefficients"),
+            ReportBlock(BlockType.DEFECT, title="Defect (Oxide Residuals)"),
         ]
+
+    def _build_summary_text(self) -> str:
+        lines = [f"Samples: {len(self._results)}"]
+        for r in self._results:
+            lines.append(
+                f"  {r.sample_name}: Type {int(r.rock_type)}, "
+                f"F={r.coefficients.F:.3f}, Ab={r.minerals_weight.ab:.1f}%, "
+                f"Q={r.minerals_weight.q:.1f}%"
+            )
+        return "\n".join(lines)
 
     def _render_block(self, doc: Document, block: ReportBlock) -> None:
         if block.block_type == BlockType.HEADER:

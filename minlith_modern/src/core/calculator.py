@@ -100,18 +100,19 @@ class Calculator:
         fe_total = fe[:, feo_idx]
         mg_fu = fe[:, mgo_idx]
 
-        F_values = np.where(
-            fe_total + mg_fu > 0,
-            fe_total / (fe_total + mg_fu),
-            0.0,
-        )
+        with np.errstate(divide="ignore", invalid="ignore"):
+            F_values = np.where(
+                fe_total + mg_fu > 0,
+                fe_total / (fe_total + mg_fu),
+                0.0,
+            )
 
-        al_fu = fe[:, al2o3_idx]
-        A_values = np.where(
-            2 * al_fu + fe_total + mg_fu > 0,
-            2 * al_fu / (2 * al_fu + fe_total + mg_fu),
-            0.0,
-        )
+            al_fu = fe[:, al2o3_idx]
+            A_values = np.where(
+                2 * al_fu + fe_total + mg_fu > 0,
+                2 * al_fu / (2 * al_fu + fe_total + mg_fu),
+                0.0,
+            )
 
         F_values = np.round(F_values, 3)
         A_values = np.round(A_values, 3)

@@ -70,14 +70,24 @@ class PDFGenerator:
             elements = self._render_block(block)
             story.extend(elements)
 
-        doc.build(story)
+        # Add page numbers
+        def add_page_number(canvas, doc):
+            page_num = canvas.getPageNumber()
+            text = f"MINLITH Report — стр. {page_num}"
+            canvas.saveState()
+            canvas.setFont("Helvetica", 8)
+            canvas.setFillColor(colors.grey)
+            canvas.drawCentredString(A4[0] / 2, 10 * mm, text)
+            canvas.restoreState()
+
+        doc.build(story, onFirstPage=add_page_number, onLaterPages=add_page_number)
         logger.info("PDF exported: %s", path)
 
     def _default_blocks(self) -> list[ReportBlock]:
         return [
-            ReportBlock(BlockType.HEADER, title="MINLITH Report"),
-            ReportBlock(BlockType.MINERAL_TABLE, title="Mineral Composition"),
-            ReportBlock(BlockType.PARAMETERS, title="Parameters"),
+            ReportBlock(BlockType.HEADER, title="MINLITH — Отчёт"),
+            ReportBlock(BlockType.MINERAL_TABLE, title="Минеральный состав"),
+            ReportBlock(BlockType.PARAMETERS, title="Коэффициенты"),
         ]
 
     def _render_block(self, block: ReportBlock) -> list:

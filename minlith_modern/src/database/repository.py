@@ -176,3 +176,39 @@ class SampleRepository:
             SampleDB.name.ilike(f"%{query}%")
         ).limit(50).all()
         return [(r.id, r.name) for r in rows]
+
+    def cleanup_old_records(self, keep_last: int = 100) -> int:
+        """Удалить старые записи, оставив последние keep_last."""
+        session = self._session()
+        try:
+            # Get IDs to keep
+            keep_ids = (
+                session.query(CalculationDB.id)
+                .order_by(desc(CalculationDB.created_at))
+                .limit(keep_last)
+                .all()
+            )
+            keep_ids = {r[0] for r in keep_ids}
+
+            # Delete old calculations
+            old_calcs = session.query(CalculationDB).filter(
+                ~CalculationDB.id.in_(keep_ids)
+            ).all()
+            count = len(old_calcs)
+            for calc in old_calcs:
+                session.delete(calc)
+
+            session.commit()
+            logger.info("Cleaned up %d old calculation records", count)
+            return count
+        except Exception:
+            session.rollback()
+            raise
+
+    def get_stats(self) -> dict:
+        """Получить статистику БД."""
+        session = self._session()
+        return {
+            "samples": session.query(SampleDB).count(),
+            "calculations": session.query(CalculationDB).count(),
+        }

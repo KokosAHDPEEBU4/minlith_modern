@@ -296,6 +296,20 @@ def save_results(
                     ws_d.cell(r, i, round(val, 2))
 
     wb.save(str(path))
+
+    # Auto-fit column widths
+    for ws in wb.worksheets:
+        for col in ws.columns:
+            max_length = 0
+            col_letter = col[0].column_letter
+            for cell in col:
+                try:
+                    if cell.value:
+                        max_length = max(max_length, len(str(cell.value)))
+                except Exception:
+                    pass
+            ws.column_dimensions[col_letter].width = min(max_length + 2, 20)
+
     logger.info("Saved results to %s", path)
 
 

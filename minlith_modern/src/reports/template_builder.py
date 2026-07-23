@@ -114,37 +114,37 @@ class ReportTemplate:
 # ── Predefined templates ──
 
 def template_brief() -> ReportTemplate:
-    """Brief: mineral table only."""
-    t = ReportTemplate(name="Brief")
-    t.add_block(BlockType.HEADER, title="MINLITH — Brief Report")
-    t.add_block(BlockType.MINERAL_TABLE, title="Mineral Composition (wt%)")
+    """Краткий: только таблица минералов."""
+    t = ReportTemplate(name="Краткий")
+    t.add_block(BlockType.HEADER, title="MINLITH — Краткий отчёт")
+    t.add_block(BlockType.MINERAL_TABLE, title="Минеральный состав (вес.%)")
     return t
 
 
 def template_standard() -> ReportTemplate:
-    """Standard: header + minerals + parameters + 1 chart."""
-    t = ReportTemplate(name="Standard")
-    t.add_block(BlockType.HEADER, title="MINLITH — Standard Report")
-    t.add_block(BlockType.OXIDE_TABLE, title="Input Composition")
-    t.add_block(BlockType.MINERAL_TABLE, title="Mineral Composition (wt%)")
-    t.add_block(BlockType.PARAMETERS, title="Calculation Parameters")
-    t.add_block(BlockType.DEFECT, title="Oxide Defect")
-    t.add_block(BlockType.CHART, title="Mineral Bar Chart", chart_type="bar")
+    """Стандартный: заголовок + минералы + параметры + диаграмма."""
+    t = ReportTemplate(name="Стандартный")
+    t.add_block(BlockType.HEADER, title="MINLITH — Стандартный отчёт")
+    t.add_block(BlockType.OXIDE_TABLE, title="Входные данные")
+    t.add_block(BlockType.MINERAL_TABLE, title="Минеральный состав (вес.%)")
+    t.add_block(BlockType.PARAMETERS, title="Коэффициенты расчёта")
+    t.add_block(BlockType.DEFECT, title="Дефект (остатки оксидов)")
+    t.add_block(BlockType.CHART, title="Минеральный состав", chart_type="bar")
     return t
 
 
 def template_full() -> ReportTemplate:
-    """Full: everything."""
-    t = ReportTemplate(name="Full")
-    t.add_block(BlockType.HEADER, title="MINLITH — Full Report")
-    t.add_block(BlockType.TEXT, title="Description", text_content="Enter description here...")
-    t.add_block(BlockType.OXIDE_TABLE, title="Input Composition")
-    t.add_block(BlockType.MINERAL_TABLE, title="Mineral Composition (wt%)", min_wt_percent=0.1)
-    t.add_block(BlockType.PARAMETERS, title="Calculation Parameters")
-    t.add_block(BlockType.DEFECT, title="Oxide Defect")
-    t.add_block(BlockType.CHART, title="Mineral Composition", chart_type="bar")
-    t.add_block(BlockType.CHART, title="Mineral Pie Chart", chart_type="pie")
-    t.add_block(BlockType.CHART, title="Defect Chart", chart_type="defect")
+    """Полный: всё включено."""
+    t = ReportTemplate(name="Полный")
+    t.add_block(BlockType.HEADER, title="MINLITH — Полный отчёт")
+    t.add_block(BlockType.TEXT, title="Описание", text_content="Введите описание здесь...")
+    t.add_block(BlockType.OXIDE_TABLE, title="Входные данные")
+    t.add_block(BlockType.MINERAL_TABLE, title="Минеральный состав (вес.%)", min_wt_percent=0.1)
+    t.add_block(BlockType.PARAMETERS, title="Коэффициенты расчёта")
+    t.add_block(BlockType.DEFECT, title="Дефект (остатки оксидов)")
+    t.add_block(BlockType.CHART, title="Минеральный состав", chart_type="bar")
+    t.add_block(BlockType.CHART, title="Круговая диаграмма", chart_type="pie")
+    t.add_block(BlockType.CHART, title="Дефект", chart_type="defect")
     return t
 
 

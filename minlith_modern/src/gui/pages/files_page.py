@@ -38,7 +38,7 @@ class FilesPage(QWidget):
 
         layout = QVBoxLayout(self)
 
-        header = QLabel("Files")
+        header = QLabel("Файлы")
         header.setStyleSheet("font-size: 18px; font-weight: bold; padding: 8px;")
         layout.addWidget(header)
 
@@ -53,11 +53,11 @@ class FilesPage(QWidget):
         top_layout.addWidget(self._drag_drop)
 
         btn_row = QHBoxLayout()
-        self._btn_import = QPushButton("Import .xlsx")
+        self._btn_import = QPushButton("Импорт .xlsx")
         self._btn_import.clicked.connect(self._on_import_click)
         btn_row.addWidget(self._btn_import)
 
-        self._btn_import_csv = QPushButton("Import .csv")
+        self._btn_import_csv = QPushButton("Импорт .csv")
         self._btn_import_csv.clicked.connect(self._on_import_csv)
         btn_row.addWidget(self._btn_import_csv)
 

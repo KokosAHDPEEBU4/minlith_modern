@@ -1,11 +1,13 @@
-"""Logging setup with optional GUI handler."""
+"""Logging setup with optional GUI handler + file rotation."""
 
 from __future__ import annotations
 
 import logging
+import logging.handlers
 import sys
 from collections import deque
 from logging import Handler, LogRecord
+from pathlib import Path
 from typing import Optional
 
 
@@ -34,7 +36,7 @@ class GUILogHandler(Handler):
 _gui_handler: Optional[GUILogHandler] = None
 
 
-def setup_logging(level: int = logging.INFO) -> GUILogHandler:
+def setup_logging(level: int = logging.INFO, log_dir: Path | str | None = None) -> GUILogHandler:
     """Configure application logging. Returns the GUI handler for attachment."""
     global _gui_handler
 
@@ -49,6 +51,23 @@ def setup_logging(level: int = logging.INFO) -> GUILogHandler:
         datefmt="%H:%M:%S",
     ))
     root.addHandler(console)
+
+    # File handler with rotation
+    if log_dir:
+        log_dir = Path(log_dir)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.handlers.RotatingFileHandler(
+            log_dir / "minlith.log",
+            maxBytes=5 * 1024 * 1024,  # 5 MB
+            backupCount=3,
+            encoding="utf-8",
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        ))
+        root.addHandler(file_handler)
 
     # GUI handler (buffers messages for the logs page)
     _gui_handler = GUILogHandler()

@@ -82,3 +82,27 @@ class ConfigManager:
         max_recent = self._data.get("max_recent", 10)
         self._data["recent_files"] = recent[:max_recent]
         self.save()
+
+    def reset(self) -> None:
+        """Reset all settings to defaults."""
+        self._data = dict(DEFAULT_CONFIG)
+        self.save()
+
+    def export_settings(self, path: Path | str) -> None:
+        """Export current settings to a JSON file."""
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(self._data, f, indent=2, ensure_ascii=False)
+
+    def import_settings(self, path: Path | str) -> None:
+        """Import settings from a JSON file (merges with current)."""
+        with open(path, "r", encoding="utf-8") as f:
+            imported = json.load(f)
+        self._data.update(imported)
+        self.save()
+
+    def get_all(self) -> dict[str, Any]:
+        """Return all settings as a copy."""
+        return dict(self._data)
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._data

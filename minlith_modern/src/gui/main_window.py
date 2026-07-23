@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern — Normative Mineralogy")
+        self.setWindowTitle("MINLITH Modern v0.2.0 — Normative Mineralogy")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
@@ -70,15 +70,15 @@ class MainWindow(QMainWindow):
 
         self._nav_buttons: list[QPushButton] = []
         self._page_names = [
-            ("Welcome", "\U0001f3e0"),
-            ("Files", "\U0001f4c2"),
-            ("Input", "\u270f\ufe0f"),
-            ("Results", "\U0001f4ca"),
-            ("Charts", "\U0001f4c8"),
-            ("Reports", "\U0001f4c4"),
-            ("History", "\U0001f4c1"),
-            ("Settings", "\u2699\ufe0f"),
-            ("Logs", "\U0001f4dd"),
+            ("Начало", "\U0001f3e0"),
+            ("Файлы", "\U0001f4c2"),
+            ("Ввод", "\u270f\ufe0f"),
+            ("Результаты", "\U0001f4ca"),
+            ("Диаграммы", "\U0001f4c8"),
+            ("Отчёты", "\U0001f4c4"),
+            ("История", "\U0001f4c1"),
+            ("Настройки", "\u2699\ufe0f"),
+            ("Журнал", "\U0001f4dd"),
         ]
 
         for label, icon in self._page_names:
@@ -143,7 +143,7 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("F5"), self, self._input_page._on_calculate)
 
         # Status bar
-        self.statusBar().showMessage("Ready")
+        self.statusBar().showMessage("Готово")
 
         # Restore geometry
         geom = self._config.get("window_geometry")
@@ -179,9 +179,9 @@ class MainWindow(QMainWindow):
                 save_results_json(path, results)
             else:
                 save_results(path, results)
-            self.statusBar().showMessage(f"Exported: {path}")
+            self.statusBar().showMessage(f"Экспортировано: {path}")
         except Exception as e:
-            QMessageBox.critical(self, "Export Error", str(e))
+            QMessageBox.critical(self, "Ошибка экспорта", str(e))
 
     # ── Signal handlers ──
 
@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
         if samples:
             s = samples[0]
             self._input_page.set_composition(s.composition, s.name)
-            self.statusBar().showMessage(f"Loaded: {s.name}")
+            self.statusBar().showMessage(f"Загружен: {s.name}")
 
     def _on_calculation_done(self, result) -> None:
         self._results_page.add_result(result)
@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
         self._reports_page.set_results(self._results_page._results)
         self._switch_page(3)  # Results
         self.statusBar().showMessage(
-            f"{result.sample_name} → {result.rock_type.name}  "
+            f"{result.sample_name} -> {result.rock_type.name}  "
             f"(F={result.coefficients.F:.3f})"
         )
 
@@ -221,7 +221,7 @@ class MainWindow(QMainWindow):
             chart_data = self._charts_page.build_data_from_results(dialog.results)
             self._charts_page.set_data(chart_data)
             self._reports_page.set_results(dialog.results)
-            self.statusBar().showMessage(f"Calculated {len(dialog.results)} sample(s)")
+            self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
 
     def closeEvent(self, event) -> None:
         geom = self.saveGeometry().toHex().data().decode()

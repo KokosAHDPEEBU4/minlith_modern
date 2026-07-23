@@ -35,15 +35,16 @@ class InputPage(QWidget):
 
         layout = QVBoxLayout(self)
 
-        header = QLabel("Input")
+        header = QLabel("Ввод данных")
         header.setStyleSheet("font-size: 18px; font-weight: bold; padding: 8px;")
         layout.addWidget(header)
 
         # Sample name
         name_row = QHBoxLayout()
-        name_row.addWidget(QLabel("Sample name:"))
-        self._name_edit = QLineEdit("Sample")
+        name_row.addWidget(QLabel("Название образца:"))
+        self._name_edit = QLineEdit("Образец")
         self._name_edit.setFixedWidth(200)
+        self._name_edit.setToolTip("Введите название образца для идентификации")
         name_row.addWidget(self._name_edit)
         name_row.addStretch()
         layout.addLayout(name_row)
@@ -53,20 +54,22 @@ class InputPage(QWidget):
         layout.addWidget(self._oxide_table)
 
         # Sum display
-        self._sum_label = QLabel("Sum: 0.00%")
+        self._sum_label = QLabel("Сумма: 0.00%")
         self._sum_label.setStyleSheet("padding: 4px; font-weight: bold;")
+        self._sum_label.setToolTip("Сумма оксидов должна быть в диапазоне 98-102%")
         layout.addWidget(self._sum_label)
 
         self._oxide_table.value_changed.connect(self._update_sum)
 
         # Buttons
         btn_row = QHBoxLayout()
-        self._btn_calculate = QPushButton("  Calculate  ")
+        self._btn_calculate = QPushButton("  Рассчитать (F5)  ")
         self._btn_calculate.clicked.connect(self._on_calculate)
+        self._btn_calculate.setToolTip("Рассчитать минеральный состав (Ctrl+Enter)")
         btn_row.addStretch()
         btn_row.addWidget(self._btn_calculate)
 
-        self._btn_export = QPushButton("Export .xlsx")
+        self._btn_export = QPushButton("Экспорт .xlsx")
         self._btn_export.clicked.connect(self._on_export)
         btn_row.addWidget(self._btn_export)
         btn_row.addStretch()
@@ -76,7 +79,7 @@ class InputPage(QWidget):
 
     def _update_sum(self) -> None:
         total = self._oxide_table.get_sum()
-        self._sum_label.setText(f"Sum: {total:.2f}%")
+        self._sum_label.setText(f"Сумма: {total:.2f}%")
         if 98 <= total <= 102:
             self._sum_label.setStyleSheet("padding: 4px; font-weight: bold; color: #4a9eff;")
         elif total < 98:
@@ -87,10 +90,10 @@ class InputPage(QWidget):
     def _on_calculate(self) -> None:
         comp = self._oxide_table.get_composition()
         if comp.sio2 == 0:
-            QMessageBox.warning(self, "Input Error", "SiO2 must be non-zero.")
+            QMessageBox.warning(self, "Ошибка ввода", "SiO2 должен быть больше нуля.")
             return
 
-        name = self._name_edit.text().strip() or "Sample"
+        name = self._name_edit.text().strip() or "Образец"
         sample = Sample(name=name, composition=comp)
 
         try:
