@@ -18,6 +18,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "include_formula_units": False,
     "include_defect": True,
     "timeout_seconds": 120,
+    "algorithm_mode": "stub",  # "stub" | "custom"
     "theme": "dark",
     "language": "ru",
     "recent_files": [],

@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.core.calculator import Calculator
-from src.core.models import Sample
+from src.core.models import CalculationConfig, Sample
 from src.io.excel import load_samples, save_results
 from src.utils.config import ConfigManager
 from src.gui.pages.welcome_page import WelcomePage
@@ -48,7 +48,7 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
-        self._calculator = Calculator()
+        self._calculator = self._create_calculator()
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -114,6 +114,7 @@ class MainWindow(QMainWindow):
         self._charts_page = ChartsPage()
         self._reports_page = ReportsPage()
         self._settings_page = SettingsPage(self._config)
+        self._settings_page.settings_changed.connect(self._on_settings_changed)
         self._history_page = HistoryPage()
         self._logs_page = LogsPage()
 
@@ -228,3 +229,39 @@ class MainWindow(QMainWindow):
         self._config["window_geometry"] = geom
         self._config.save()
         super().closeEvent(event)
+
+    def _build_config(self) -> CalculationConfig:
+        """Build CalculationConfig from ConfigManager settings."""
+        return CalculationConfig(
+            molar_mass_source=self._config.get("molar_mass_source", "iupac"),
+            sum_tolerance=tuple(self._config.get("sum_tolerance", [98.0, 102.0])),
+            warn_negative=self._config.get("warn_negative", True),
+            auto_correct_sum=self._config.get("auto_correct_sum", False),
+            decimal_places=self._config.get("decimal_places", 2),
+            timeout_seconds=self._config.get("timeout_seconds", 120),
+            algorithm_mode=self._config.get("algorithm_mode", "stub"),
+        )
+
+    def _create_calculator(self) -> Calculator:
+        """Create Calculator with current config and algorithm mode."""
+        config = self._build_config()
+        mode = config.algorithm_mode
+
+        if mode == "custom":
+            # Placeholder for user's custom algorithm implementation.
+            # When ready, import and use the custom algorithm class here.
+            # Example:
+            #   from src.core.my_algorithm import MyAlgorithm
+            #   return Calculator(config=config, algorithm=MyAlgorithm())
+            logger.info("Algorithm mode: custom (using stub as placeholder)")
+            return Calculator(config=config)
+        else:
+            # Default stub algorithm (approximate, waiting for VBA port)
+            logger.info("Algorithm mode: stub")
+            return Calculator(config=config)
+
+    def _on_settings_changed(self) -> None:
+        """Rebuild calculator when settings change."""
+        self._calculator = self._create_calculator()
+        self._input_page._calculator = self._calculator
+        logger.info("Calculator rebuilt with new settings")

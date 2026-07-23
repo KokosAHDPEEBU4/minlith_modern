@@ -39,7 +39,7 @@ def cmd_calculate(args: argparse.Namespace) -> int:
     init_db()
 
     # Build config from CLI args
-    config = CalculationConfig(timeout_seconds=args.timeout)
+    config = CalculationConfig(timeout_seconds=args.timeout, algorithm_mode=args.algorithm)
     if args.config:
         cfg_path = Path(args.config)
         if cfg_path.exists():
@@ -445,6 +445,9 @@ def main_cli() -> int:
                         help="Подробный вывод (debug trace)")
     parser.add_argument("--timeout", type=int, default=120,
                         help="Таймаут расчёта на образец (сек)")
+    parser.add_argument("--algorithm", "-a", choices=["stub", "custom"],
+                        default="stub",
+                        help="Режим алгоритма: stub (заглушка) или custom (пользовательский)")
     parser.add_argument("--config", type=str, default=None,
                         help="Путь к файлу конфигурации JSON")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")

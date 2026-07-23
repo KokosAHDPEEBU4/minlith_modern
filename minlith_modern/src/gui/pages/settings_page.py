@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -25,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 class SettingsPage(QWidget):
     """Страница настроек приложения."""
+
+    settings_changed = pyqtSignal()
 
     def __init__(self, config: ConfigManager, parent=None) -> None:
         super().__init__(parent)
@@ -75,6 +78,15 @@ class SettingsPage(QWidget):
         self._timeout.setSuffix(" сек")
         calc_form.addRow("Таймаут:", self._timeout)
 
+        self._algorithm_mode = QComboBox()
+        self._algorithm_mode.addItems(["stub", "custom"])
+        self._algorithm_mode.setCurrentText(config.get("algorithm_mode", "stub"))
+        self._algorithm_mode.setToolTip(
+            "stub — заглушка (ожидает перенос VBA-макроса)\n"
+            "custom — пользовательская реализация алгоритма"
+        )
+        calc_form.addRow("Режим алгоритма:", self._algorithm_mode)
+
         layout.addWidget(calc_group)
 
         # Интерфейс
@@ -116,7 +128,9 @@ class SettingsPage(QWidget):
         self._config["auto_correct_sum"] = self._auto_correct.isChecked()
         self._config["decimal_places"] = self._decimal_places.value()
         self._config["timeout_seconds"] = self._timeout.value()
+        self._config["algorithm_mode"] = self._algorithm_mode.currentText()
         self._config["theme"] = self._theme.currentText()
         self._config["language"] = self._language.currentText()
         self._config.save()
+        self.settings_changed.emit()
         logger.info("Настройки сохранены")

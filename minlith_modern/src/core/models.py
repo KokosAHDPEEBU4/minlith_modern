@@ -187,6 +187,7 @@ class CalculationConfig:
     include_parameters: bool = True
     timeout_seconds: int = 120
     batch_size: int | str = "auto"
+    algorithm_mode: str = "stub"  # "stub" | "custom"
 
 
 @dataclass(frozen=True)
