@@ -13,7 +13,7 @@ To integrate VBA macro:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 
@@ -47,6 +47,8 @@ class AlgorithmInput:
     f: float        # F° (D15) — corrected for fluorite
     cl: float       # Cl° (D16)
     s: float        # S° (D17)
+    co2: float      # CO₂° (D18)
+    so: float       # SO° (D19)
 
     # Adaptive coefficients (from Stage 0)
     k1: float       # Mg in chlorite
@@ -97,6 +99,7 @@ class AlgorithmOutput:
     Prl: float = 0.0   # Pyrolusite
 
 
+@runtime_checkable
 class MineralAlgorithm(Protocol):
     """Protocol for normative mineral calculation algorithms.
 

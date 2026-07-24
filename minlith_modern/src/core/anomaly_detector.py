@@ -30,7 +30,7 @@ _RULES: list[tuple[str, callable, float, str, str]] = []
 def _rule(name: str, severity: str, message: str, action: str, confidence: float = 0.8):
     """Decorator to register a detection rule."""
     def decorator(func):
-        _RULES.append((name, func, confidence, message, action))
+        _RULES.append((name, func, confidence, message, action, severity))
         return func
     return decorator
 
@@ -133,13 +133,12 @@ class AnomalyDetector:
     def analyze(self, result: CalculationResult) -> list[AnomalyHypothesis]:
         """Analyze a single result for anomalies."""
         hypotheses = []
-        for name, func, confidence, message, action in self._rules:
+        for name, func, confidence, message, action, severity in self._rules:
             try:
                 triggered, affected = func(result)
                 if triggered:
                     hypotheses.append(AnomalyHypothesis(
-                        severity="critical" if "critical" in name else
-                                  "warning" if confidence >= 0.6 else "info",
+                        severity=severity,
                         pattern=name,
                         message=message,
                         confidence=confidence,

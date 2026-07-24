@@ -179,7 +179,7 @@ def calculate_type3(
     si = fu.sio2
     ca = fu.cao
     mg = fu.mgo
-    fe = fu.feo + fu.fe2o3 * 0.9
+    fe = fu.feo  # fe2o3 is always 0 (already converted to feo in Stage 0)
 
     k1, k2, k3, k4 = coeff.k1, coeff.k2, coeff.k3, coeff.k4
 
@@ -240,7 +240,7 @@ def calculate_type4(
     si = fu.sio2
     ca = fu.cao
     mg = fu.mgo
-    fe = fu.feo + fu.fe2o3 * 0.9
+    fe = fu.feo  # fe2o3 is always 0 (already converted to feo in Stage 0)
 
     k1, k2, k3, k4 = coeff.k1, coeff.k2, coeff.k3, coeff.k4
 
@@ -311,7 +311,7 @@ def calculate_type5(
     si = fu.sio2
     ca = fu.cao
     mg = fu.mgo
-    fe = fu.feo + fu.fe2o3 * 0.9
+    fe = fu.feo  # fe2o3 is always 0 (already converted to feo in Stage 0)
 
     k1, k2, k3, k4 = coeff.k1, coeff.k2, coeff.k3, coeff.k4
 
@@ -383,7 +383,7 @@ def stage_vi(
     k2 = coeff.k2 if coeff else 1.0
 
     ca_an = minerals.an
-    ca_ap = minerals.ap * 5
+    ca_ap = minerals.ap * 3.36
     ca_n = fu.cao - ca_an - ca_ap
 
     mg_chl = minerals.chl * k1

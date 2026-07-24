@@ -44,6 +44,8 @@ class RealAlgorithm:
             f=inp.f,
             cl=inp.cl,
             s=inp.s,
+            co2=inp.co2,
+            so=inp.so,
         )
 
         coeff = AdaptiveCoefficients(

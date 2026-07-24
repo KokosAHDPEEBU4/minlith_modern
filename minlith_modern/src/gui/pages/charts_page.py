@@ -65,7 +65,7 @@ class ChartsPage(QWidget):
 
         self._current_fig = None
 
-    def set_data(self, data: ChartData) -> None:
+    def set_data(self, data: Optional[ChartData]) -> None:
         self._data = data
 
     def build_data_from_results(self, results: list) -> ChartData:

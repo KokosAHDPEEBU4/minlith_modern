@@ -1,13 +1,15 @@
-"""Stub algorithm — placeholder until VBA macro is found.
+"""Stub algorithm — DEPRECATED. Use RealAlgorithm instead.
 
-Contains ALL verified constants from the Excel file:
-  - Consumption matrix (rows 155-162): how each mineral consumes oxides
-  - Molar masses and formula weights
-  - Type classification thresholds
-  - Branching conditions
+.. deprecated::
+    This module is deprecated. Use :mod:`src.core.algorithm_real` instead.
+"""
 
-The compute() method implements a simplified version of the algorithm.
-When the VBA macro is found, replace compute() with the real logic.
+import warnings
+warnings.warn(
+    "algorithm_stub is deprecated. Use src.core.algorithm_real.RealAlgorithm instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 VERIFIED DATA FROM EXCEL (Нач+Type 12 sheet):
 ───────────────────────────────────────────────

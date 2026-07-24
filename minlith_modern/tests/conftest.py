@@ -124,4 +124,4 @@ def save_fixtures(all_results) -> None:
 @pytest.fixture(scope="session")
 def sample_xlsx_path() -> Path:
     """Path to the real MINLITH1.xlsx for integration tests."""
-    return Path(r"C:\Users\kokos\Desktop\Lene\MINLITH1.xlsx")
+    return Path(__file__).resolve().parent.parent / "MINLITH1.xlsx"

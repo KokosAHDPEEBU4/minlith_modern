@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import threading
 from typing import Optional
 
 import numpy as np
@@ -39,7 +38,7 @@ class CalculationTimeoutError(Exception):
 
 
 class _TimeoutWrapper:
-    """Cross-platform timeout wrapper using threading."""
+    """Cross-platform timeout wrapper using concurrent.futures."""
 
     def __init__(self, seconds: int):
         self.seconds = seconds
@@ -52,21 +51,16 @@ class _TimeoutWrapper:
                 f"Расчёт превысил лимит {self.seconds} сек"
             )
 
-        def _target():
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(func, *args, **kwargs)
             try:
-                self.result = func(*args, **kwargs)
-            except Exception as e:
-                self.exception = e
-
-        thread = threading.Thread(target=_target, daemon=True)
-        thread.start()
-        thread.join(timeout=self.seconds)
-        if thread.is_alive():
-            raise CalculationTimeoutError(
-                f"Расчёт превысил лимит {self.seconds} сек"
-            )
-        if self.exception:
-            raise self.exception
+                self.result = future.result(timeout=self.seconds)
+            except concurrent.futures.TimeoutError:
+                future.cancel()
+                raise CalculationTimeoutError(
+                    f"Расчёт превысил лимит {self.seconds} сек"
+                )
         return self.result
 
 
@@ -92,7 +86,7 @@ class Calculator:
 
     def _stage_0(
         self, samples: list[Sample], tracer: Optional[DebugTraceCollector] = None
-    ) -> tuple[np.ndarray, np.ndarray, list[AdaptiveCoefficients], list[RockType]]:
+    ) -> tuple[np.ndarray, np.ndarray, list[AdaptiveCoefficients], list[RockType], np.ndarray]:
         """
         Stage 0: Preparation (vectorized with numpy).
 
@@ -187,11 +181,12 @@ class Calculator:
             return RockType.TYPE_1
         elif al <= 1.2 * na + 3.25 * k:
             return RockType.TYPE_2
-        k1 = coeff.k1 if coeff.k1 != 0 else 1e-10
-        t3 = 1.2 * na + 3.25 * k + (mg - 0.5 * k * coeff.k3) / k1
+        if coeff.k1 < 1e-10:
+            return RockType.TYPE_5
+        t3 = 1.2 * na + 3.25 * k + (mg - 0.5 * k * coeff.k3) / coeff.k1
         if al <= t3:
             return RockType.TYPE_3
-        t4 = 5 * na + 3.25 * k + (mg - 0.5 * k - 2 * na) * coeff.k3 / k1
+        t4 = 5 * na + 3.25 * k + (mg - 0.5 * k - 2 * na) * coeff.k3 / coeff.k1
         if al <= t4:
             return RockType.TYPE_4
         return RockType.TYPE_5
@@ -216,6 +211,8 @@ class Calculator:
             f=float(fe[OXIDE_ORDER.index("f")]),
             cl=float(fe[OXIDE_ORDER.index("cl")]),
             s=float(fe[OXIDE_ORDER.index("s")]),
+            co2=float(fe[OXIDE_ORDER.index("co2")]),
+            so=float(fe[OXIDE_ORDER.index("so")]),
             k1=coeff.k1,
             k2=coeff.k2,
             k3=coeff.k3,
@@ -359,7 +356,7 @@ class Calculator:
         )
 
         # Calculate defect
-        defect = self._calculate_defect(sample.composition, minerals_weight)
+        defect = self._calculate_defect(sample.composition, minerals_weight, coeff)
 
         # Calculate geochemical parameters
         from src.charts.built_in.parameters import compute_parameters
@@ -432,23 +429,35 @@ class Calculator:
             fl=minerals.fl * fw["Fl"] * scale,
         )
 
+    # Fields derived from other minerals (always 0, excluded from normalization)
+    _DERIVED_FIELDS = frozenset({"pl", "fsp", "pel", "pel_fsp", "carsd", "ill_kn", "chl_mm_srp"})
+
     def _normalize(self, minerals: MineralComposition) -> tuple[MineralComposition, float]:
         """Normalize mineral weights to sum to 100%. Returns (normalized, factor)."""
         d = minerals.__dict__
-        total = sum(v for k, v in d.items() if not k.startswith("_"))
+        total = sum(v for k, v in d.items() if not k.startswith("_") and k not in self._DERIVED_FIELDS)
         if total == 0:
             return minerals, 1.0
         factor = 100.0 / total
         return MineralComposition(**{k: v * factor for k, v in d.items()}), factor
 
     def _calculate_defect(
-        self, comp: OxideComposition, minerals: MineralComposition
+        self, comp: OxideComposition, minerals: MineralComposition,
+        coeff: Optional[AdaptiveCoefficients] = None,
     ) -> dict[str, float]:
-        """Calculate defect (oxide residuals) using verified consumption matrix."""
+        """Calculate defect (oxide residuals) using verified consumption matrix.
+
+        Uses real k1-k4 coefficients from AdaptiveCoefficients for chlorite.
+        """
         masses = self._get_molar_masses()
         oxide_array = comp.to_array()
         molar_arr = np.array([masses[k] for k in OXIDE_ORDER], dtype=np.float64)
         input_fu = oxide_array / molar_arr * 10000
+
+        k1 = coeff.k1 if coeff else 1.0
+        k2 = coeff.k2 if coeff else 1.0
+        k3 = coeff.k3 if coeff else 1.0
+        k4 = coeff.k4 if coeff else 1.0
 
         mineral_fu = np.zeros(18, dtype=np.float64)
 
@@ -456,24 +465,24 @@ class Calculator:
         # SiO2
         mineral_fu[OXIDE_ORDER.index("sio2")] = (
             6 * minerals.ab + 2 * minerals.an + 6 * minerals.or_
-            + 16 * minerals.ill + minerals.chl * 3.494  # k4*Chl placeholder
+            + 16 * minerals.ill + k4 * minerals.chl
             + 2 * minerals.kn + 24 * minerals.mm
             + minerals.q + 2 * minerals.srp
         )
         # Al2O3
         mineral_fu[OXIDE_ORDER.index("al2o3")] = (
             minerals.ab + minerals.an + minerals.or_
-            + 6.5 * minerals.ill + minerals.chl * 1.469  # k3*Chl placeholder
+            + 6.5 * minerals.ill + k3 * minerals.chl
             + minerals.kn + minerals.gb + minerals.mm * 5
         )
         # MgO
         mineral_fu[OXIDE_ORDER.index("mgo")] = (
-            minerals.chl * 0.56 + minerals.ill  # k1*Chl placeholder
+            k1 * minerals.chl + minerals.ill
             + minerals.dl + 3 * minerals.srp + minerals.mst
         )
         # FeO
         mineral_fu[OXIDE_ORDER.index("feo")] = (
-            minerals.chl * 3.008 + minerals.ill  # k2*Chl placeholder
+            k2 * minerals.chl + minerals.ill
             + minerals.ank + minerals.sd + 2 * minerals.ht
         )
         # Na2O

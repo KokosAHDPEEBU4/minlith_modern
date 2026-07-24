@@ -107,9 +107,12 @@ class SettingsPage(QWidget):
 
         # Кнопки
         btn_row = QHBoxLayout()
+        self._btn_reset = QPushButton("Сбросить настройки")
+        self._btn_reset.clicked.connect(self._on_reset)
+        btn_row.addWidget(self._btn_reset)
+        btn_row.addStretch()
         self._btn_save = QPushButton("Сохранить настройки")
         self._btn_save.clicked.connect(self._on_save)
-        btn_row.addStretch()
         btn_row.addWidget(self._btn_save)
         btn_row.addStretch()
         layout.addLayout(btn_row)
@@ -134,3 +137,31 @@ class SettingsPage(QWidget):
         self._config.save()
         self.settings_changed.emit()
         logger.info("Настройки сохранены")
+
+    def _on_reset(self) -> None:
+        from PyQt6.QtWidgets import QMessageBox
+        reply = QMessageBox.question(
+            self, "Сброс настроек",
+            "Вернуть все настройки по умолчанию?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+        self._config.reset()
+        self._reload_widgets()
+        self.settings_changed.emit()
+        logger.info("Настройки сброшены до умолчаний")
+
+    def _reload_widgets(self) -> None:
+        """Reload widget values from config (after reset)."""
+        self._molar_mass.setCurrentText(self._config.get("molar_mass_source", "iupac"))
+        tol = self._config.get("sum_tolerance", [98.0, 102.0])
+        self._sum_lo.setText(str(tol[0]))
+        self._sum_hi.setText(str(tol[1]))
+        self._warn_negative.setChecked(self._config.get("warn_negative", True))
+        self._auto_correct.setChecked(self._config.get("auto_correct_sum", False))
+        self._decimal_places.setValue(self._config.get("decimal_places", 2))
+        self._timeout.setValue(self._config.get("timeout_seconds", 120))
+        self._algorithm_mode.setCurrentText(self._config.get("algorithm_mode", "stub"))
+        self._theme.setCurrentText(self._config.get("theme", "dark"))
+        self._language.setCurrentText(self._config.get("language", "ru"))

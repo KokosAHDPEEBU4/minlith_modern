@@ -61,6 +61,17 @@ class FilesPage(QWidget):
         btn_row.addWidget(self._btn_import_csv)
 
         btn_row.addStretch()
+
+        self._btn_template = QPushButton("Шаблон (эталон)")
+        self._btn_template.setToolTip("Скачать шаблон с эталоном T-O2")
+        self._btn_template.clicked.connect(self._on_export_template)
+        btn_row.addWidget(self._btn_template)
+
+        self._btn_blank = QPushButton("Шаблон (пустой)")
+        self._btn_blank.setToolTip("Скачать пустой шаблон для заполнения")
+        self._btn_blank.clicked.connect(self._on_export_blank)
+        btn_row.addWidget(self._btn_blank)
+
         top_layout.addLayout(btn_row)
 
         splitter.addWidget(top)
@@ -122,6 +133,36 @@ class FilesPage(QWidget):
         )
         if path:
             self._load_csv(path)
+
+    def _on_export_template(self) -> None:
+        from PyQt6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Экспорт шаблона", "minlith_template.xlsx",
+            "Excel (*.xlsx)",
+        )
+        if not path:
+            return
+        try:
+            from src.io.template import create_reference_template
+            create_reference_template(path)
+            QMessageBox.information(self, "Шаблон", f"Шаблон сохранён:\n{path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", str(e))
+
+    def _on_export_blank(self) -> None:
+        from PyQt6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Экспорт пустого шаблона", "minlith_blank.xlsx",
+            "Excel (*.xlsx)",
+        )
+        if not path:
+            return
+        try:
+            from src.io.template import create_template
+            create_template(path, sample_names=["Образец 1", "Образец 2", "Образец 3"])
+            QMessageBox.information(self, "Шаблон", f"Пустой шаблон сохранён:\n{path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", str(e))
 
     def _load_file(self, path: str) -> None:
         try:

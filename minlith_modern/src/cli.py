@@ -440,7 +440,7 @@ def main_cli() -> int:
         prog="minlith",
         description="MINLITH Modern — Нормативный минералогический расчёт",
     )
-    parser.add_argument("--version", action="version", version="MINLITH Modern 0.4.0")
+    parser.add_argument("--version", action="version", version="MINLITH Modern 0.5.0")
     parser.add_argument("--verbose", "-V", action="store_true",
                         help="Подробный вывод (debug trace)")
     parser.add_argument("--timeout", type=int, default=120,

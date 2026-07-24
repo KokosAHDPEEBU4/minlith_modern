@@ -10,6 +10,15 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 
+def _resolve_theme_path(theme: str) -> Path:
+    """Resolve theme name to QSS file path."""
+    base = Path(__file__).resolve().parent / "gui" / "styles"
+    path = base / f"{theme}.qss"
+    if not path.exists():
+        path = base / "default.qss"
+    return path
+
+
 def main() -> None:
     from PyQt6.QtWidgets import QApplication
 
@@ -25,9 +34,7 @@ def main() -> None:
     # Load QSS stylesheet based on theme
     config = ConfigManager()
     theme = config.get("theme", "dark")
-    qss_path = Path(__file__).resolve().parent / "gui" / "styles" / f"{theme}.qss"
-    if not qss_path.exists():
-        qss_path = Path(__file__).resolve().parent / "gui" / "styles" / "default.qss"
+    qss_path = _resolve_theme_path(theme)
     if qss_path.exists():
         app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
 

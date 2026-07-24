@@ -25,6 +25,7 @@ from src.core.calculator import Calculator
 from src.core.models import CalculationConfig, Sample
 from src.io.excel import load_samples, save_results
 from src.utils.config import ConfigManager
+from src.utils.cache import ResultCache
 from src.gui.pages.welcome_page import WelcomePage
 from src.gui.pages.files_page import FilesPage
 from src.gui.pages.input_page import InputPage
@@ -34,6 +35,7 @@ from src.gui.pages.history_page import HistoryPage
 from src.gui.pages.charts_page import ChartsPage
 from src.gui.pages.reports_page import ReportsPage
 from src.gui.pages.logs_page import LogsPage
+from src.gui.pages.output_page import OutputPage
 from src.gui.dialogs.calculation_dialog import CalculationDialog
 
 logger = logging.getLogger(__name__)
@@ -44,10 +46,11 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern v0.4.0 — Нормативный минералогический расчёт")
+        self.setWindowTitle("MINLITH Modern v0.5.0 — Нормативный минералогический расчёт")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
+        self._cache = ResultCache()
         self._calculator = self._create_calculator()
 
         central = QWidget()
@@ -75,6 +78,7 @@ class MainWindow(QMainWindow):
             ("Ввод", "\u270f\ufe0f"),
             ("Результаты", "\U0001f4ca"),
             ("Диаграммы", "\U0001f4c8"),
+            ("Вывод", "\U0001f4e2"),
             ("Отчёты", "\U0001f4c4"),
             ("История", "\U0001f4c1"),
             ("Настройки", "\u2699\ufe0f"),
@@ -112,6 +116,7 @@ class MainWindow(QMainWindow):
 
         self._results_page = ResultsPage()
         self._charts_page = ChartsPage()
+        self._output_page = OutputPage()
         self._reports_page = ReportsPage()
         self._settings_page = SettingsPage(self._config)
         self._settings_page.settings_changed.connect(self._on_settings_changed)
@@ -123,6 +128,7 @@ class MainWindow(QMainWindow):
         self._stack.addWidget(self._input_page)
         self._stack.addWidget(self._results_page)
         self._stack.addWidget(self._charts_page)
+        self._stack.addWidget(self._output_page)
         self._stack.addWidget(self._reports_page)
         self._stack.addWidget(self._history_page)
         self._stack.addWidget(self._settings_page)
@@ -140,7 +146,8 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("Ctrl+I"), self, lambda: self._switch_page(2))  # Input
         QShortcut(QKeySequence("Ctrl+R"), self, lambda: self._switch_page(3))  # Results
         QShortcut(QKeySequence("Ctrl+D"), self, lambda: self._switch_page(4))  # Charts
-        QShortcut(QKeySequence("Ctrl+P"), self, lambda: self._switch_page(5))  # Reports
+        QShortcut(QKeySequence("Ctrl+U"), self, lambda: self._switch_page(5))  # Output
+        QShortcut(QKeySequence("Ctrl+P"), self, lambda: self._switch_page(6))  # Reports
         QShortcut(QKeySequence("F5"), self, self._input_page._on_calculate)
 
         # Status bar
@@ -196,6 +203,7 @@ class MainWindow(QMainWindow):
         self._results_page.add_result(result)
         chart_data = self._charts_page.build_data_from_results(self._results_page._results)
         self._charts_page.set_data(chart_data)
+        self._output_page.set_data(chart_data)
         self._reports_page.set_results(self._results_page._results)
         self._switch_page(3)  # Results
         self.statusBar().showMessage(
@@ -221,6 +229,7 @@ class MainWindow(QMainWindow):
             self._switch_page(3)
             chart_data = self._charts_page.build_data_from_results(dialog.results)
             self._charts_page.set_data(chart_data)
+            self._output_page.set_data(chart_data)
             self._reports_page.set_results(dialog.results)
             self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
 
@@ -234,11 +243,16 @@ class MainWindow(QMainWindow):
         """Build CalculationConfig from ConfigManager settings."""
         return CalculationConfig(
             molar_mass_source=self._config.get("molar_mass_source", "iupac"),
+            custom_molar_masses=self._config.get("custom_molar_masses", {}),
             sum_tolerance=tuple(self._config.get("sum_tolerance", [98.0, 102.0])),
             warn_negative=self._config.get("warn_negative", True),
             auto_correct_sum=self._config.get("auto_correct_sum", False),
             decimal_places=self._config.get("decimal_places", 2),
+            include_formula_units=self._config.get("include_formula_units", False),
+            include_defect=self._config.get("include_defect", True),
+            include_parameters=self._config.get("include_parameters", True),
             timeout_seconds=self._config.get("timeout_seconds", 120),
+            batch_size=self._config.get("batch_size", "auto"),
             algorithm_mode=self._config.get("algorithm_mode", "stub"),
         )
 
@@ -261,7 +275,30 @@ class MainWindow(QMainWindow):
             return Calculator(config=config)
 
     def _on_settings_changed(self) -> None:
-        """Rebuild calculator when settings change."""
+        """Rebuild calculator and apply all settings immediately."""
+        # 1. Rebuild calculator with new config
         self._calculator = self._create_calculator()
         self._input_page._calculator = self._calculator
         logger.info("Calculator rebuilt with new settings")
+
+        # 2. Invalidate cache (settings may change results)
+        invalidated = self._cache.invalidate_config()
+        if invalidated:
+            logger.info("Cache invalidated: %d entries removed", invalidated)
+
+        # 3. Hot-reload theme stylesheet
+        from src.main import _resolve_theme_path
+        theme = self._config.get("theme", "dark")
+        qss_path = _resolve_theme_path(theme)
+        if qss_path.exists():
+            from PyQt6.QtWidgets import QApplication
+            app = QApplication.instance()
+            if app:
+                app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+                logger.info("Theme reloaded: %s", theme)
+
+        # 4. Clear stale results/charts since config changed
+        if self._results_page._results:
+            self._results_page.clear()
+            self._charts_page.set_data(None)
+            logger.info("Results cleared due to settings change")

@@ -40,7 +40,7 @@ class TestParameterizedAlgorithm:
         self.input = AlgorithmInput(
             sio2=52.5, tio2=0.0, al2o3=23.41, feo=8.06, mgo=2.35,
             cao=0.28, na2o=0.94, k2o=3.45, p2o5=0.31, mno=0.16,
-            c=0.0, so3=0.0, f=0.0, cl=0.0, s=0.0,
+            c=0.0, so3=0.0, f=0.0, cl=0.0, s=0.0, co2=0.0, so=0.0,
             k1=4.42, k2=0.0, k3=1.58, k4=2.42, F=0.0, A=0.0,
             rock_type=5,
         )
