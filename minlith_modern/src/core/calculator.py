@@ -9,7 +9,7 @@ from typing import Optional
 import numpy as np
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput, MineralAlgorithm
-from src.core.algorithm_stub import StubAlgorithm
+from src.core.algorithm_real import RealAlgorithm
 from src.core.anomaly_detector import AnomalyDetector
 from src.core.models import (
     AdaptiveCoefficients,
@@ -79,7 +79,7 @@ class Calculator:
         algorithm: Optional[MineralAlgorithm] = None,
     ):
         self.config = config or CalculationConfig()
-        self.algorithm = algorithm or StubAlgorithm()
+        self.algorithm = algorithm or RealAlgorithm()
 
     def _get_molar_masses(self) -> dict[str, float]:
         """Get molar masses based on config source."""
