@@ -42,8 +42,6 @@ class HarkerPlugin(ChartPlugin):
         return True
 
     def render(self, data: ChartData, **kwargs) -> Any:
-        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color, get_grid_color, get_accent
-
         bg = get_bg_color()
         fg = get_fg_color()
         grid = get_grid_color()

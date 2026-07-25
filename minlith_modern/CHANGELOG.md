@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.6.8] — 2026-07-24
+
+### Added
+- `tests/test_charts.py` — 29 tests for all 23 matplotlib chart plugins (render without errors, empty data handling, stacked/grouped/sample variants)
+- `tests/test_plotly_charts.py` — 14 tests for all Plotly interactive charts (HTML file creation, content validation, empty data handling)
+
+### Fixed
+- Plotly ternary charts (QAPF, A-CN-K, AFM): `fig.update_ternary()` → `fig.update_layout(ternary=...)` (Plotly 6.x API)
+
+## [0.6.7] — 2026-07-24
+
+### Fixed
+- P0: `_build_chart_data()` now adds `k_values` to `metadata` — CoefficientHeatmap renders in preview
+- P0: QAPF Plotly formula fixed — A=Ab+Or, P=An (was incorrectly including An in A)
+- P1: AFM Plotly formula fixed — now matches matplotlib version (Irvine & Baragar 1971): A=Na₂O+K₂O, F=FeOᵀ+MgO
+- P1: Removed duplicate imports in 5 chart files (coefficient_heatmap, radar_chart, harker, correlation, heatmap)
+- P1: Chart preview now uses `get_name()` lookup instead of fragile magic indices `BUILTIN_CHARTS[N]`
+- P2: `pca_biplot.py` — added `n_minerals >= 2` check to prevent singular matrix error
+
+## [0.6.6] — 2026-07-24
+
+### Fixed
+- Arrow buttons for block reorder: now show "▲ Вверх" and "▼ Вниз" labels (fixed width 80px)
+- Report preview now renders charts as base64 PNG images in real-time
+- Each CHART block in the template shows its actual diagram in the preview
+
+### Changed
+- ReportsPage: preview includes embedded charts (bar, pie, defect, boxplot, heatmap, correlation, harker, qapf, tas, radar)
+- Chart rendering is lazy — only shown in preview, not on page load
+
 ## [0.6.5] — 2026-07-24
 
 ### Changed

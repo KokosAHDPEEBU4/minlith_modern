@@ -27,7 +27,6 @@ class CoefficientHeatmap(ChartPlugin):
 
     def render(self, data: ChartData, **kwargs) -> Any:
         import matplotlib.pyplot as plt
-        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color
 
         bg = get_bg_color()
         fg = get_fg_color()

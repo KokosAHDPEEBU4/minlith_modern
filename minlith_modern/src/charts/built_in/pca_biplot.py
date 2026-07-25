@@ -41,6 +41,10 @@ class PCABiplot(ChartPlugin):
             fig = create_figure(title="Need ≥2 samples for PCA")
             return fig
 
+        if n_minerals < 2:
+            fig = create_figure(title="Need ≥2 minerals for PCA")
+            return fig
+
         # Build matrix: rows=samples, cols=minerals
         matrix = np.zeros((n_samples, n_minerals))
         for j, m in enumerate(names):

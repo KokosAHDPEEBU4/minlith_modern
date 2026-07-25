@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import base64
+import io
 import logging
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -24,10 +25,8 @@ from PyQt6.QtWidgets import (
     QTextBrowser,
     QTextEdit,
     QAbstractItemView,
-    QFrame,
     QSizePolicy,
 )
-from PyQt6.QtGui import QFont
 
 from src.core.models import CalculationResult
 from src.reports.template_builder import (
@@ -70,13 +69,104 @@ def _block_summary(block: ReportBlock) -> str:
     return f"{type_name}: {title}{extra}"
 
 
+def _build_chart_data(results: list[CalculationResult]):
+    """Build ChartData from CalculationResult list."""
+    import numpy as np
+    from src.charts.base import ChartData
+
+    data = ChartData()
+    data.sample_names = [r.sample_name for r in results]
+
+    mineral_fields = [
+        "ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb",
+        "ap", "cc", "dl", "ank", "rch", "sd", "srp", "mst", "ht", "prl",
+    ]
+    for f in mineral_fields:
+        data.minerals_wt[f] = np.array([getattr(r.minerals_weight, f, 0.0) for r in results])
+
+    oxide_fields = ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao", "na2o", "k2o", "p2o5", "mno"]
+    for f in oxide_fields:
+        data.oxides[f] = np.array([getattr(r.input_composition, f, 0.0) for r in results])
+
+    data.rock_types = [int(r.rock_type) for r in results]
+
+    if results and results[0].defect:
+        for oxide in results[0].defect:
+            data.defect[oxide] = np.array([r.defect.get(oxide, 0.0) for r in results])
+
+    data.F_values = [r.coefficients.F for r in results]
+    data.A_values = [r.coefficients.A for r in results]
+
+    data.metadata["k_values"] = {
+        "k1": [r.coefficients.k1 for r in results],
+        "k2": [r.coefficients.k2 for r in results],
+        "k3": [r.coefficients.k3 for r in results],
+        "k4": [r.coefficients.k4 for r in results],
+    }
+
+    return data
+
+
+def _render_chart_to_base64(chart_type: str, chart_data, sample_idx: int = 0) -> str | None:
+    """Render a chart to base64 PNG string for HTML embedding."""
+    from src.charts.built_in import BUILTIN_CHARTS
+    import matplotlib.pyplot as plt
+
+    _chart_name_map = {c.get_name().lower(): c for c in BUILTIN_CHARTS}
+    # some charts have names that differ from keys
+    _alias = {
+        "bar": "Mineral Bar Chart",
+        "pie": "Mineral Pie Chart",
+        "defect": "Defect Chart",
+        "boxplot": "Mineral Box Plot",
+        "heatmap": "Mineral Heatmap",
+        "correlation": "correlation",
+        "harker": "harker",
+        "qapf": "qapf",
+        "tas": "tas",
+        "radar": "Mineral Radar",
+    }
+
+    plugin = None
+    alias_name = _alias.get(chart_type, chart_type)
+    # try exact match first, then lowercase match
+    plugin = _chart_name_map.get(alias_name.lower())
+    if plugin is None:
+        for c in BUILTIN_CHARTS:
+            if c.get_name().lower() == alias_name.lower():
+                plugin = c
+                break
+
+    if plugin is None:
+        return None
+
+    kwargs = {}
+    if chart_type == "bar":
+        kwargs = dict(stacked=True, normalized=True)
+    elif chart_type in ("pie", "defect", "radar"):
+        kwargs = dict(sample_idx=sample_idx)
+
+    try:
+        fig = plugin.render(chart_data, **kwargs)
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight",
+                    facecolor=fig.get_facecolor())
+        plt.close(fig)
+        buf.seek(0)
+        b64 = base64.b64encode(buf.read()).decode("ascii")
+        return f"data:image/png;base64,{b64}"
+    except Exception as e:
+        logger.warning("Chart preview render failed (%s): %s", chart_type, e)
+        return None
+
+
 class ReportsPage(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._results: list[CalculationResult] = []
         self._template = template_standard()
         self._is_custom = False
-        self._suppress_signals = False
+        self._suppress = False
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -168,14 +258,14 @@ class ReportsPage(QWidget):
 
         btn_row.addStretch()
 
-        btn_up = QPushButton("▲")
-        btn_up.setFixedWidth(30)
+        btn_up = QPushButton("▲ Вверх")
+        btn_up.setFixedWidth(80)
         btn_up.setToolTip("Переместить вверх")
         btn_up.clicked.connect(self._on_move_up)
         btn_row.addWidget(btn_up)
 
-        btn_down = QPushButton("▼")
-        btn_down.setFixedWidth(30)
+        btn_down = QPushButton("▼ Вниз")
+        btn_down.setFixedWidth(80)
         btn_down.setToolTip("Переместить вниз")
         btn_down.clicked.connect(self._on_move_down)
         btn_row.addWidget(btn_down)
@@ -205,7 +295,6 @@ class ReportsPage(QWidget):
         self._edit_text.setMaximumHeight(80)
         self._edit_text.textChanged.connect(self._on_field_changed)
         self._editor_form.addRow("Текст:", self._edit_text)
-        self._edit_text_row_widget = self._edit_text.parentWidget()
 
         self._edit_chart_type = QComboBox()
         for code, label in CHART_TYPES:
@@ -264,7 +353,7 @@ class ReportsPage(QWidget):
     # ── Template management ──
 
     def _on_preset_changed(self, index: int) -> None:
-        if self._suppress_signals:
+        if self._suppress:
             return
         presets = [template_brief, template_standard, template_full]
         if 0 <= index < len(presets):
@@ -295,9 +384,9 @@ class ReportsPage(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             self._template = template_standard()
             self._is_custom = False
-            self._suppress_signals = True
+            self._suppress = True
             self._tmpl_combo.setCurrentIndex(1)
-            self._suppress_signals = False
+            self._suppress = False
             self._btn_rename.setEnabled(False)
             self._btn_delete.setEnabled(False)
             self._refresh()
@@ -328,14 +417,14 @@ class ReportsPage(QWidget):
             QMessageBox.critical(self, "Ошибка", str(e))
 
     def _ensure_custom_combo(self) -> None:
-        self._suppress_signals = True
+        self._suppress = True
         if self._is_custom and self._tmpl_combo.count() <= 3:
             self._tmpl_combo.addItem(f"★ {self._template.name}")
         if self._is_custom:
             self._tmpl_combo.setCurrentIndex(self._tmpl_combo.count() - 1)
             self._btn_rename.setEnabled(True)
             self._btn_delete.setEnabled(True)
-        self._suppress_signals = False
+        self._suppress = False
 
     # ── Block management ──
 
@@ -378,7 +467,7 @@ class ReportsPage(QWidget):
         self._block_list.setCurrentRow(row + 1)
 
     def _on_block_selected(self, row: int) -> None:
-        if self._suppress_signals or row < 0 or row >= len(self._template.blocks):
+        if self._suppress or row < 0 or row >= len(self._template.blocks):
             self._clear_editor()
             return
         block = self._template.blocks[row]
@@ -402,7 +491,7 @@ class ReportsPage(QWidget):
     # ── Inline editor ──
 
     def _clear_editor(self) -> None:
-        self._suppress_signals = True
+        self._suppress = True
         self._edit_title.clear()
         self._edit_text.clear()
         self._edit_sample_idx.setValue(0)
@@ -412,16 +501,15 @@ class ReportsPage(QWidget):
         self._set_field_visible("sample", False)
         self._set_field_visible("min_wt", False)
         self._edit_hint.setVisible(True)
-        self._suppress_signals = False
+        self._suppress = False
 
     def _show_editor(self, block: ReportBlock) -> None:
-        self._suppress_signals = True
+        self._suppress = True
         bt = block.block_type
 
         self._edit_title.setText(block.title)
         self._edit_text.setPlainText(block.text_content)
 
-        # chart type
         for i, (code, _) in enumerate(CHART_TYPES):
             if code == block.chart_type:
                 self._edit_chart_type.setCurrentIndex(i)
@@ -429,7 +517,6 @@ class ReportsPage(QWidget):
         self._edit_sample_idx.setValue(block.chart_sample_idx)
         self._edit_min_wt.setValue(int(block.min_wt_percent * 10))
 
-        # visibility per block type
         self._set_field_visible("text", bt == BlockType.TEXT)
         self._set_field_visible("chart", bt == BlockType.CHART)
         self._set_field_visible("sample", bt == BlockType.CHART)
@@ -449,7 +536,7 @@ class ReportsPage(QWidget):
         self._edit_hint.setStyleSheet("color: #888; font-style: italic; padding: 4px; font-size: 11px;")
         self._edit_hint.setVisible(True)
 
-        self._suppress_signals = False
+        self._suppress = False
 
     def _set_field_visible(self, name: str, visible: bool) -> None:
         widgets = {
@@ -462,7 +549,6 @@ class ReportsPage(QWidget):
         if w is None:
             return
         w.setVisible(visible)
-        # find the label in the form layout
         for i in range(self._editor_form.rowCount()):
             label_item = self._editor_form.itemAt(i, QFormLayout.ItemRole.LabelRole)
             field_item = self._editor_form.itemAt(i, QFormLayout.ItemRole.FieldRole)
@@ -472,7 +558,7 @@ class ReportsPage(QWidget):
                 break
 
     def _on_field_changed(self) -> None:
-        if self._suppress_signals:
+        if self._suppress:
             return
         row = self._block_list.currentRow()
         if row < 0 or row >= len(self._template.blocks):
@@ -487,7 +573,6 @@ class ReportsPage(QWidget):
             block.min_wt_percent = self._edit_min_wt.value() / 10.0
         self._is_custom = True
         self._ensure_custom_combo()
-        # update list item text
         item = self._block_list.item(row)
         if item:
             item.setText(f"{row+1}. {_block_summary(block)}")
@@ -496,14 +581,13 @@ class ReportsPage(QWidget):
     # ── Refresh ──
 
     def _refresh(self) -> None:
-        self._suppress_signals = True
+        self._suppress = True
         current_row = self._block_list.currentRow()
 
         self._block_list.clear()
         for i, block in enumerate(self._template.blocks):
             self._block_list.addItem(f"{i+1}. {_block_summary(block)}")
 
-        # restore selection
         if 0 <= current_row < len(self._template.blocks):
             self._block_list.setCurrentRow(current_row)
         elif self._template.blocks:
@@ -511,7 +595,7 @@ class ReportsPage(QWidget):
         else:
             self._clear_editor()
 
-        self._suppress_signals = False
+        self._suppress = False
         self._refresh_preview()
 
     def _refresh_preview(self) -> None:
@@ -521,7 +605,7 @@ class ReportsPage(QWidget):
             )
             html = f"""
             <html><body style="font-family: Segoe UI, Arial, sans-serif; padding: 12px; color: #555;">
-            <div style="color: #999; font-size: 11px;">{self._template.name} &mdash; {len(self._template.blocks)} блоков</div>
+            <div style="color: #999; font-size: 11px;">{self._template.name} — {len(self._template.blocks)} блоков</div>
             <p style="color: #888; font-style: italic;">Нет данных. Выполните расчёт.</p>
             <ol style="font-size: 12px;">{blocks_html}</ol>
             </body></html>
@@ -530,7 +614,26 @@ class ReportsPage(QWidget):
             from src.reports.html_generator import _block_html
             from datetime import datetime
 
-            parts = [_block_html(b, self._results) for b in self._template.blocks]
+            chart_data = _build_chart_data(self._results)
+
+            parts = []
+            for block in self._template.blocks:
+                if block.block_type == BlockType.CHART:
+                    img_src = _render_chart_to_base64(
+                        block.chart_type, chart_data, block.chart_sample_idx)
+                    if img_src:
+                        title = block.title or CHART_LABELS.get(block.chart_type, block.chart_type)
+                        parts.append(
+                            f'<h2>{title}</h2>'
+                            f'<div style="text-align:center; margin: 8px 0;">'
+                            f'<img src="{img_src}" style="max-width:100%; height:auto;">'
+                            f'</div>'
+                        )
+                    else:
+                        parts.append(f'<p><em>Диаграмма «{block.chart_type}» не построена.</em></p>')
+                else:
+                    parts.append(_block_html(block, self._results))
+
             html = f"""
             <html><head><style>
             body {{ font-family: Segoe UI, Arial, sans-serif; margin: 8px; background: #fafafa; color: #333; font-size: 12px; }}
@@ -546,7 +649,7 @@ class ReportsPage(QWidget):
             </style></head><body>
             <h1>MINLITH Report</h1>
             {''.join(parts)}
-            <div class="footer">{self._template.name} &mdash; {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>
+            <div class="footer">{self._template.name} — {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>
             </body></html>
             """
         self._preview.setHtml(html)

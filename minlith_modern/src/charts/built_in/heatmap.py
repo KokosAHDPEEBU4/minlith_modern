@@ -26,7 +26,7 @@ class HeatmapChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
-        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color, get_chart_theme
+        from src.charts.engines.matplotlib_engine import get_chart_theme
 
         bg = get_bg_color()
         fg = get_fg_color()

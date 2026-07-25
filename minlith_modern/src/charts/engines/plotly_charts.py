@@ -123,25 +123,27 @@ def interactive_qapf(data: ChartData, path: Path, **kwargs) -> None:
     total = q + ab + an + or_
     total[total == 0] = 1.0
 
-    # Upper triangle QAP, lower APF
+    # QAP: Q at top, A=Ab+Or at bottom-left, P=An at bottom-right
     q_norm = q / total * 100
-    a_norm = (ab + an) / total * 100
-    p_norm = an / (ab + an + 1e-10) * 100
+    a_norm = (ab + or_) / total * 100
+    p_norm = an / total * 100
 
     fig = go.Figure()
     fig.add_trace(go.Scatterternary(
-        a=q_norm, b=ab / total * 100, c=or_ / total * 100,
+        a=q_norm, b=a_norm, c=p_norm,
         mode="markers+text",
         marker=dict(size=10, color=COLORS[0]),
         text=data.sample_names, textposition="top center", textfont=dict(size=9),
     ))
 
-    fig.update_ternary(
-        aaxis=dict(title="Q", min=0, linewidth=2, gridcolor="#313244"),
-        baxis=dict(title="Ab", min=0, linewidth=2, gridcolor="#313244"),
-        caxis=dict(title="Or", min=0, linewidth=2, gridcolor="#313244"),
+    fig.update_layout(
+        ternary=dict(
+            aaxis=dict(title="Q", min=0, linewidth=2, gridcolor="#313244"),
+            baxis=dict(title="A (Ab+Or)", min=0, linewidth=2, gridcolor="#313244"),
+            caxis=dict(title="P (An)", min=0, linewidth=2, gridcolor="#313244"),
+        ),
+        height=600, width=700,
     )
-    fig.update_layout(height=600, width=700)
     save_html(fig, path, title=kwargs.get("title", "QAPF Diagram"))
 
 
@@ -170,12 +172,14 @@ def interactive_acnk(data: ChartData, path: Path, **kwargs) -> None:
         text=data.sample_names, textposition="top center", textfont=dict(size=9),
     ))
 
-    fig.update_ternary(
-        aaxis=dict(title="A (Al₂O₃)", min=0, gridcolor="#313244"),
-        baxis=dict(title="CN (CaO+Na₂O)", min=0, gridcolor="#313244"),
-        caxis=dict(title="K (K₂O)", min=0, gridcolor="#313244"),
+    fig.update_layout(
+        ternary=dict(
+            aaxis=dict(title="A (Al₂O₃)", min=0, gridcolor="#313244"),
+            baxis=dict(title="CN (CaO+Na₂O)", min=0, gridcolor="#313244"),
+            caxis=dict(title="K (K₂O)", min=0, gridcolor="#313244"),
+        ),
+        height=600, width=700,
     )
-    fig.update_layout(height=600, width=700)
     save_html(fig, path, title=kwargs.get("title", "A-CN-K Diagram"))
 
 
@@ -191,10 +195,9 @@ def interactive_afm(data: ChartData, path: Path, **kwargs) -> None:
     if len(feo) == 0:
         return
 
-    f = feo + fe2o3
+    f = feo + 0.8998 * fe2o3
     m = mgo
-    a = al2o3 - na2o * 1.652 - k2o * 0.638
-    a = np.maximum(a, 0)
+    a = na2o + k2o
     total = f + m + a
     total[total == 0] = 1.0
 
@@ -206,12 +209,14 @@ def interactive_afm(data: ChartData, path: Path, **kwargs) -> None:
         text=data.sample_names, textposition="top center", textfont=dict(size=9),
     ))
 
-    fig.update_ternary(
-        aaxis=dict(title="F (FeO+Fe₂O₃)", min=0, gridcolor="#313244"),
-        baxis=dict(title="M (MgO)", min=0, gridcolor="#313244"),
-        caxis=dict(title="A (Al₂O₃)", min=0, gridcolor="#313244"),
+    fig.update_layout(
+        ternary=dict(
+            aaxis=dict(title="F (FeOᵀ)", min=0, gridcolor="#313244"),
+            baxis=dict(title="M (MgO)", min=0, gridcolor="#313244"),
+            caxis=dict(title="A (Na₂O+K₂O)", min=0, gridcolor="#313244"),
+        ),
+        height=600, width=700,
     )
-    fig.update_layout(height=600, width=700)
     save_html(fig, path, title=kwargs.get("title", "AFM Diagram"))
 
 
