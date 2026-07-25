@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.5] — 2026-07-24
+
+### Changed
+- ReportsPage completely redesigned:
+  - Preview moved to top (~40% height) — shows live HTML preview of the report
+  - Template selector row simplified — preset combo, rename/delete, save/load
+  - Left panel: block list with add/remove/reorder controls
+  - Right panel: inline editor (no more dialog) — fields change based on selected block type
+  - Selected block's title, text, chart type, sample index, min wt% are editable directly
+  - Drag-drop reorder, arrow buttons, double-click selection all work
+  - Removed BlockEditDialog — all editing is inline now
+
 ## [0.6.4] — 2026-07-24
 
 ### Fixed
