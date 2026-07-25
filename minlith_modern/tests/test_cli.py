@@ -15,7 +15,7 @@ class TestCli:
             capture_output=True, text=True, timeout=10, encoding="utf-8",
         )
         assert result.returncode == 0
-        assert "0.6.1" in result.stdout
+        assert "0.6.2" in result.stdout
 
     def test_help(self):
         result = subprocess.run(

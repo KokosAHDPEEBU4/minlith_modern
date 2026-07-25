@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.2] — 2026-07-24
+
+### Added
+- Chart theme setting: "Фон диаграмм" in Settings — choose between dark (Catppuccin) and light (white) background
+- `set_chart_theme()` / `get_chart_theme()` in matplotlib_engine.py
+- All charts now respect the active theme (BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT)
+- Theme applied on startup and when settings change
+
 ## [0.6.1] — 2026-07-24
 
 ### Added

@@ -96,7 +96,13 @@ class SettingsPage(QWidget):
         self._theme = QComboBox()
         self._theme.addItems(["dark", "light"])
         self._theme.setCurrentText(config.get("theme", "dark"))
-        ui_form.addRow("Тема:", self._theme)
+        ui_form.addRow("Тема интерфейса:", self._theme)
+
+        self._chart_theme = QComboBox()
+        self._chart_theme.addItems(["dark", "light"])
+        self._chart_theme.setCurrentText(config.get("chart_theme", "dark"))
+        self._chart_theme.setToolTip("Фон диаграмм: тёмный (Catppuccin) или белый")
+        ui_form.addRow("Фон диаграмм:", self._chart_theme)
 
         self._language = QComboBox()
         self._language.addItems(["ru", "en"])
@@ -133,8 +139,14 @@ class SettingsPage(QWidget):
         self._config["timeout_seconds"] = self._timeout.value()
         self._config["algorithm_mode"] = self._algorithm_mode.currentText()
         self._config["theme"] = self._theme.currentText()
+        self._config["chart_theme"] = self._chart_theme.currentText()
         self._config["language"] = self._language.currentText()
         self._config.save()
+
+        # Apply chart theme immediately
+        from src.charts.engines.matplotlib_engine import set_chart_theme
+        set_chart_theme(self._chart_theme.currentText())
+
         self.settings_changed.emit()
         logger.info("Настройки сохранены")
 
@@ -164,4 +176,5 @@ class SettingsPage(QWidget):
         self._timeout.setValue(self._config.get("timeout_seconds", 120))
         self._algorithm_mode.setCurrentText(self._config.get("algorithm_mode", "stub"))
         self._theme.setCurrentText(self._config.get("theme", "dark"))
+        self._chart_theme.setCurrentText(self._config.get("chart_theme", "dark"))
         self._language.setCurrentText(self._config.get("language", "ru"))

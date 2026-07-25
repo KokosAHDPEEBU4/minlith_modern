@@ -21,6 +21,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "timeout_seconds": 120,
     "algorithm_mode": "stub",  # "stub" | "custom"
     "theme": "dark",
+    "chart_theme": "dark",  # "dark" | "light" — background for charts
     "language": "ru",
     "recent_files": [],
     "max_recent": 10,
@@ -156,6 +157,10 @@ class ConfigManager:
         theme = self._data.get("theme", "dark")
         if theme not in ("dark", "light"):
             errors.append(f"Unknown theme: {theme!r}")
+
+        chart_theme = self._data.get("chart_theme", "dark")
+        if chart_theme not in ("dark", "light"):
+            errors.append(f"Unknown chart_theme: {chart_theme!r}")
 
         lang = self._data.get("language", "ru")
         if lang not in ("ru", "en"):

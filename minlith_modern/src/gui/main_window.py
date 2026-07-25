@@ -46,12 +46,16 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern v0.6.1 — Нормативный минералогический расчёт")
+        self.setWindowTitle("MINLITH Modern v0.6.2 — Нормативный минералогический расчёт")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
         self._cache = ResultCache()
         self._calculator = self._create_calculator()
+
+        # Apply chart theme from settings
+        from src.charts.engines.matplotlib_engine import set_chart_theme
+        set_chart_theme(self._config.get("chart_theme", "dark"))
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -290,7 +294,11 @@ class MainWindow(QMainWindow):
         if invalidated:
             logger.info("Cache invalidated: %d entries removed", invalidated)
 
-        # 3. Hot-reload theme stylesheet
+        # 3. Apply chart theme
+        from src.charts.engines.matplotlib_engine import set_chart_theme
+        set_chart_theme(self._config.get("chart_theme", "dark"))
+
+        # 4. Hot-reload theme stylesheet
         from src.main import _resolve_theme_path
         theme = self._config.get("theme", "dark")
         qss_path = _resolve_theme_path(theme)
