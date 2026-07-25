@@ -7,7 +7,7 @@ from typing import Any, Optional
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
 from src.core.coefficients import calculate_coefficients
 
 
@@ -27,6 +27,9 @@ class KFChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         fig = create_figure(
             figsize=(10, 6),
             title=kwargs.get("title", "Коэффициенты хлорита k1-k4 vs F"),
@@ -65,12 +68,12 @@ class KFChart(ChartPlugin):
                 ax.plot(f_val, coeff.k3, "o", color="#a6e3a1", markersize=6, alpha=0.7)
                 ax.plot(f_val, coeff.k4, "o", color="#fab387", markersize=6, alpha=0.7)
                 ax.annotate(name, (f_val, coeff.k1), fontsize=7, ha="center", va="bottom",
-                           color=FG_COLOR)
+                           color=fg)
 
-        ax.set_xlabel("F (Fe³⁺/ΣFe)", color=FG_COLOR)
-        ax.set_ylabel("Значение коэффициента", color=FG_COLOR)
+        ax.set_xlabel("F (Fe³⁺/ΣFe)", color=fg)
+        ax.set_ylabel("Значение коэффициента", color=fg)
         ax.legend(loc="upper right", fontsize=9)
         ax.set_xlim(0, 1)
-        ax.grid(True, alpha=0.3, color=GRID_COLOR)
+        ax.grid(True, alpha=0.3, color=grid)
 
         return fig

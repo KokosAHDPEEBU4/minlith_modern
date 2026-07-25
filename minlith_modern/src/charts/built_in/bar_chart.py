@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
 
 
 class BarChart(ChartPlugin):
@@ -26,6 +26,9 @@ class BarChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         minerals = data.minerals_wt
         if not minerals:
             fig = create_figure(title="No mineral data")
@@ -79,8 +82,8 @@ class BarChart(ChartPlugin):
 
         ax.set_xticks(x)
         ax.set_xticklabels(data.sample_names, rotation=45, ha="right", fontsize=9)
-        ax.legend(fontsize=8, loc="upper right", framealpha=0.3, labelcolor=FG_COLOR)
-        ax.grid(axis="y", color=GRID_COLOR, alpha=0.5)
+        ax.legend(fontsize=8, loc="upper right", framealpha=0.3, labelcolor=fg)
+        ax.grid(axis="y", color=grid, alpha=0.5)
         ax.set_axisbelow(True)
         fig.tight_layout()
         return fig

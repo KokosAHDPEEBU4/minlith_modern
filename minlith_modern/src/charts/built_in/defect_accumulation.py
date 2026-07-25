@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
 
 
 class DefectAccumulation(ChartPlugin):
@@ -26,6 +26,9 @@ class DefectAccumulation(ChartPlugin):
         return True
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         defect = data.defect
         if not defect:
             return create_figure(title="No defect data")
@@ -51,9 +54,9 @@ class DefectAccumulation(ChartPlugin):
         ax.set_xticks(x)
         ax.set_xticklabels(data.sample_names, rotation=45, ha="right", fontsize=9)
         ax.set_ylabel("Cumulative Δ")
-        ax.axhline(y=0, color=FG_COLOR, linewidth=0.5, alpha=0.5)
-        ax.legend(fontsize=7, loc="upper right", framealpha=0.3, labelcolor=FG_COLOR, ncol=2)
-        ax.grid(axis="y", color=GRID_COLOR, alpha=0.5)
+        ax.axhline(y=0, color=fg, linewidth=0.5, alpha=0.5)
+        ax.legend(fontsize=7, loc="upper right", framealpha=0.3, labelcolor=fg, ncol=2)
+        ax.grid(axis="y", color=grid, alpha=0.5)
         ax.set_axisbelow(True)
         fig.tight_layout()
         return fig

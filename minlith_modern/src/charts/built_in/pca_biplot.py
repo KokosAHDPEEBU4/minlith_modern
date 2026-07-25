@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_figure, get_fg_color, get_grid_color
 
 
 class PCABiplot(ChartPlugin):
@@ -26,6 +26,9 @@ class PCABiplot(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         minerals = data.minerals_wt
         if not minerals:
             return create_figure(title="No mineral data")
@@ -67,11 +70,11 @@ class PCABiplot(ChartPlugin):
 
         # Plot samples
         ax.scatter(pc[:, 0], pc[:, 1], c=ACCENT, s=60, alpha=0.8,
-                   edgecolors=FG_COLOR, linewidth=0.5, zorder=5)
+                   edgecolors=fg, linewidth=0.5, zorder=5)
 
         for i, name in enumerate(data.sample_names):
             ax.annotate(name, (pc[i, 0], pc[i, 1]),
-                        fontsize=8, color=FG_COLOR, alpha=0.8,
+                        fontsize=8, color=fg, alpha=0.8,
                         xytext=(5, 5), textcoords="offset points")
 
         # Plot loadings as arrows
@@ -86,10 +89,10 @@ class PCABiplot(ChartPlugin):
             ax.text(dx * 1.1, dy * 1.1, mineral, fontsize=8, color=COLORS[j % len(COLORS)],
                     ha="center", va="center")
 
-        ax.set_xlabel(f"PC1 ({var_explained[0]:.1f}%)", color=FG_COLOR)
-        ax.set_ylabel(f"PC2 ({var_explained[1]:.1f}%)", color=FG_COLOR)
-        ax.axhline(y=0, color=FG_COLOR, linewidth=0.3, alpha=0.5)
-        ax.axvline(x=0, color=FG_COLOR, linewidth=0.3, alpha=0.5)
-        ax.grid(color=GRID_COLOR, alpha=0.3)
+        ax.set_xlabel(f"PC1 ({var_explained[0]:.1f}%)", color=fg)
+        ax.set_ylabel(f"PC2 ({var_explained[1]:.1f}%)", color=fg)
+        ax.axhline(y=0, color=fg, linewidth=0.3, alpha=0.5)
+        ax.axvline(x=0, color=fg, linewidth=0.3, alpha=0.5)
+        ax.grid(color=grid, alpha=0.3)
         fig.tight_layout()
         return fig

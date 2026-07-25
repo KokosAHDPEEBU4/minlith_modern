@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_figure, get_fg_color, get_grid_color
 
 
 # Simplified TAS field boundaries (SiO2 vs Na2O+K2O)
@@ -49,6 +49,9 @@ class TASChart(ChartPlugin):
         return True
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         fig = create_figure(figsize=(10, 7), title=kwargs.get("title", "TAS — Total Alkali-Silica"))
         ax = fig.axes[0]
 
@@ -56,7 +59,7 @@ class TASChart(ChartPlugin):
         for name, pts in _TAS_FIELDS:
             xs = [p[0] for p in pts] + [pts[0][0]]
             ys = [p[1] for p in pts] + [pts[0][1]]
-            ax.plot(xs, ys, color=FG_COLOR, linewidth=0.3, alpha=0.25)
+            ax.plot(xs, ys, color=fg, linewidth=0.3, alpha=0.25)
 
         # Alkali-subalkali line
         ax.plot(_ALKALI_LINE_X, _ALKALI_LINE_Y, "--", color="#f38ba8", linewidth=1.0, alpha=0.6, label="Alkali / Subalkali")
@@ -71,15 +74,15 @@ class TASChart(ChartPlugin):
             if i < len(sio2):
                 color = ACCENT if len(data.sample_names) == 1 else COLORS[i % len(COLORS)]
                 ax.plot(sio2[i], total_alk[i], "o", color=color, markersize=8,
-                        markeredgecolor=FG_COLOR, markeredgewidth=0.5)
+                        markeredgecolor=fg, markeredgewidth=0.5)
                 ax.annotate(name, (sio2[i], total_alk[i]), textcoords="offset points",
-                            xytext=(5, 5), fontsize=8, color=FG_COLOR, alpha=0.8)
+                            xytext=(5, 5), fontsize=8, color=fg, alpha=0.8)
 
         ax.set_xlabel("SiO₂ (wt%)")
         ax.set_ylabel("Na₂O + K₂O (wt%)")
         ax.set_xlim(35, 80)
         ax.set_ylim(0, 16)
-        ax.grid(True, color=GRID_COLOR, alpha=0.3)
-        ax.legend(fontsize=9, loc="upper left", framealpha=0.3, labelcolor=FG_COLOR)
+        ax.grid(True, color=grid, alpha=0.3)
+        ax.legend(fontsize=9, loc="upper left", framealpha=0.3, labelcolor=fg)
         fig.tight_layout()
         return fig

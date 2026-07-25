@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_bg_color, get_fg_color, get_grid_color
 
 
 class BoxPlotChart(ChartPlugin):
@@ -26,6 +26,9 @@ class BoxPlotChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         minerals = data.minerals_wt
         if not minerals:
             return create_figure(title="No mineral data")
@@ -43,21 +46,21 @@ class BoxPlotChart(ChartPlugin):
         colors = [COLORS[i % len(COLORS)] for i in range(n)]
 
         bp = ax.boxplot(box_data, patch_artist=True, widths=0.6,
-                        medianprops=dict(color=FG_COLOR, linewidth=1.5),
-                        whiskerprops=dict(color=FG_COLOR, linewidth=0.8),
-                        capprops=dict(color=FG_COLOR, linewidth=0.8),
+                        medianprops=dict(color=fg, linewidth=1.5),
+                        whiskerprops=dict(color=fg, linewidth=0.8),
+                        capprops=dict(color=fg, linewidth=0.8),
                         flierprops=dict(marker="o", markerfacecolor=COLORS[1],
                                         markersize=4, alpha=0.6))
 
         for patch, color in zip(bp["boxes"], colors):
             patch.set_facecolor(color)
             patch.set_alpha(0.7)
-            patch.set_edgecolor(FG_COLOR)
+            patch.set_edgecolor(fg)
 
         ax.set_xticks(range(1, n + 1))
         ax.set_xticklabels(names, rotation=45, ha="right", fontsize=9)
         ax.set_ylabel("wt%")
-        ax.grid(axis="y", color=GRID_COLOR, alpha=0.5)
+        ax.grid(axis="y", color=grid, alpha=0.5)
         ax.set_axisbelow(True)
         fig.tight_layout()
         return fig

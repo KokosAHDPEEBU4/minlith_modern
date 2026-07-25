@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.4] — 2026-07-24
+
+### Fixed
+- ALL 16 remaining charts converted from static `BG_COLOR`/`FG_COLOR`/`GRID_COLOR` imports to `get_bg_color()`/`get_fg_color()`/`get_grid_color()` — theme switch now works for every chart
+- Heatmap: colormap changes between light/dark themes
+- ReportsPage: HTML preview now renders actual report content (tables, parameters) in QTextBrowser instead of showing just block names
+
 ## [0.6.3] — 2026-07-24
 
 ### Fixed

@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
 
 
 class DefectChart(ChartPlugin):
@@ -26,6 +26,9 @@ class DefectChart(ChartPlugin):
         return True
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         defect = data.defect
         if not defect:
             return create_figure(title="No defect data")
@@ -54,7 +57,7 @@ class DefectChart(ChartPlugin):
             neg_vals = [min(v, 0) for v in values]
             ax.bar(range(len(oxides)), pos_vals, color="#a6e3a1", edgecolor="none", width=0.7, label="+Δ")
             ax.bar(range(len(oxides)), neg_vals, color="#f38ba8", edgecolor="none", width=0.7, label="-Δ")
-            ax.legend(fontsize=8, loc="upper right", framealpha=0.3, labelcolor=FG_COLOR)
+            ax.legend(fontsize=8, loc="upper right", framealpha=0.3, labelcolor=fg)
         else:
             colors = ["#a6e3a1" if v >= 0 else "#f38ba8" for v in values]
             ax.bar(range(len(oxides)), values, color=colors, edgecolor="none", width=0.7)
@@ -62,8 +65,8 @@ class DefectChart(ChartPlugin):
         ax.set_xticks(range(len(oxides)))
         ax.set_xticklabels(oxides, rotation=45, ha="right", fontsize=9)
         ax.set_ylabel("Δ (formula units)")
-        ax.axhline(y=0, color=FG_COLOR, linewidth=0.5, alpha=0.5)
-        ax.grid(axis="y", color=GRID_COLOR, alpha=0.5)
+        ax.axhline(y=0, color=fg, linewidth=0.5, alpha=0.5)
+        ax.grid(axis="y", color=grid, alpha=0.5)
         ax.set_axisbelow(True)
         fig.tight_layout()
         return fig

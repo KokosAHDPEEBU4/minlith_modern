@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
 
 
 class ParallelCoordinates(ChartPlugin):
@@ -26,6 +26,9 @@ class ParallelCoordinates(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         minerals = data.minerals_wt
         if not minerals:
             return create_figure(title="No mineral data")
@@ -49,11 +52,11 @@ class ParallelCoordinates(ChartPlugin):
         ax.set_xticks(range(n_minerals))
         ax.set_xticklabels(names, rotation=45, ha="right", fontsize=9)
         ax.set_ylabel("wt%")
-        ax.grid(axis="y", color=GRID_COLOR, alpha=0.3)
+        ax.grid(axis="y", color=grid, alpha=0.3)
         ax.set_axisbelow(True)
 
         if n_samples <= 20:
-            ax.legend(fontsize=7, loc="upper right", framealpha=0.3, labelcolor=FG_COLOR)
+            ax.legend(fontsize=7, loc="upper right", framealpha=0.3, labelcolor=fg)
 
         fig.tight_layout()
         return fig

@@ -8,7 +8,7 @@ import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import (
-    create_figure, COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT,
+    create_figure, COLORS, ACCENT, get_fg_color, get_grid_color,
 )
 
 
@@ -28,6 +28,9 @@ class BlandAltmanPlugin(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         fig = create_figure(figsize=(8, 6),
                             title=kwargs.get("title", "Bland-Altman Agreement Plot"))
         ax = fig.axes[0]
@@ -43,7 +46,7 @@ class BlandAltmanPlugin(ChartPlugin):
             # Return empty figure with grid instead of text placeholder
             ax.set_xlabel(f"Mean of {label_a} and {label_b}")
             ax.set_ylabel(f"Difference ({label_a} - {label_b})")
-            ax.grid(True, color=GRID_COLOR, alpha=0.3)
+            ax.grid(True, color=grid, alpha=0.3)
             fig.tight_layout()
             return fig
 
@@ -58,7 +61,7 @@ class BlandAltmanPlugin(ChartPlugin):
         loa_lower = mean_diff - 1.96 * std_diff
 
         ax.scatter(mean_val, diff, c=ACCENT, s=40, alpha=0.8,
-                   edgecolors=FG_COLOR, linewidth=0.5, zorder=5)
+                   edgecolors=fg, linewidth=0.5, zorder=5)
 
         ax.axhline(mean_diff, color=ACCENT, linewidth=1.5, linestyle="-",
                     label=f"Mean diff = {mean_diff:.3f}")
@@ -66,11 +69,11 @@ class BlandAltmanPlugin(ChartPlugin):
                     label=f"+1.96 SD = {loa_upper:.3f}")
         ax.axhline(loa_lower, color=COLORS[2], linewidth=1, linestyle="--",
                     label=f"-1.96 SD = {loa_lower:.3f}")
-        ax.axhline(0, color=FG_COLOR, linewidth=0.5, linestyle=":")
+        ax.axhline(0, color=fg, linewidth=0.5, linestyle=":")
 
         ax.set_xlabel(f"Mean of {label_a} and {label_b}")
         ax.set_ylabel(f"Difference ({label_a} - {label_b})")
-        ax.legend(loc="upper right", fontsize=9, framealpha=0.3, labelcolor=FG_COLOR)
-        ax.grid(True, color=GRID_COLOR, alpha=0.3)
+        ax.legend(loc="upper right", fontsize=9, framealpha=0.3, labelcolor=fg)
+        ax.grid(True, color=grid, alpha=0.3)
         fig.tight_layout()
         return fig

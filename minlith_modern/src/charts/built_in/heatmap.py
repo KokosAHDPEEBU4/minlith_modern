@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import BG_COLOR, FG_COLOR, GRID_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import create_figure, get_bg_color, get_fg_color
 
 
 class HeatmapChart(ChartPlugin):
@@ -26,6 +26,11 @@ class HeatmapChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color, get_chart_theme
+
+        bg = get_bg_color()
+        fg = get_fg_color()
+
         minerals = data.minerals_wt
         if not minerals:
             return create_figure(title="No mineral data")
@@ -34,7 +39,6 @@ class HeatmapChart(ChartPlugin):
         n_samples = len(data.sample_names)
         n_minerals = len(names)
 
-        # Build matrix
         matrix = np.zeros((n_samples, n_minerals))
         for j, mineral in enumerate(names):
             arr = minerals[mineral]
@@ -46,31 +50,38 @@ class HeatmapChart(ChartPlugin):
         )
         ax = fig.axes[0]
 
-        # Custom colormap
         import matplotlib.colors as mcolors
-        cmap = mcolors.LinearSegmentedColormap.from_list(
-            "minlith", ["#1e1e2e", "#313244", "#45475a", "#89b4fa", "#f38ba8"],
-        )
+        if get_chart_theme() == "light":
+            cmap = mcolors.LinearSegmentedColormap.from_list(
+                "minlith_light", ["#ffffff", "#e8f0fe", "#89b4fa", "#f38ba8"],
+            )
+            text_low = "#1e1e2e"
+            text_high = "#ffffff"
+        else:
+            cmap = mcolors.LinearSegmentedColormap.from_list(
+                "minlith_dark", ["#1e1e2e", "#313244", "#45475a", "#89b4fa", "#f38ba8"],
+            )
+            text_low = fg
+            text_high = bg
 
         im = ax.imshow(matrix, cmap=cmap, aspect="auto", interpolation="nearest")
 
         ax.set_xticks(range(n_minerals))
-        ax.set_xticklabels(names, rotation=45, ha="right", fontsize=9, color=FG_COLOR)
+        ax.set_xticklabels(names, rotation=45, ha="right", fontsize=9, color=fg)
         ax.set_yticks(range(n_samples))
-        ax.set_yticklabels(data.sample_names[:n_samples], fontsize=9, color=FG_COLOR)
+        ax.set_yticklabels(data.sample_names[:n_samples], fontsize=9, color=fg)
 
-        # Annotate cells
         for i in range(n_samples):
             for j in range(n_minerals):
                 val = matrix[i, j]
                 if val > 0.01:
-                    text_color = BG_COLOR if val > matrix.max() * 0.5 else FG_COLOR
+                    tc = text_high if val > matrix.max() * 0.5 else text_low
                     ax.text(j, i, f"{val:.1f}", ha="center", va="center",
-                            fontsize=7, color=text_color)
+                            fontsize=7, color=tc)
 
         cbar = fig.colorbar(im, ax=ax, fraction=0.02, pad=0.04)
-        cbar.ax.tick_params(colors=FG_COLOR)
-        cbar.set_label("wt%", color=FG_COLOR)
+        cbar.ax.tick_params(colors=fg)
+        cbar.set_label("wt%", color=fg)
 
         fig.tight_layout()
         return fig

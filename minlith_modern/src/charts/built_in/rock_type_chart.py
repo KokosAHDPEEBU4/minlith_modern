@@ -7,7 +7,7 @@ from typing import Any
 from collections import Counter
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_bg_color, get_fg_color, get_grid_color
 
 
 _TYPE_NAMES = {
@@ -35,6 +35,10 @@ class RockTypeChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        bg = get_bg_color()
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         rock_types = data.rock_types
         if not rock_types:
             return create_figure(title="No rock type data")
@@ -51,22 +55,22 @@ class RockTypeChart(ChartPlugin):
             colors = COLORS[:len(labels)]
             ax.bar(labels, values, color=colors, edgecolor="none", width=0.6)
             ax.set_ylabel("Count")
-            ax.grid(axis="y", color="#313244", alpha=0.3)
+            ax.grid(axis="y", color=grid, alpha=0.3)
             for i, v in enumerate(values):
-                ax.text(i, v + 0.1, str(v), ha="center", va="bottom", color=FG_COLOR, fontsize=10)
+                ax.text(i, v + 0.1, str(v), ha="center", va="bottom", color=fg, fontsize=10)
         else:
             fig = create_figure(figsize=(7, 7), title="Rock Type Distribution")
             ax = fig.add_subplot(111)
-            ax.set_facecolor(BG_COLOR)
+            ax.set_facecolor(bg)
             colors = COLORS[:len(labels)]
             wedges, texts, autotexts = ax.pie(
                 values, labels=labels, autopct="%1.0f%%",
                 colors=colors, startangle=90,
-                textprops={"color": FG_COLOR, "fontsize": 11},
+                textprops={"color": fg, "fontsize": 11},
             )
             for t in autotexts:
                 t.set_fontsize(10)
-                t.set_color(BG_COLOR)
+                t.set_color(bg)
                 t.set_fontweight("bold")
 
         fig.tight_layout()

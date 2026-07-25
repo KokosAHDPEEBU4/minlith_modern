@@ -8,7 +8,7 @@ import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import (
-    create_figure, COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT,
+    create_figure, COLORS, ACCENT, get_fg_color, get_grid_color,
 )
 
 
@@ -28,6 +28,9 @@ class AFMPlugin(ChartPlugin):
         return True
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        fg = get_fg_color()
+        grid = get_grid_color()
+
         fig = create_figure(figsize=(8, 7), title=kwargs.get("title", "AFM Diagram (Irvine & Baragar, 1971)"))
         ax = fig.axes[0]
 
@@ -49,7 +52,7 @@ class AFMPlugin(ChartPlugin):
             return fig
 
         ax.scatter(A, FM, c=ACCENT, s=50, alpha=0.8,
-                   edgecolors=FG_COLOR, linewidth=0.5, zorder=5)
+                   edgecolors=fg, linewidth=0.5, zorder=5)
 
         # Irvine & Baragar (1971) boundary line
         x_boundary = np.linspace(0, 90, 100)
@@ -58,15 +61,15 @@ class AFMPlugin(ChartPlugin):
                 label="Irvine & Baragar (1971)")
 
         ax.text(10, 70, "Tholeiitic", fontsize=11, fontweight="bold", alpha=0.4,
-                fontstyle="italic", color=FG_COLOR)
+                fontstyle="italic", color=fg)
         ax.text(40, 20, "Calc-Alkaline", fontsize=11, fontweight="bold", alpha=0.4,
-                fontstyle="italic", color=FG_COLOR)
+                fontstyle="italic", color=fg)
 
         ax.set_xlabel("A = Na₂O + K₂O")
         ax.set_ylabel("F + M = FeOᵀ + MgO")
-        ax.legend(loc="upper right", fontsize=9, framealpha=0.3, labelcolor=FG_COLOR)
+        ax.legend(loc="upper right", fontsize=9, framealpha=0.3, labelcolor=fg)
         ax.set_xlim(0, max(A) * 1.2 if A else 100)
         ax.set_ylim(0, 100)
-        ax.grid(True, color=GRID_COLOR, alpha=0.3)
+        ax.grid(True, color=grid, alpha=0.3)
         fig.tight_layout()
         return fig

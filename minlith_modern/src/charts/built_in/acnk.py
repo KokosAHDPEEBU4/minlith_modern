@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT, create_triangle
+from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_triangle, get_bg_color, get_fg_color
 
 
 def _to_cartesian(a: float, cn: float, k: float) -> tuple[float, float]:
@@ -51,17 +51,20 @@ class ACNKChart(ChartPlugin):
         return True
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        bg = get_bg_color()
+        fg = get_fg_color()
+
         fig = create_triangle(title=kwargs.get("title", "A-CN-K — Weathering Diagram"))
         ax = fig.add_subplot(111)
-        ax.set_facecolor(BG_COLOR)
+        ax.set_facecolor(bg)
 
         # Triangle edges
         for x1, y1, x2, y2 in [(0, 0, 1, 0), (0, 0, 0.5, 1), (1, 0, 0.5, 1)]:
-            ax.plot([x1, x2], [y1, y2], color=FG_COLOR, linewidth=0.8, alpha=0.4)
+            ax.plot([x1, x2], [y1, y2], color=fg, linewidth=0.8, alpha=0.4)
 
         # Field lines
         for (x1, y1), (x2, y2) in _FIELD_LINES:
-            ax.plot([x1, x2], [y1, y2], color=FG_COLOR, linewidth=0.3, alpha=0.25, linestyle="--")
+            ax.plot([x1, x2], [y1, y2], color=fg, linewidth=0.3, alpha=0.25, linestyle="--")
 
         # Plot samples
         al2o3 = data.oxides.get("al2o3", np.array([]))
@@ -79,14 +82,14 @@ class ACNKChart(ChartPlugin):
                 x, y = _to_cartesian(a, cn, k)
                 color = ACCENT if len(data.sample_names) == 1 else COLORS[i % len(COLORS)]
                 ax.plot(x, y, "o", color=color, markersize=8,
-                        markeredgecolor=FG_COLOR, markeredgewidth=0.5)
+                        markeredgecolor=fg, markeredgewidth=0.5)
                 ax.annotate(name, (x, y), textcoords="offset points",
-                            xytext=(5, 5), fontsize=8, color=FG_COLOR, alpha=0.8)
+                            xytext=(5, 5), fontsize=8, color=fg, alpha=0.8)
 
         # Vertex labels
-        ax.text(0.5, 1.05, "A (Al₂O₃)", ha="center", va="bottom", fontsize=11, color=FG_COLOR, fontweight="bold")
-        ax.text(-0.05, -0.05, "CN (CaO+Na₂O)", ha="center", va="top", fontsize=11, color=FG_COLOR, fontweight="bold")
-        ax.text(1.05, -0.05, "K (K₂O)", ha="center", va="top", fontsize=11, color=FG_COLOR, fontweight="bold")
+        ax.text(0.5, 1.05, "A (Al₂O₃)", ha="center", va="bottom", fontsize=11, color=fg, fontweight="bold")
+        ax.text(-0.05, -0.05, "CN (CaO+Na₂O)", ha="center", va="top", fontsize=11, color=fg, fontweight="bold")
+        ax.text(1.05, -0.05, "K (K₂O)", ha="center", va="top", fontsize=11, color=fg, fontweight="bold")
 
         ax.set_xlim(-0.1, 1.1)
         ax.set_ylim(-0.1, 1.1)

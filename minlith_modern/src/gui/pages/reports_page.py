@@ -27,7 +27,9 @@ from PyQt6.QtWidgets import (
     QSpinBox,
     QGroupBox,
     QAbstractItemView,
+    QTextBrowser,
 )
+from PyQt6.QtCore import Qt
 
 from src.core.models import CalculationResult
 from src.reports.template_builder import (
@@ -248,9 +250,10 @@ class ReportsPage(QWidget):
         right_layout.addWidget(add_group)
 
         # Preview
-        right_layout.addWidget(QLabel("Предпросмотр порядка:"))
-        self._preview = QListWidget()
-        self._preview.setStyleSheet("QListWidget { background: #f5f5f5; }")
+        right_layout.addWidget(QLabel("Предпросмотр отчёта:"))
+        self._preview = QTextBrowser()
+        self._preview.setOpenExternalLinks(False)
+        self._preview.setMinimumHeight(300)
         right_layout.addWidget(self._preview)
 
         splitter.addWidget(right)
@@ -434,11 +437,55 @@ class ReportsPage(QWidget):
     def _refresh(self) -> None:
         """Refresh block list and preview."""
         self._block_list.clear()
-        self._preview.clear()
         for i, block in enumerate(self._template.blocks):
             summary = _block_summary(block)
             self._block_list.addItem(f"{i+1}. {summary}")
-            self._preview.addItem(f"  {i+1}. {summary}")
+
+        # Generate HTML preview
+        html = self._generate_preview_html()
+        self._preview.setHtml(html)
+
+    def _generate_preview_html(self) -> str:
+        """Generate a preview HTML of the current template."""
+        from datetime import datetime
+
+        if not self._results:
+            return f"""
+            <html><body style="font-family: Segoe UI, Arial, sans-serif; padding: 20px; color: #666;">
+            <h2 style="color: #1e1e2e;">{self._template.name}</h2>
+            <p><em>Нет данных для предпросмотра. Выполните расчёт на вкладке «Расчёт».</em></p>
+            <hr>
+            <h3>Структура отчёта:</h3>
+            <ol>
+            {''.join(f'<li>{_block_summary(b)}</li>' for b in self._template.blocks)}
+            </ol>
+            </body></html>
+            """
+
+        from src.reports.html_generator import _block_html
+
+        block_htmls = []
+        for block in self._template.blocks:
+            block_htmls.append(_block_html(block, self._results))
+
+        return f"""
+        <html><head><style>
+        body {{ font-family: Segoe UI, Arial, sans-serif; margin: 10px; background: #fafafa; color: #333; }}
+        h1 {{ color: #1e1e2e; border-bottom: 2px solid #4a9eff; padding-bottom: 8px; font-size: 16px; }}
+        h2 {{ color: #45475a; margin-top: 16px; font-size: 14px; }}
+        table {{ border-collapse: collapse; width: 100%; margin: 8px 0; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); font-size: 12px; }}
+        th {{ background: #1e1e2e; color: white; padding: 6px 8px; text-align: left; }}
+        td {{ padding: 4px 8px; border-bottom: 1px solid #eee; }}
+        tr:nth-child(even) {{ background: #f8f9fa; }}
+        .negative {{ color: #e74c3c; }}
+        .param {{ font-weight: bold; color: #4a9eff; }}
+        .footer {{ margin-top: 20px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }}
+        </style></head><body>
+        <h1>MINLITH Report</h1>
+        {''.join(block_htmls)}
+        <div class="footer">Preview &mdash; {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>
+        </body></html>
+        """
 
     # ── Export ──
 
