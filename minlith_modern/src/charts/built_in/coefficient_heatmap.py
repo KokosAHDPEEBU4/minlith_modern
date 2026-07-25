@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import BG_COLOR, FG_COLOR
+from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color
 
 
 class CoefficientHeatmap(ChartPlugin):
@@ -27,6 +27,10 @@ class CoefficientHeatmap(ChartPlugin):
 
     def render(self, data: ChartData, **kwargs) -> Any:
         import matplotlib.pyplot as plt
+        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color
+
+        bg = get_bg_color()
+        fg = get_fg_color()
 
         k_values = data.metadata.get("k_values", None)
         if k_values is None:
@@ -42,15 +46,15 @@ class CoefficientHeatmap(ChartPlugin):
             for j in range(min(len(vals), n_samples)):
                 matrix[i, j] = vals[j]
 
-        fig, ax = plt.subplots(figsize=(max(8, n_samples * 0.8), 3), facecolor=BG_COLOR)
-        ax.set_facecolor(BG_COLOR)
+        fig, ax = plt.subplots(figsize=(max(8, n_samples * 0.8), 3), facecolor=bg)
+        ax.set_facecolor(bg)
 
         im = ax.imshow(matrix, cmap="YlOrRd", aspect="auto")
 
         ax.set_xticks(range(n_samples))
-        ax.set_xticklabels(data.sample_names, rotation=45, ha="right", fontsize=8, color=FG_COLOR)
+        ax.set_xticklabels(data.sample_names, rotation=45, ha="right", fontsize=8, color=fg)
         ax.set_yticks(range(n_coeffs))
-        ax.set_yticklabels(coeffs, fontsize=10, color=FG_COLOR)
+        ax.set_yticklabels(coeffs, fontsize=10, color=fg)
 
         for i in range(n_coeffs):
             for j in range(n_samples):
@@ -59,10 +63,10 @@ class CoefficientHeatmap(ChartPlugin):
                 ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=7, color=color)
 
         cbar = fig.colorbar(im, ax=ax, shrink=0.8)
-        cbar.ax.tick_params(colors=FG_COLOR)
-        cbar.set_label("Value", color=FG_COLOR)
+        cbar.ax.tick_params(colors=fg)
+        cbar.set_label("Value", color=fg)
 
-        ax.set_title("Adaptive Coefficients (k1-k4)", fontsize=12, fontweight="bold", color=FG_COLOR, pad=12)
+        ax.set_title("Adaptive Coefficients (k1-k4)", fontsize=12, fontweight="bold", color=fg, pad=12)
         fig.tight_layout()
         return fig
 

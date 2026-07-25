@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.3] — 2026-07-24
+
+### Fixed
+- Chart theme: all charts now use `get_bg_color()` / `get_fg_color()` getters (not static imports) — theme switch works immediately
+- correlation.py, harker.py, coefficient_heatmap.py, radar_chart.py: no longer hardcode dark colors
+- Plotly engine: `_get_layout_template()` reads current theme dynamically
+
+### Changed
+- ReportsPage redesigned: visual block constructor with preview, drag-drop reorder, double-click to edit
+- Template management: rename, delete, save/load custom templates (JSON)
+- Block summary shows type + title + extras (chart type, min wt%)
+
 ## [0.6.2] — 2026-07-24
 
 ### Added

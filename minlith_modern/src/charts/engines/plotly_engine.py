@@ -14,21 +14,31 @@ COLORS = [
     "#f9e2af", "#94e2d5", "#74c7ec", "#eba0ac", "#b4befe",
 ]
 
-LAYOUT_TEMPLATE = dict(
-    paper_bgcolor="#1e1e2e",
-    plot_bgcolor="#1e1e2e",
-    font=dict(color="#cdd6f4", size=12),
-    xaxis=dict(gridcolor="#313244", zerolinecolor="#313244"),
-    yaxis=dict(gridcolor="#313244", zerolinecolor="#313244"),
-    legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#cdd6f4")),
-    margin=dict(l=50, r=30, t=50, b=50),
-)
+
+def _get_layout_template() -> dict:
+    """Return layout template matching current matplotlib theme."""
+    from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color, get_grid_color
+
+    bg = get_bg_color()
+    fg = get_fg_color()
+    grid = get_grid_color()
+
+    return dict(
+        paper_bgcolor=bg,
+        plot_bgcolor=bg,
+        font=dict(color=fg, size=12),
+        xaxis=dict(gridcolor=grid, zerolinecolor=grid),
+        yaxis=dict(gridcolor=grid, zerolinecolor=grid),
+        legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color=fg)),
+        margin=dict(l=50, r=30, t=50, b=50),
+    )
 
 
 def save_html(fig: go.Figure, path: str | Path, title: str = "") -> None:
     """Save Plotly figure as standalone HTML."""
     path = Path(path)
-    fig.update_layout(**LAYOUT_TEMPLATE)
+    fig.update_layout(**_get_layout_template())
     if title:
-        fig.update_layout(title=dict(text=title, font=dict(size=16, color="#cdd6f4")))
+        from src.charts.engines.matplotlib_engine import get_fg_color
+        fig.update_layout(title=dict(text=title, font=dict(size=16, color=get_fg_color())))
     fig.write_html(str(path), include_plotlyjs="cdn")

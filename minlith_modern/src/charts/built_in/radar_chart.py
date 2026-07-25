@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT, create_figure
+from src.charts.engines.matplotlib_engine import COLORS, get_bg_color, get_fg_color, get_grid_color, get_accent, create_figure
 
 
 class RadarChart(ChartPlugin):
@@ -26,6 +26,13 @@ class RadarChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color, get_grid_color, get_accent
+
+        bg = get_bg_color()
+        fg = get_fg_color()
+        grid = get_grid_color()
+        accent = get_accent()
+
         minerals = data.minerals_wt
         if not minerals:
             return create_figure(title="No mineral data")
@@ -50,19 +57,19 @@ class RadarChart(ChartPlugin):
 
         fig = create_figure(figsize=(8, 8), title=f"{sample_name} — Mineral Profile")
         ax = fig.add_subplot(111, polar=True)
-        ax.set_facecolor(BG_COLOR)
+        ax.set_facecolor(bg)
 
-        ax.plot(angles, values_plot, color=ACCENT, linewidth=2, linestyle="-")
-        ax.fill(angles, values_plot, color=ACCENT, alpha=0.25)
+        ax.plot(angles, values_plot, color=accent, linewidth=2, linestyle="-")
+        ax.fill(angles, values_plot, color=accent, alpha=0.25)
 
         ax.set_xticks(np.linspace(0, 2 * np.pi, n, endpoint=False))
-        ax.set_xticklabels(names, fontsize=9, color=FG_COLOR)
+        ax.set_xticklabels(names, fontsize=9, color=fg)
         ax.set_yticks([0.25 * max_val, 0.5 * max_val, 0.75 * max_val, max_val])
         ax.set_yticklabels([f"{v:.1f}" for v in [0.25 * max_val, 0.5 * max_val, 0.75 * max_val, max_val]],
-                           fontsize=7, color=FG_COLOR)
+                           fontsize=7, color=fg)
         ax.set_ylim(0, max_val * 1.1)
-        ax.tick_params(colors=FG_COLOR)
-        ax.grid(color=GRID_COLOR, alpha=0.5)
+        ax.tick_params(colors=fg)
+        ax.grid(color=grid, alpha=0.5)
 
         fig.tight_layout()
         return fig

@@ -4,7 +4,7 @@ build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
 name = "minlith-modern"
-version = "0.6.2"
+version = "0.6.3"
 description = "Normative mineralogical calculation from rock chemical composition"
 readme = "README.md"
 license = {text = "MIT"}

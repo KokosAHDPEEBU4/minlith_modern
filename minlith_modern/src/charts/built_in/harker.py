@@ -9,7 +9,7 @@ import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import (
-    create_figure, COLORS, BG_COLOR, FG_COLOR, GRID_COLOR, ACCENT,
+    create_figure, COLORS, get_bg_color, get_fg_color, get_grid_color, get_accent,
 )
 
 OXIDES_TO_PLOT = [
@@ -42,12 +42,19 @@ class HarkerPlugin(ChartPlugin):
         return True
 
     def render(self, data: ChartData, **kwargs) -> Any:
+        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color, get_grid_color, get_accent
+
+        bg = get_bg_color()
+        fg = get_fg_color()
+        grid = get_grid_color()
+        accent = get_accent()
+
         n_plots = len(OXIDES_TO_PLOT)
         cols = 3
         rows = (n_plots + cols - 1) // cols
 
         fig, axes = plt.subplots(rows, cols, figsize=(14, rows * 3.5),
-                                 facecolor=BG_COLOR)
+                                 facecolor=bg)
         if rows == 1:
             axes = np.array([axes])
         axes = axes.flatten()
@@ -58,13 +65,13 @@ class HarkerPlugin(ChartPlugin):
         for i, (field, label) in enumerate(OXIDES_TO_PLOT):
             ax = axes[i]
             y = data.oxides.get(field, np.zeros(len(sio2)))
-            ax.set_facecolor(BG_COLOR)
-            ax.tick_params(colors=FG_COLOR, labelsize=8)
-            ax.xaxis.label.set_color(FG_COLOR)
-            ax.yaxis.label.set_color(FG_COLOR)
+            ax.set_facecolor(bg)
+            ax.tick_params(colors=fg, labelsize=8)
+            ax.xaxis.label.set_color(fg)
+            ax.yaxis.label.set_color(fg)
 
-            ax.scatter(sio2, y, c=ACCENT, s=40, alpha=0.8,
-                       edgecolors=FG_COLOR, linewidth=0.5, zorder=5)
+            ax.scatter(sio2, y, c=accent, s=40, alpha=0.8,
+                       edgecolors=fg, linewidth=0.5, zorder=5)
 
             # Trend line
             if len(sio2) >= 2:
@@ -75,13 +82,13 @@ class HarkerPlugin(ChartPlugin):
 
             ax.set_xlabel("SiO₂ (wt%)", fontsize=9)
             ax.set_ylabel(label, fontsize=9)
-            ax.set_title(label, fontsize=10, fontweight="bold", color=FG_COLOR)
-            ax.grid(True, color=GRID_COLOR, alpha=0.3)
+            ax.set_title(label, fontsize=10, fontweight="bold", color=fg)
+            ax.grid(True, color=grid, alpha=0.3)
 
         for j in range(i + 1, len(axes)):
             axes[j].set_visible(False)
 
         fig.suptitle("Harker Variation Diagrams", fontsize=14,
-                      fontweight="bold", color=FG_COLOR, y=1.01)
+                      fontweight="bold", color=fg, y=1.01)
         fig.tight_layout()
         return fig

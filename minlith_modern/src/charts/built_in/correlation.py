@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import BG_COLOR, FG_COLOR
+from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color
 
 CORR_FIELDS = [
     ("sio2", "SiO₂"), ("al2o3", "Al₂O₃"), ("fe2o3", "Fe₂O₃"), ("feo", "FeO"),
@@ -33,6 +33,10 @@ class CorrelationPlugin(ChartPlugin):
 
     def render(self, data: ChartData, **kwargs) -> Any:
         import matplotlib.pyplot as plt
+        from src.charts.engines.matplotlib_engine import get_bg_color, get_fg_color
+
+        bg = get_bg_color()
+        fg = get_fg_color()
 
         fields = [f[0] for f in CORR_FIELDS]
         labels = [f[1] for f in CORR_FIELDS]
@@ -41,11 +45,10 @@ class CorrelationPlugin(ChartPlugin):
 
         matrix = np.full((n, n), np.nan)
         if n_samples < 2:
-            # Not enough samples for correlation
-            fig, ax = plt.subplots(figsize=(9, 8), facecolor=BG_COLOR)
-            ax.set_facecolor(BG_COLOR)
+            fig, ax = plt.subplots(figsize=(9, 8), facecolor=bg)
+            ax.set_facecolor(bg)
             ax.text(0.5, 0.5, f"Need ≥2 samples for correlation (have {n_samples})",
-                    ha="center", va="center", fontsize=12, transform=ax.transAxes, color=FG_COLOR)
+                    ha="center", va="center", fontsize=12, transform=ax.transAxes, color=fg)
             return fig
 
         for i, fi in enumerate(fields):
@@ -58,29 +61,29 @@ class CorrelationPlugin(ChartPlugin):
                     continue
                 matrix[i, j] = np.corrcoef(xi, xj)[0, 1]
 
-        fig, ax = plt.subplots(figsize=(9, 8), facecolor=BG_COLOR)
-        ax.set_facecolor(BG_COLOR)
+        fig, ax = plt.subplots(figsize=(9, 8), facecolor=bg)
+        ax.set_facecolor(bg)
         im = ax.imshow(matrix, cmap="RdBu_r", vmin=-1, vmax=1, aspect="auto")
 
         ax.set_xticks(range(n))
         ax.set_yticks(range(n))
-        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=9, color=FG_COLOR)
-        ax.set_yticklabels(labels, fontsize=9, color=FG_COLOR)
+        ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=9, color=fg)
+        ax.set_yticklabels(labels, fontsize=9, color=fg)
 
         for i in range(n):
             for j in range(n):
                 val = matrix[i, j]
                 if np.isnan(val):
-                    ax.text(j, i, "—", ha="center", va="center", fontsize=8, color=FG_COLOR)
+                    ax.text(j, i, "—", ha="center", va="center", fontsize=8, color=fg)
                 else:
                     color = "white" if abs(val) > 0.6 else "black"
                     ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=8, color=color)
 
         cbar = fig.colorbar(im, ax=ax, shrink=0.8)
-        cbar.ax.yaxis.label.set_color(FG_COLOR)
-        cbar.ax.tick_params(colors=FG_COLOR)
-        cbar.set_label("Pearson r", color=FG_COLOR)
+        cbar.ax.yaxis.label.set_color(fg)
+        cbar.ax.tick_params(colors=fg)
+        cbar.set_label("Pearson r", color=fg)
 
-        ax.set_title("Correlation Matrix", fontsize=12, fontweight="bold", color=FG_COLOR, pad=12)
+        ax.set_title("Correlation Matrix", fontsize=12, fontweight="bold", color=fg, pad=12)
         fig.tight_layout()
         return fig

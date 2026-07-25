@@ -70,6 +70,26 @@ def get_chart_theme() -> str:
     return "light" if BG_COLOR == LIGHT_BG else "dark"
 
 
+def get_bg_color() -> str:
+    """Return current background color (always fresh)."""
+    return BG_COLOR
+
+
+def get_fg_color() -> str:
+    """Return current foreground/text color (always fresh)."""
+    return FG_COLOR
+
+
+def get_grid_color() -> str:
+    """Return current grid color (always fresh)."""
+    return GRID_COLOR
+
+
+def get_accent() -> str:
+    """Return current accent color (always fresh)."""
+    return ACCENT
+
+
 def create_figure(
     figsize: tuple[int, int] = (8, 6),
     title: str = "",

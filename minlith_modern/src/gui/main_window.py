@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern v0.6.2 — Нормативный минералогический расчёт")
+        self.setWindowTitle("MINLITH Modern v0.6.3 — Нормативный минералогический расчёт")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
