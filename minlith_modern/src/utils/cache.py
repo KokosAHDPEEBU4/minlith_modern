@@ -82,6 +82,9 @@ class ResultCache:
 
         # Serialize results
         from src.core.models import CalculationResult
+        # Fields derived from other minerals (always 0, excluded from cache)
+        _DERIVED = frozenset({"pl", "fsp", "pel", "pel_fsp", "carsd", "ill_kn", "chl_mm_srp"})
+
         data = []
         for r in results:
             if isinstance(r, CalculationResult):
@@ -91,7 +94,7 @@ class ResultCache:
                     "F": r.coefficients.F,
                     "A": r.coefficients.A,
                     "minerals": {k: v for k, v in r.minerals_weight.__dict__.items()
-                                 if not k.startswith("_")},
+                                 if not k.startswith("_") and k not in _DERIVED},
                     "defect": r.defect,
                 })
             elif isinstance(r, dict):

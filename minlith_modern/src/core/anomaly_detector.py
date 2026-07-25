@@ -124,11 +124,23 @@ def _check_negative_mineral(result: CalculationResult) -> tuple[bool, list[str]]
 
 
 class AnomalyDetector:
-    """Analyze calculation results for anomalies and provide hypotheses."""
+    """Analyze calculation results for anomalies and provide hypotheses.
+
+    Singleton: use AnomalyDetector.instance() to get the shared instance.
+    """
+
+    _instance: Optional["AnomalyDetector"] = None
 
     def __init__(self, rules_path: Optional[str] = None) -> None:
         self._rules = list(_RULES)
         logger.debug("AnomalyDetector initialized with %d rules", len(self._rules))
+
+    @classmethod
+    def instance(cls) -> "AnomalyDetector":
+        """Get the shared singleton instance."""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
 
     def analyze(self, result: CalculationResult) -> list[AnomalyHypothesis]:
         """Analyze a single result for anomalies."""

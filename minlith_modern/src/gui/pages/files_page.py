@@ -30,6 +30,7 @@ class FilesPage(QWidget):
     """Страница импорта и управления файлами."""
 
     samples_loaded = pyqtSignal(list)
+    calculate_requested = pyqtSignal(list)
 
     def __init__(self, config=None, parent=None) -> None:
         super().__init__(parent)
@@ -61,6 +62,13 @@ class FilesPage(QWidget):
         btn_row.addWidget(self._btn_import_csv)
 
         btn_row.addStretch()
+
+        self._btn_calculate = QPushButton("  Рассчитать все  ")
+        self._btn_calculate.setStyleSheet("font-weight: bold; padding: 6px 16px;")
+        self._btn_calculate.setToolTip("Рассчитать все загруженные образцы")
+        self._btn_calculate.clicked.connect(self._on_calculate_all)
+        self._btn_calculate.setEnabled(False)
+        btn_row.addWidget(self._btn_calculate)
 
         self._btn_template = QPushButton("Шаблон (эталон)")
         self._btn_template.setToolTip("Скачать шаблон с эталоном T-O2")
@@ -175,6 +183,7 @@ class FilesPage(QWidget):
                 self._file_list.addItem(f"{s.name}  ({Path(path).name})")
             if self._config:
                 self._config.add_recent_file(path)
+            self._btn_calculate.setEnabled(bool(self._loaded_samples))
             self.samples_loaded.emit(samples)
             logger.info("Загружено %d образцов из %s", len(samples), Path(path).name)
         except Exception as e:
@@ -214,9 +223,14 @@ class FilesPage(QWidget):
             sample = self._loaded_samples[row]
             self.samples_loaded.emit([sample])
 
+    def _on_calculate_all(self) -> None:
+        if self._loaded_samples:
+            self.calculate_requested.emit(list(self._loaded_samples))
+
     def _clear_list(self) -> None:
         self._loaded_samples.clear()
         self._file_list.clear()
+        self._btn_calculate.setEnabled(False)
 
     def get_all_samples(self) -> list:
         return list(self._loaded_samples)

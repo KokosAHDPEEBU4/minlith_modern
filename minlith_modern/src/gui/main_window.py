@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern v0.5.0 — Нормативный минералогический расчёт")
+        self.setWindowTitle("MINLITH Modern v0.6.1 — Нормативный минералогический расчёт")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
@@ -110,6 +110,7 @@ class MainWindow(QMainWindow):
 
         self._files_page = FilesPage(self._config)
         self._files_page.samples_loaded.connect(self._on_samples_loaded)
+        self._files_page.calculate_requested.connect(self._on_calculate_from_files)
 
         self._input_page = InputPage(self._calculator)
         self._input_page.calculation_done.connect(self._on_calculation_done)
@@ -198,6 +199,9 @@ class MainWindow(QMainWindow):
             s = samples[0]
             self._input_page.set_composition(s.composition, s.name)
             self.statusBar().showMessage(f"Загружен: {s.name}")
+
+    def _on_calculate_from_files(self, samples: list) -> None:
+        self.calculate_batch(samples)
 
     def _on_calculation_done(self, result) -> None:
         self._results_page.add_result(result)

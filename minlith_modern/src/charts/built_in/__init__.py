@@ -15,6 +15,14 @@ from src.charts.built_in.sio2_k2o import SiO2K2OPlugin
 from src.charts.built_in.bland_altman import BlandAltmanPlugin
 from src.charts.built_in.correlation import CorrelationPlugin
 from src.charts.built_in.kf_chart import KFChart
+from src.charts.built_in.box_plot import BoxPlotChart
+from src.charts.built_in.radar_chart import RadarChart
+from src.charts.built_in.coefficient_heatmap import CoefficientHeatmap
+from src.charts.built_in.defect_accumulation import DefectAccumulation
+from src.charts.built_in.pca_biplot import PCABiplot
+from src.charts.built_in.dendrogram import DendrogramChart
+from src.charts.built_in.parallel_coordinates import ParallelCoordinates
+from src.charts.built_in.mineral_mg_fe_al import MineralMgFeAl
 
 BUILTIN_CHARTS: list = [
     BarChart(),
@@ -32,4 +40,12 @@ BUILTIN_CHARTS: list = [
     BlandAltmanPlugin(),
     CorrelationPlugin(),
     KFChart(),
+    BoxPlotChart(),
+    RadarChart(),
+    CoefficientHeatmap(),
+    DefectAccumulation(),
+    PCABiplot(),
+    DendrogramChart(),
+    ParallelCoordinates(),
+    MineralMgFeAl(),
 ]

@@ -93,8 +93,8 @@ def all_results(calculator) -> dict[str, object]:
     for key, sample in SAMPLES.items():
         try:
             results[key] = calculator.calculate_single(sample)
-        except Exception:
-            pass
+        except Exception as exc:
+            pytest.fail(f"Fixture calculation failed for '{key}': {exc}")
     return results
 
 

@@ -37,16 +37,26 @@ class CorrelationPlugin(ChartPlugin):
         fields = [f[0] for f in CORR_FIELDS]
         labels = [f[1] for f in CORR_FIELDS]
         n = len(fields)
+        n_samples = len(data.sample_names)
 
-        matrix = np.zeros((n, n))
+        matrix = np.full((n, n), np.nan)
+        if n_samples < 2:
+            # Not enough samples for correlation
+            fig, ax = plt.subplots(figsize=(9, 8), facecolor=BG_COLOR)
+            ax.set_facecolor(BG_COLOR)
+            ax.text(0.5, 0.5, f"Need ≥2 samples for correlation (have {n_samples})",
+                    ha="center", va="center", fontsize=12, transform=ax.transAxes, color=FG_COLOR)
+            return fig
+
         for i, fi in enumerate(fields):
             for j, fj in enumerate(fields):
                 xi = data.oxides.get(fi, np.array([]))
                 xj = data.oxides.get(fj, np.array([]))
-                if len(xi) == 0 or np.std(xi) == 0 or np.std(xj) == 0:
-                    matrix[i, j] = 0.0
-                else:
-                    matrix[i, j] = np.corrcoef(xi, xj)[0, 1]
+                if len(xi) < 2 or len(xj) < 2:
+                    continue
+                if np.std(xi) == 0 or np.std(xj) == 0:
+                    continue
+                matrix[i, j] = np.corrcoef(xi, xj)[0, 1]
 
         fig, ax = plt.subplots(figsize=(9, 8), facecolor=BG_COLOR)
         ax.set_facecolor(BG_COLOR)
@@ -60,8 +70,11 @@ class CorrelationPlugin(ChartPlugin):
         for i in range(n):
             for j in range(n):
                 val = matrix[i, j]
-                color = "white" if abs(val) > 0.6 else "black"
-                ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=8, color=color)
+                if np.isnan(val):
+                    ax.text(j, i, "—", ha="center", va="center", fontsize=8, color=FG_COLOR)
+                else:
+                    color = "white" if abs(val) > 0.6 else "black"
+                    ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=8, color=color)
 
         cbar = fig.colorbar(im, ax=ax, shrink=0.8)
         cbar.ax.yaxis.label.set_color(FG_COLOR)

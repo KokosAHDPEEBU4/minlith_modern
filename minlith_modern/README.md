@@ -1,4 +1,4 @@
-# MINLITH Modern v0.5.0
+# MINLITH Modern v0.6.1
 
 Нормативный минералогический расчёт из химического состава горных пород.
 
@@ -12,8 +12,8 @@ MINLITH Modern — это перезапись легендарной Excel-пр
 - Auto-calibration — автоматическое восстановление параметров алгоритма из Excel через scipy
 - PyQt6 GUI с drag-and-drop, предпросмотром, прогресс-барами
 - SQLite база данных с версионированием
-- 15 типов диаграмм (bar, pie, QAPF, A-CN-K, A-F-M, TAS, defect, heatmap, feldspar, harker, afm, sio2_k2o, bland_altman, correlation, k1-k4)
-- 4 интерактивные диаграммы (Plotly HTML): bar, tas, harker, pie
+- 23 типов диаграмм (matplotlib): bar, pie, defect, QAPF, TAS, A-CN-K, heatmap, rock type, feldspar triangle, harker, AFM, SiO₂-K₂O, Bland-Altman, correlation, k1-k4, box plot, radar, coefficient heatmap, defect accumulation, PCA biplot, dendrogram, parallel coordinates, Mg-Fe-Al ternary
+- 14 интерактивных диаграмм (Plotly HTML): bar, TAS, harker, pie, QAPF, A-CN-K, AFM, heatmap, correlation, k1-k4, boxplot, violin, parallel, rock type
 - Генератор отчётов (PDF, Word, HTML) с встроенными диаграммами
 - 5 шаблонов отчётов: brief, standard, full, core, geochemical
 - Параллельный расчёт через ProcessPoolExecutor
@@ -109,6 +109,7 @@ python calibrate.py --input MINLITH1.xlsx --output calibration_config.json --max
 | `--timeout N` | Таймаут расчёта на образец (сек, по умолчанию 120) |
 | `--config FILE` | Путь к JSON конфигурации |
 | `--no-cache` | Не использовать кэш |
+| `--force` | Принудительный пересчёт (игнорировать кэш) |
 | `--format`, `-f` | Формат вывода (xlsx, csv, json, pdf, docx, html) |
 | `--template`, `-t` | Шаблон отчёта (brief, standard, full, core, geochemical) |
 | `--dpi N` | Разрешение диаграммы |
@@ -145,7 +146,7 @@ pyinstaller minlith.spec
 ## Тесты
 
 ```bash
-# Все тесты (268)
+# Все тесты (293)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -186,10 +187,15 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 268 тестов
+├── tests/              # 293 тестов
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша
+│   ├── test_types_logic.py    # 20 тестов типов 1-5
+│   ├── test_coefficients.py   # 11 тестов коэффициентов
+│   ├── test_excel.py          # 5 тестов Excel export
+│   ├── test_repository.py     # 6 тестов CRUD
+│   ├── test_cli.py            # 2 теста CLI
 │   └── ...
 ├── calibrate.py        # CLI для калибровки
 ├── calibration_config.json

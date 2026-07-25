@@ -378,7 +378,7 @@ class Calculator:
         )
 
         # Detect anomalies
-        detector = AnomalyDetector()
+        detector = AnomalyDetector.instance()
         anomalies = detector.analyze(_pre_result)
 
         return CalculationResult(
@@ -506,7 +506,7 @@ class Calculator:
     def calculate(
         self, samples: list[Sample], debug: bool = False
     ) -> list[CalculationResult]:
-        """Calculate mineral composition for multiple samples."""
+        """Calculate mineral composition for multiple samples (sequential)."""
         results = []
         for sample in samples:
             try:
@@ -516,3 +516,71 @@ class Calculator:
                 logger.error("Calculation failed for %s: %s", sample.name, e)
                 raise
         return results
+
+    def calculate_batch(
+        self, samples: list[Sample], max_workers: int | str = "auto",
+        debug: bool = False,
+    ) -> list[CalculationResult]:
+        """Calculate mineral composition for multiple samples in parallel.
+
+        Uses ProcessPoolExecutor for CPU-bound work.
+
+        Args:
+            samples: List of samples to calculate.
+            max_workers: Number of workers. "auto" = min(4, cpu_count).
+            debug: Enable debug tracing.
+
+        Returns:
+            List of CalculationResult in the same order as input samples.
+        """
+        import os
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        if max_workers == "auto":
+            max_workers = min(4, os.cpu_count() or 1)
+        max_workers = max(1, int(max_workers))
+
+        if len(samples) <= 1 or max_workers == 1:
+            return self.calculate(samples, debug=debug)
+
+        logger.info("Batch calculation: %d samples, %d workers", len(samples), max_workers)
+
+        # Serialize config for pickling
+        config_dict = {
+            "molar_mass_source": self.config.molar_mass_source,
+            "custom_molar_masses": self.config.custom_molar_masses,
+            "sum_tolerance": self.config.sum_tolerance,
+            "warn_negative": self.config.warn_negative,
+            "auto_correct_sum": self.config.auto_correct_sum,
+            "decimal_places": self.config.decimal_places,
+            "timeout_seconds": self.config.timeout_seconds,
+            "algorithm_mode": self.config.algorithm_mode,
+        }
+
+        results: list[CalculationResult | None] = [None] * len(samples)
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            future_to_idx = {}
+            for i, sample in enumerate(samples):
+                future = executor.submit(
+                    _calculate_single_worker, sample, config_dict, debug,
+                )
+                future_to_idx[future] = i
+
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                try:
+                    results[idx] = future.result()
+                except Exception as e:
+                    logger.error("Batch calculation failed for sample %d: %s", idx, e)
+                    raise
+
+        return [r for r in results if r is not None]
+
+
+def _calculate_single_worker(
+    sample: Sample, config_dict: dict, debug: bool,
+) -> CalculationResult:
+    """Standalone function for ProcessPoolExecutor (must be picklable)."""
+    config = CalculationConfig(**config_dict)
+    calc = Calculator(config=config)
+    return calc.calculate_single(sample, debug=debug)

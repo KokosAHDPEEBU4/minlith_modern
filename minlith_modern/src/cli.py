@@ -53,17 +53,20 @@ def cmd_calculate(args: argparse.Namespace) -> int:
     calc = Calculator(config=config)
     cache = ResultCache()
     all_results = []
+    total_files = len(args.input)
 
-    for input_path in args.input:
+    for file_idx, input_path in enumerate(args.input, start=1):
         p = Path(input_path)
         if not p.exists():
-            print(f"ОШИБКА: Файл не найден: {p}", file=sys.stderr)
+            print(f"[{file_idx}/{total_files}] ОШИБКА: Файл не найден: {p}", file=sys.stderr)
             continue
+
+        print(f"[{file_idx}/{total_files}] {p.name}")
 
         # Check cache first
         cached = cache.get(p)
-        if cached and not args.no_cache:
-            print(f"Из кэша: {p.name} ({len(cached)} образцов)")
+        if cached and not args.no_cache and not getattr(args, "force", False):
+            print(f"  Из кэша: {len(cached)} образцов")
             # Deserialize cached dicts to CalculationResult objects
             from src.core.models import (
                 CalculationResult, OxideComposition, MineralComposition,
@@ -96,16 +99,17 @@ def cmd_calculate(args: argparse.Namespace) -> int:
             samples = load_samples(p)
 
         if not samples:
-            print(f"ВНИМАНИЕ: Образцы не найдены в {p.name}", file=sys.stderr)
+            print(f"  ВНИМАНИЕ: Образцы не найдены в {p.name}", file=sys.stderr)
             continue
 
-        print(f"Загружено {len(samples)} образцов из {p.name}")
+        print(f"  Загружено {len(samples)} образцов")
 
-        for sample in samples:
+        n = len(samples)
+        for i, sample in enumerate(samples, start=1):
             try:
                 result = calc.calculate_single(sample, debug=args.verbose)
                 all_results.append(result)
-                print(f"  {sample.name:30s} -> {result.rock_type.name:8s} "
+                print(f"  [{i}/{n}] {sample.name:30s} -> {result.rock_type.name:8s} "
                       f"(F={result.coefficients.F:.3f}, Ab={result.minerals_weight.ab:.1f}%)")
 
                 # Save to DB
@@ -440,7 +444,7 @@ def main_cli() -> int:
         prog="minlith",
         description="MINLITH Modern — Нормативный минералогический расчёт",
     )
-    parser.add_argument("--version", action="version", version="MINLITH Modern 0.5.0")
+    parser.add_argument("--version", action="version", version="MINLITH Modern 0.6.1")
     parser.add_argument("--verbose", "-V", action="store_true",
                         help="Подробный вывод (debug trace)")
     parser.add_argument("--timeout", type=int, default=120,
@@ -461,6 +465,8 @@ def main_cli() -> int:
                         default="standard", help="Шаблон отчёта (для pdf/docx/html)")
     p_calc.add_argument("--no-cache", action="store_true",
                         help="Не использовать кэш результатов")
+    p_calc.add_argument("--force", action="store_true",
+                        help="Принудительный пересчёт (игнорировать кэш)")
     p_calc.set_defaults(func=cmd_calculate)
 
     # info

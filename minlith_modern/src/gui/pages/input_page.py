@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 from src.core.calculator import Calculator
 from src.core.models import CalculationResult, OxideComposition, Sample
 from src.gui.widgets.oxide_table import OxideTable
+from src.utils.history import ChangeHistory
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ class InputPage(QWidget):
         super().__init__(parent)
         self._calculator = calculator
         self._last_result: Optional[CalculationResult] = None
+        self._history = ChangeHistory()
 
         layout = QVBoxLayout(self)
 
@@ -56,13 +58,27 @@ class InputPage(QWidget):
         self._sum_label.setToolTip("Сумма оксидов должна быть в диапазоне 98-102%")
         layout.addWidget(self._sum_label)
 
-        self._oxide_table.value_changed.connect(self._update_sum)
+        self._oxide_table.value_changed.connect(self._on_value_changed)
 
         btn_row = QHBoxLayout()
+
+        self._btn_undo = QPushButton("Отменить (Ctrl+Z)")
+        self._btn_undo.clicked.connect(self._on_undo)
+        self._btn_undo.setEnabled(False)
+        self._btn_undo.setToolTip("Отменить последнее изменение")
+        btn_row.addWidget(self._btn_undo)
+
+        self._btn_redo = QPushButton("Повторить (Ctrl+Y)")
+        self._btn_redo.clicked.connect(self._on_redo)
+        self._btn_redo.setEnabled(False)
+        self._btn_redo.setToolTip("Повторить отменённое изменение")
+        btn_row.addWidget(self._btn_redo)
+
+        btn_row.addStretch()
+
         self._btn_calculate = QPushButton("  Рассчитать (F5)  ")
         self._btn_calculate.clicked.connect(self._on_calculate)
         self._btn_calculate.setToolTip("Рассчитать минеральный состав (Ctrl+Enter)")
-        btn_row.addStretch()
         btn_row.addWidget(self._btn_calculate)
 
         self._btn_export = QPushButton("Экспорт .xlsx")
@@ -72,6 +88,33 @@ class InputPage(QWidget):
         layout.addLayout(btn_row)
 
         self._update_sum()
+
+    def _on_value_changed(self) -> None:
+        """Record state before change and update undo/redo buttons."""
+        comp = self._oxide_table.get_composition()
+        self._history.push(comp)
+        self._update_undo_redo()
+        self._update_sum()
+
+    def _on_undo(self) -> None:
+        current = self._oxide_table.get_composition()
+        restored = self._history.undo(current)
+        if restored is not None:
+            self._oxide_table.set_composition(restored)
+            self._update_sum()
+            self._update_undo_redo()
+
+    def _on_redo(self) -> None:
+        current = self._oxide_table.get_composition()
+        restored = self._history.redo(current)
+        if restored is not None:
+            self._oxide_table.set_composition(restored)
+            self._update_sum()
+            self._update_undo_redo()
+
+    def _update_undo_redo(self) -> None:
+        self._btn_undo.setEnabled(self._history.can_undo)
+        self._btn_redo.setEnabled(self._history.can_redo)
 
     def _update_sum(self) -> None:
         total = self._oxide_table.get_sum()
@@ -117,9 +160,13 @@ class InputPage(QWidget):
                 QMessageBox.critical(self, "Ошибка экспорта", str(e))
 
     def set_composition(self, comp: OxideComposition, name: str = "") -> None:
+        self._history.suppress(True)
         self._oxide_table.set_composition(comp)
         if name:
             self._name_edit.setText(name)
+        self._history.clear()
+        self._history.suppress(False)
+        self._update_undo_redo()
         self._update_sum()
 
     def get_composition(self) -> OxideComposition:

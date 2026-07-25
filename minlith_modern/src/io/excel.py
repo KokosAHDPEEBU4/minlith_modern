@@ -44,6 +44,16 @@ _LABEL_TO_FIELD: dict[str, str] = {
     "S": "s", "CO2": "co2", "SO": "so",
 }
 
+# Mapping from MINERAL_CODES to MineralComposition field names
+MINERAL_FIELD_MAP: dict[str, str] = {
+    "Ab": "ab", "An": "an", "Or": "or_", "Q": "q", "Mm": "mm",
+    "Ill": "ill", "Chl": "chl", "Gb": "gb", "Kn": "kn",
+    "Ap": "ap", "Cc": "cc", "Dl": "dl", "Ank": "ank",
+    "Rch": "rch", "Sd": "sd", "Srp": "srp", "Mst": "mst",
+    "Ht": "ht", "Prl": "prl", "Pr": "pr", "Rt": "rt",
+    "Hl": "hl", "Gy": "gy", "Fl": "fl",
+}
+
 
 def _safe_float(val: object) -> float:
     """Convert value to float, returning 0.0 for None/non-numeric."""
@@ -193,12 +203,21 @@ def _load_transposed(ws) -> list[Sample]:
             continue
 
         fields: dict[str, float] = {}
+        missing_labels = []
         for label, field in _LABEL_TO_FIELD.items():
             row = label_rows.get(label)
             if row:
                 fields[field] = _safe_float(ws.cell(row, c).value)
             else:
                 fields[field] = 0.0
+                if field in ("sio2", "al2o3", "feo", "mgo", "cao", "na2o", "k2o"):
+                    missing_labels.append(label)
+
+        if missing_labels:
+            logger.warning(
+                "Sample '%s': missing required oxide labels: %s (set to 0.0)",
+                name, ", ".join(missing_labels),
+            )
 
         sample_name = str(name) if name else f"Sample_{c}"
         samples.append(Sample(name=sample_name, composition=OxideComposition(**fields)))
@@ -247,17 +266,7 @@ def save_results(
         ws.cell(i, 4, result.coefficients.A)
         col = 5
         for code in MINERAL_CODES:
-            field = code.lower().replace("or", "or_").replace("ill", "ill")
-            # Map mineral code to MineralComposition field
-            field_map = {
-                "Ab": "ab", "An": "an", "Or": "or_", "Q": "q", "Mm": "mm",
-                "Ill": "ill", "Chl": "chl", "Gb": "gb", "Kn": "kn",
-                "Ap": "ap", "Cc": "cc", "Dl": "dl", "Ank": "ank",
-                "Rch": "rch", "Sd": "sd", "Srp": "srp", "Mst": "mst",
-                "Ht": "ht", "Prl": "prl", "Pr": "pr", "Rt": "rt",
-                "Hl": "hl", "Gy": "gy", "Fl": "fl",
-            }
-            attr = field_map.get(code, code.lower())
+            attr = MINERAL_FIELD_MAP.get(code, code.lower())
             val = getattr(result.minerals_weight, attr, 0.0)
             ws.cell(i, col, round(val, 2))
             col += 1
@@ -311,9 +320,7 @@ def save_results(
             val = getattr(result.geo_params, attr, 0.0) if result.geo_params else 0.0
             ws_geo.cell(r, i, round(val, 4))
 
-    wb.save(str(path))
-
-    # Auto-fit column widths
+    # Auto-fit column widths (must be before wb.save)
     for ws in wb.worksheets:
         for col in ws.columns:
             max_length = 0
@@ -325,6 +332,8 @@ def save_results(
                 except Exception:
                     pass
             ws.column_dimensions[col_letter].width = min(max_length + 2, 20)
+
+    wb.save(str(path))
 
     logger.info("Saved results to %s", path)
 
@@ -372,15 +381,6 @@ def save_results_csv(path: str | Path, results: list, delimiter: str = ";") -> N
         ("CaO", "cao"), ("Na2O", "na2o"), ("K2O", "k2o"),
         ("P2O5", "p2o5"), ("MnO", "mno"),
     ]
-    field_map = {
-        "Ab": "ab", "An": "an", "Or": "or_", "Q": "q", "Mm": "mm",
-        "Ill": "ill", "Chl": "chl", "Gb": "gb", "Kn": "kn",
-        "Ap": "ap", "Cc": "cc", "Dl": "dl", "Ank": "ank",
-        "Rch": "rch", "Sd": "sd", "Srp": "srp", "Mst": "mst",
-        "Ht": "ht", "Prl": "prl", "Pr": "pr", "Rt": "rt",
-        "Hl": "hl", "Gy": "gy", "Fl": "fl",
-    }
-
     header = ["Sample", "Type", "F", "A"]
     header += [label for label, _ in oxide_fields]
     header += list(MINERAL_CODES)
@@ -391,7 +391,7 @@ def save_results_csv(path: str | Path, results: list, delimiter: str = ";") -> N
         for r in results:
             row = [r.sample_name, r.rock_type.name, r.coefficients.F, r.coefficients.A]
             row += [round(getattr(r.input_composition, field, 0.0), 4) for _, field in oxide_fields]
-            row += [round(getattr(r.minerals_weight, field_map.get(code, code.lower()), 0.0), 2)
+            row += [round(getattr(r.minerals_weight, MINERAL_FIELD_MAP.get(code, code.lower()), 0.0), 2)
                     for code in MINERAL_CODES]
             writer.writerow(row)
 

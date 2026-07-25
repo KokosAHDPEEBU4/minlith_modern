@@ -40,8 +40,11 @@ class BlandAltmanPlugin(ChartPlugin):
         label_b = compare.get("label_b", "Set B")
 
         if not set_a or not set_b or len(set_a) != len(set_b):
-            ax.text(0.5, 0.5, "Need equal-length 'set_a' and 'set_b'\nin data.metadata['compare']",
-                    ha="center", va="center", fontsize=11, transform=ax.transAxes, color=FG_COLOR)
+            # Return empty figure with grid instead of text placeholder
+            ax.set_xlabel(f"Mean of {label_a} and {label_b}")
+            ax.set_ylabel(f"Difference ({label_a} - {label_b})")
+            ax.grid(True, color=GRID_COLOR, alpha=0.3)
+            fig.tight_layout()
             return fig
 
         a = np.array(set_a)

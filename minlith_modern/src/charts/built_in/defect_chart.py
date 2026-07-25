@@ -30,6 +30,7 @@ class DefectChart(ChartPlugin):
         if not defect:
             return create_figure(title="No defect data")
 
+        stacked = kwargs.get("stacked", False)
         sample_idx = kwargs.get("sample_idx", 0)
         sample_name = data.sample_names[sample_idx] if sample_idx < len(data.sample_names) else "Sample"
 
@@ -48,8 +49,15 @@ class DefectChart(ChartPlugin):
         )
         ax = fig.axes[0]
 
-        colors = ["#a6e3a1" if v >= 0 else "#f38ba8" for v in values]
-        ax.bar(range(len(oxides)), values, color=colors, edgecolor="none", width=0.7)
+        if stacked:
+            pos_vals = [max(v, 0) for v in values]
+            neg_vals = [min(v, 0) for v in values]
+            ax.bar(range(len(oxides)), pos_vals, color="#a6e3a1", edgecolor="none", width=0.7, label="+Δ")
+            ax.bar(range(len(oxides)), neg_vals, color="#f38ba8", edgecolor="none", width=0.7, label="-Δ")
+            ax.legend(fontsize=8, loc="upper right", framealpha=0.3, labelcolor=FG_COLOR)
+        else:
+            colors = ["#a6e3a1" if v >= 0 else "#f38ba8" for v in values]
+            ax.bar(range(len(oxides)), values, color=colors, edgecolor="none", width=0.7)
 
         ax.set_xticks(range(len(oxides)))
         ax.set_xticklabels(oxides, rotation=45, ha="right", fontsize=9)

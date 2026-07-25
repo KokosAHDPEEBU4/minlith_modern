@@ -7,6 +7,18 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from matplotlib import font_manager
+
+# Register Cyrillic-capable font if available
+_CYRILLIC_FONTS = ["DejaVu Sans", "Arial", "Liberation Sans", "Segoe UI"]
+for fname in _CYRILLIC_FONTS:
+    try:
+        font_manager.findfont(fname, fallback_to_default=False)
+        matplotlib.rcParams["font.family"] = fname
+        matplotlib.rcParams["axes.unicode_minus"] = False
+        break
+    except Exception:
+        continue
 
 
 # MINLITH color palette (Catppuccin-inspired)

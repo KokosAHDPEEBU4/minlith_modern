@@ -15,16 +15,12 @@ from src.charts.engines.plotly_engine import COLORS, save_html
 
 def interactive_bar(data: ChartData, path: Path, **kwargs) -> None:
     """Interactive grouped bar chart of mineral weight %."""
-    minerals = ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb"]
-    labels = ["Ab", "An", "Or", "Q", "Ill", "Chl", "Kn", "Mm", "Gb"]
-
     fig = go.Figure()
-    for i, (mineral, label) in enumerate(zip(minerals, labels)):
-        vals = data.minerals_wt.get(mineral, np.array([]))
+    for i, (mineral, vals) in enumerate(data.minerals_wt.items()):
         if len(vals) == 0:
             continue
         fig.add_trace(go.Bar(
-            name=label, x=data.sample_names, y=vals,
+            name=mineral, x=data.sample_names, y=vals,
             marker_color=COLORS[i % len(COLORS)],
             text=[f"{v:.1f}" for v in vals], textposition="outside",
         ))
@@ -88,24 +84,288 @@ def interactive_harker(data: ChartData, path: Path, **kwargs) -> None:
 
 def interactive_pie(data: ChartData, path: Path, **kwargs) -> None:
     """Interactive pie charts for each sample."""
-    minerals = ["ab", "an", "or_", "q", "ill", "chl", "kn"]
-    labels = ["Ab", "An", "Or", "Q", "Ill", "Chl", "Kn"]
-
+    all_minerals = list(data.minerals_wt.keys())
     n = len(data.sample_names)
     fig = make_subplots(rows=1, cols=max(n, 1), specs=[[{"type": "pie"}] * max(n, 1)],
                         subplot_titles=data.sample_names)
 
     for j, name in enumerate(data.sample_names):
-        vals = [data.minerals_wt.get(m, np.array([0.0]))[j] if j < len(data.minerals_wt.get(m, [])) else 0
-                for m in minerals]
+        vals = []
+        labels = []
+        for m in all_minerals:
+            v = data.minerals_wt[m][j] if j < len(data.minerals_wt[m]) else 0.0
+            if v > 0.01:
+                vals.append(v)
+                labels.append(m)
+        if not vals:
+            vals = [1.0]
+            labels = ["(no data)"]
         fig.add_trace(go.Pie(
             labels=labels, values=vals, hole=0.3,
-            marker=dict(colors=COLORS[:len(minerals)]),
+            marker=dict(colors=COLORS[:len(vals)]),
             textinfo="label+percent", textfont_size=9,
         ), row=1, col=j + 1)
 
     fig.update_layout(height=400, width=300 * n)
     save_html(fig, path, title=kwargs.get("title", "Mineral Pie Charts"))
+
+
+def interactive_qapf(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive QAPF ternary diagram."""
+    q = data.minerals_wt.get("q", np.array([]))
+    ab = data.minerals_wt.get("ab", np.array([]))
+    an = data.minerals_wt.get("an", np.array([]))
+    or_ = data.minerals_wt.get("or_", np.array([]))
+
+    if len(q) == 0:
+        return
+
+    total = q + ab + an + or_
+    total[total == 0] = 1.0
+
+    # Upper triangle QAP, lower APF
+    q_norm = q / total * 100
+    a_norm = (ab + an) / total * 100
+    p_norm = an / (ab + an + 1e-10) * 100
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatterternary(
+        a=q_norm, b=ab / total * 100, c=or_ / total * 100,
+        mode="markers+text",
+        marker=dict(size=10, color=COLORS[0]),
+        text=data.sample_names, textposition="top center", textfont=dict(size=9),
+    ))
+
+    fig.update_ternary(
+        aaxis=dict(title="Q", min=0, linewidth=2, gridcolor="#313244"),
+        baxis=dict(title="Ab", min=0, linewidth=2, gridcolor="#313244"),
+        caxis=dict(title="Or", min=0, linewidth=2, gridcolor="#313244"),
+    )
+    fig.update_layout(height=600, width=700)
+    save_html(fig, path, title=kwargs.get("title", "QAPF Diagram"))
+
+
+def interactive_acnk(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive A-CN-K ternary diagram."""
+    al2o3 = data.oxides.get("al2o3", np.array([]))
+    cao = data.oxides.get("cao", np.array([]))
+    na2o = data.oxides.get("na2o", np.array([]))
+    k2o = data.oxides.get("k2o", np.array([]))
+
+    if len(al2o3) == 0:
+        return
+
+    # Molecular proportions
+    a = al2o3 / 101.96
+    cn = cao / 56.08 + na2o / 61.98
+    k = k2o / 94.20
+    total = a + cn + k
+    total[total == 0] = 1.0
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatterternary(
+        a=a / total * 100, b=cn / total * 100, c=k / total * 100,
+        mode="markers+text",
+        marker=dict(size=10, color=COLORS[2]),
+        text=data.sample_names, textposition="top center", textfont=dict(size=9),
+    ))
+
+    fig.update_ternary(
+        aaxis=dict(title="A (Al₂O₃)", min=0, gridcolor="#313244"),
+        baxis=dict(title="CN (CaO+Na₂O)", min=0, gridcolor="#313244"),
+        caxis=dict(title="K (K₂O)", min=0, gridcolor="#313244"),
+    )
+    fig.update_layout(height=600, width=700)
+    save_html(fig, path, title=kwargs.get("title", "A-CN-K Diagram"))
+
+
+def interactive_afm(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive AFM ternary diagram."""
+    feo = data.oxides.get("feo", np.array([]))
+    fe2o3 = data.oxides.get("fe2o3", np.zeros(len(feo)))
+    mgo = data.oxides.get("mgo", np.array([]))
+    al2o3 = data.oxides.get("al2o3", np.array([]))
+    na2o = data.oxides.get("na2o", np.zeros(len(feo)))
+    k2o = data.oxides.get("k2o", np.zeros(len(feo)))
+
+    if len(feo) == 0:
+        return
+
+    f = feo + fe2o3
+    m = mgo
+    a = al2o3 - na2o * 1.652 - k2o * 0.638
+    a = np.maximum(a, 0)
+    total = f + m + a
+    total[total == 0] = 1.0
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatterternary(
+        a=f / total * 100, b=m / total * 100, c=a / total * 100,
+        mode="markers+text",
+        marker=dict(size=10, color=COLORS[1]),
+        text=data.sample_names, textposition="top center", textfont=dict(size=9),
+    ))
+
+    fig.update_ternary(
+        aaxis=dict(title="F (FeO+Fe₂O₃)", min=0, gridcolor="#313244"),
+        baxis=dict(title="M (MgO)", min=0, gridcolor="#313244"),
+        caxis=dict(title="A (Al₂O₃)", min=0, gridcolor="#313244"),
+    )
+    fig.update_layout(height=600, width=700)
+    save_html(fig, path, title=kwargs.get("title", "AFM Diagram"))
+
+
+def interactive_heatmap(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive mineral heatmap."""
+    minerals = data.minerals_wt
+    if not minerals:
+        return
+
+    names = list(minerals.keys())
+    n = len(data.sample_names)
+    matrix = np.zeros((len(names), n))
+    for i, m in enumerate(names):
+        for j in range(n):
+            matrix[i, j] = minerals[m][j] if j < len(minerals[m]) else 0.0
+
+    fig = go.Figure(data=go.Heatmap(
+        z=matrix, x=data.sample_names, y=names,
+        colorscale="YlOrRd", text=np.round(matrix, 1), texttemplate="%{text}",
+    ))
+    fig.update_layout(height=max(400, len(names) * 25), width=max(600, n * 80))
+    save_html(fig, path, title=kwargs.get("title", "Mineral Heatmap"))
+
+
+def interactive_correlation(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive correlation heatmap."""
+    from src.charts.built_in.correlation import CORR_FIELDS
+
+    fields = [f[0] for f in CORR_FIELDS]
+    labels = [f[1] for f in CORR_FIELDS]
+    n = len(fields)
+    n_samples = len(data.sample_names)
+
+    matrix = np.full((n, n), np.nan)
+    if n_samples >= 2:
+        for i, fi in enumerate(fields):
+            for j, fj in enumerate(fields):
+                xi = data.oxides.get(fi, np.array([]))
+                xj = data.oxides.get(fj, np.array([]))
+                if len(xi) < 2 or len(xj) < 2:
+                    continue
+                if np.std(xi) == 0 or np.std(xj) == 0:
+                    continue
+                matrix[i, j] = np.corrcoef(xi, xj)[0, 1]
+
+    fig = go.Figure(data=go.Heatmap(
+        z=matrix, x=labels, y=labels,
+        colorscale="RdBu_r", zmin=-1, zmax=1,
+        text=np.round(matrix, 2), texttemplate="%{text}",
+    ))
+    fig.update_layout(height=600, width=700)
+    save_html(fig, path, title=kwargs.get("title", "Correlation Matrix"))
+
+
+def interactive_kf(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive k1-k4 vs F line chart."""
+    k_values = data.metadata.get("k_values", None)
+    f_values = data.F_values
+
+    if k_values is None or not f_values:
+        return
+
+    fig = go.Figure()
+    for i, key in enumerate(["k1", "k2", "k3", "k4"]):
+        vals = k_values.get(key, [])
+        if vals:
+            fig.add_trace(go.Scatter(
+                x=list(range(len(vals))), y=vals, mode="lines+markers",
+                name=key.upper(), line=dict(color=COLORS[i % len(COLORS)], width=2),
+                marker=dict(size=6),
+            ))
+
+    fig.update_layout(
+        xaxis_title="Sample Index", yaxis_title="Coefficient Value",
+        legend_title="Coefficients",
+    )
+    save_html(fig, path, title=kwargs.get("title", "k1-k4 vs Sample"))
+
+
+def interactive_boxplot(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive box plot of mineral distribution."""
+    minerals = data.minerals_wt
+    if not minerals:
+        return
+
+    fig = go.Figure()
+    for i, (name, vals) in enumerate(minerals.items()):
+        fig.add_trace(go.Box(
+            y=vals, name=name, marker_color=COLORS[i % len(COLORS)],
+            boxpoints="outliers",
+        ))
+
+    fig.update_layout(yaxis_title="wt%", showlegend=False)
+    save_html(fig, path, title=kwargs.get("title", "Mineral Box Plot"))
+
+
+def interactive_violin(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive violin plot of mineral distribution."""
+    minerals = data.minerals_wt
+    if not minerals:
+        return
+
+    fig = go.Figure()
+    for i, (name, vals) in enumerate(minerals.items()):
+        fig.add_trace(go.Violin(
+            y=vals, name=name, marker_color=COLORS[i % len(COLORS)],
+            box_visible=True, meanline_visible=True,
+        ))
+
+    fig.update_layout(yaxis_title="wt%", showlegend=False)
+    save_html(fig, path, title=kwargs.get("title", "Mineral Violin Plot"))
+
+
+def interactive_parallel(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive parallel coordinates of minerals."""
+    minerals = data.minerals_wt
+    if not minerals:
+        return
+
+    names = list(minerals.keys())
+    n_samples = len(data.sample_names)
+
+    dims = []
+    for m in names:
+        vals = list(minerals[m])
+        dims.append(dict(label=m, values=vals))
+
+    fig = go.Figure(data=go.Parcoords(
+        line=dict(color=list(range(n_samples)), colorscale="Viridis"),
+        dimensions=dims,
+    ))
+
+    save_html(fig, path, title=kwargs.get("title", "Parallel Coordinates"))
+
+
+def interactive_rock_type(data: ChartData, path: Path, **kwargs) -> None:
+    """Interactive rock type distribution pie."""
+    rock_types = data.rock_types
+    if not rock_types:
+        return
+
+    type_names = {1: "Type I", 2: "Type II", 3: "Type III", 4: "Type IV", 5: "Type V"}
+    counts = {}
+    for rt in rock_types:
+        label = type_names.get(rt, f"Type {rt}")
+        counts[label] = counts.get(label, 0) + 1
+
+    fig = go.Figure(data=go.Pie(
+        labels=list(counts.keys()), values=list(counts.values()),
+        hole=0.3, marker=dict(colors=COLORS[:len(counts)]),
+        textinfo="label+percent",
+    ))
+
+    save_html(fig, path, title=kwargs.get("title", "Rock Type Distribution"))
 
 
 # Registry
@@ -114,4 +374,14 @@ PLOTLY_CHARTS = {
     "tas": interactive_tas,
     "harker": interactive_harker,
     "pie": interactive_pie,
+    "qapf": interactive_qapf,
+    "acnk": interactive_acnk,
+    "afm": interactive_afm,
+    "heatmap": interactive_heatmap,
+    "correlation": interactive_correlation,
+    "kf": interactive_kf,
+    "boxplot": interactive_boxplot,
+    "violin": interactive_violin,
+    "parallel": interactive_parallel,
+    "rock_type": interactive_rock_type,
 }
