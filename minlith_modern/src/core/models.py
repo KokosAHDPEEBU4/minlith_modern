@@ -105,6 +105,7 @@ class AdaptiveCoefficients:
     k4: float  # Si in chlorite
     F: float   # Fe3+/sum(Fe)
     A: float   # Al/(Al+Fe)
+    k_or: float = 1.0  # доля K2O, идущая в ортоклаз (0.0-1.0)
 
     @classmethod
     def from_F(cls, F: float, A: float, mass_source: str = "iupac") -> AdaptiveCoefficients:

@@ -1,0 +1,2619 @@
+Attribute VB_Name = "Module2"
+Sub aType_3()
+Attribute aType_3.VB_ProcData.VB_Invoke_Func = " \n14"
+    Range("d45").Select
+    Application.Goto Reference:="R46C3"
+    Selection.Copy
+    Application.Goto Reference:="ab"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+       Application.Goto Reference:="R47C3"
+    Selection.Copy
+    Application.Goto Reference:="si3_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R48C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+   Call p_51
+End Sub
+Sub p_51()
+Attribute p_51.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d52").Select
+If Range("d51") = True Then
+Call p_53
+Else
+Call p_61
+End If
+End Sub
+Sub p_53()
+Attribute p_53.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d54").Select
+If Range("d53") = True Then
+Call p_53t
+Else
+Call p_61
+End If
+End Sub
+Sub p_53t()
+Attribute p_53t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R54C3"
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R55C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R56C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R57C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R58C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="fe3_1"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="mg"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Call rVI
+End Sub
+Sub p_61()
+Attribute p_61.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d62").Select
+If Range("d61") = True Then
+Call p_61t
+Else
+Call p_68
+End If
+End Sub
+Sub p_61t()
+Attribute p_61t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R62C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R63C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R63C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R64C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R65C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="fe3_1"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="mg"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Call p_76
+End Sub
+Sub p_68()
+Attribute p_68.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d69").Select
+If Range("d68") = True Then
+Call p_68t
+Else
+Call p_68t 'p_76
+End If
+End Sub
+Sub p_68t()
+Attribute p_68t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R69C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R70C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R70C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R71C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R72C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="fe3_1"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R7C4"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Call p_76
+End Sub
+Sub p_76()
+Attribute p_76.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d77").Select
+If Range("d76") = True Then
+Call p_76t
+Else
+Call p_90
+End If
+End Sub
+Sub p_76t()
+Attribute p_76t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R77C3"
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R78C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R78C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R79C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="fe3_1"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R7C4"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Call p_81
+End Sub
+Sub p_90()
+Attribute p_90.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d91").Select
+If Range("d90") = True Then
+Call p_93
+Else
+Call p_142
+End If
+End Sub
+Sub p_93()
+Attribute p_93.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("f94").Select
+If Range("f93") = True Then
+Call p_97 'p_93t
+Else
+Call p_114
+End If
+End Sub
+Sub p_97()
+Attribute p_97.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e97").Select
+If Range("d97") = True Then
+Call p_93t
+Else
+Call p_114
+End If
+End Sub
+Sub p_93t()
+Attribute p_93t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R95C3"
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R97C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R97C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R98C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R99C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R99C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R100C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R100C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R101C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R101C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_106
+End Sub
+Sub p_106()
+Attribute p_106.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d107").Select
+If Range("d106") = True Then
+Call p_106t
+Else
+Call p_109
+End If
+End Sub
+Sub p_106t()
+Attribute p_106t.VB_ProcData.VB_Invoke_Func = " \n14"
+Call rVI
+End Sub
+Sub p_109()
+Attribute p_109.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d110").Select
+If Range("d109") = True Then
+Call p_159
+Else
+Call p_112
+End If
+End Sub
+Sub p_112()
+Attribute p_112.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("f113").Select
+If Range("d112") = True Then
+Call p_253
+Else
+Call p_253
+End If
+End Sub
+Sub p_114()
+Attribute p_114.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R116C3"
+    Selection.Copy
+    Application.Goto Reference:="ill_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R116C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Call p_119
+End Sub
+Sub p_119()
+Attribute p_119.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("f119").Select
+If Range("f119") = True Then
+Call p_119t
+Else
+Call p_126
+End If
+End Sub
+Sub p_119t()
+Attribute p_119t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R120C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R121C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R121C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R122C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R122C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R123C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R123C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_132
+End Sub
+Sub p_126()
+Attribute p_126.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R127C3"
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R128C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R128C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R129C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R129C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R130C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R130C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_132
+End Sub
+Sub p_132()
+Attribute p_132.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d133").Select
+If Range("d132") = True Then
+Call p_159
+Else
+Call p_136
+End If
+End Sub
+Sub p_136()
+Attribute p_136.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d137").Select
+If Range("d136") = True Then
+Call p_253
+Else
+Call p_81
+End If
+End Sub
+Sub p_142()
+Attribute p_142.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R142C3"
+    Selection.Copy
+    Application.Goto Reference:="ill_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R142C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R143C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R144C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R144C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R145C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R145C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R146C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R146C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R147C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call p_149
+End Sub
+Sub p_149()
+Attribute p_149.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d150").Select
+If Range("d149") = True Then
+Call p_159
+Else
+Call p_152
+End If
+End Sub
+Sub p_152()
+Attribute p_152.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d154").Select
+If Range("d153") = True Then
+Call p_253
+Else
+Call p_156
+End If
+End Sub
+Sub p_156()
+Attribute p_156.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d157").Select
+If Range("d156") = True Then
+Call p_81
+Else
+Call p_159
+End If
+End Sub
+Sub p_159()
+Attribute p_159.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d160").Select
+If Range("d159") = True Then
+Call p_163
+Else
+Call p_201
+End If
+End Sub
+Sub p_163()
+Attribute p_163.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d163").Select
+If Range("d162") = True Then
+Call p_163t
+Else
+Call p_176
+End If
+End Sub
+Sub p_163t()
+Attribute p_163t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R164C3"
+    Selection.Copy
+    Application.Goto Reference:="ill_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R164C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R163C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R165C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R166C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R166C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R167C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R167C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R168C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R168C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_171
+End Sub
+Sub p_171()
+Attribute p_171.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d171").Select
+If Range("d170") = True Then
+Call rVI
+Else
+Call p_253
+End If
+End Sub
+Sub p_176()
+Attribute p_176.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d177").Select
+If Range("d175") = True Then
+Call p_176t
+Else
+Call p_181
+End If
+End Sub
+Sub p_176t()
+Attribute p_176t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R177C3"
+    Application.Goto Reference:="R176C3"
+    Selection.Copy
+    Application.Goto Reference:="ill_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R176C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_181
+End Sub
+Sub p_181()
+Attribute p_181.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d182").Select
+If Range("d180") = True Then
+Call p_181t
+Else
+Call p_189
+End If
+End Sub
+Sub p_181t()
+Attribute p_181t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R181C3"
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R182C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R182C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R183C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R183C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R184C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R184C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R183C5"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+        Range("D182").Select
+    Application.Goto Reference:="R182C5"
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+        Call p_196
+End Sub
+Sub p_189()
+Attribute p_189.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d190").Select
+If Range("d188") = True Then
+Call p_189t
+Else
+Call p_196
+End If
+End Sub
+Sub p_189t()
+Attribute p_189t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R189C3"
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R190C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R190C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R191C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R191C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R192C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R192C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R193C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call p_196
+End Sub
+Sub p_196()
+Attribute p_196.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d197").Select
+If Range("d195") = True Then
+Call p_253
+Else
+Call p_199
+End If
+End Sub
+Sub p_199()
+Attribute p_199.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d200").Select
+If Range("d198") = True Then
+Call p_81
+Else
+Call p_201
+End If
+End Sub
+Sub p_201()
+Attribute p_201.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d202").Select
+If Range("d200") = True Then
+Call p_201t
+Else
+Call p_215
+End If
+End Sub
+Sub p_201t()
+Attribute p_201t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R201C3"
+    Selection.Copy
+    Application.Goto Reference:="ill_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R201C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R202C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R203C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R203C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R204C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R204C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Range("G99").Select
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R205C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R205C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R206C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R206C3"
+    Application.CutCopyMode = False
+    Call p_209
+End Sub
+Sub p_209()
+Attribute p_209.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d210").Select
+If Range("d208") = True Then
+Call p_253
+Else
+Call p_81
+End If
+End Sub
+Sub p_215()
+Attribute p_215.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d216").Select
+If Range("d214") = True Then
+Call p_215t
+Else
+Call p_215t 'p_222
+End If
+End Sub
+Sub p_215t()
+Attribute p_215t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R215C3"
+    Selection.Copy
+    Application.Goto Reference:="ill_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R215C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R216C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe3_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R216C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R217C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R217C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R218C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R219C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R219C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+           Application.Goto Reference:="R218C3"
+    Selection.Copy
+    Application.Goto Reference:="al_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R219C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Sheets("Нач+Type 3").Select
+    Call p_222
+End Sub
+Sub p_222()
+Attribute p_222.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d222").Select
+If Range("d221") = True Then
+Call s_271
+Else
+Call p_227
+End If
+End Sub
+Sub p_253()
+Attribute p_253.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R252C3"
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R253C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R254C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R254C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_227
+End Sub
+Sub p_227()
+Attribute p_227.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d228").Select
+If Range("d226") = True Then
+Call p_227t
+Else
+Call p_236
+End If
+End Sub
+Sub p_227t()
+Attribute p_227t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R227C3"
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R228C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R229C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R230C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R231C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_4"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R231C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+     Range("D252").Select
+    Application.Goto Reference:="R8C4"
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub p_236()
+Attribute p_236.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d237").Select
+If Range("d235") = True Then
+Call p_236t
+Else
+Call p_236e
+End If
+End Sub
+Sub p_236e()
+Attribute p_236e.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e237").Select
+If Range("d236") = True Then
+Call p_236t
+Else
+Call p_237
+End If
+End Sub
+Sub p_237()
+Attribute p_237.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e237").Select
+If Range("d237") = True Then
+Call p_236t
+Else
+Call p_246t
+End If
+End Sub
+Sub p_236t()
+Attribute p_236t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R236C3"
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R237C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R238C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_4"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R239C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_4"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R240C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Range("B94").Select
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+     Range("D252").Select
+    Application.Goto Reference:="R8C4"
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_257
+End Sub
+Sub p_246()
+Attribute p_246.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d247").Select
+If Range("d245") = True Then
+Call p_246t
+Else
+Call p_257
+End If
+End Sub
+Sub p_246t()
+Attribute p_246t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R246C3"
+    Selection.Copy
+    Application.Goto Reference:="chl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R247C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R248C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si3_4"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R248C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R249C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al3_4"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R250C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+     Range("D252").Select
+    Application.Goto Reference:="R8C4"
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call p_257
+End Sub
+Sub p_257()
+Attribute p_257.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d258").Select
+If Range("d257") = True Then
+Call p_257t
+Else
+Call p_263
+End If
+End Sub
+Sub p_257t()
+Attribute p_257t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R258C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R259C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R260C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub p_263()
+Attribute p_263.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R263C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R264C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub p_81()
+Attribute p_81.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d82").Select
+If Range("d81") = True Then
+Call p_81t
+Else
+Call p_81e
+End If
+End Sub
+Sub p_81t()
+Attribute p_81t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R82C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R83C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R84C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub p_81e()
+Attribute p_81e.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R87C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.Goto Reference:="R88C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Sheets("Нач+Type 3").Select
+    Application.CutCopyMode = False
+    Call rVI
+   End Sub
+Sub aType_1()
+Attribute aType_1.VB_ProcData.VB_Invoke_Func = " \n14"
+    Sheets("Нач+Type 12").Select
+    Application.Goto Reference:="R45C3"
+    Application.Goto Reference:="R45C2"
+    Selection.Copy
+    Application.Goto Reference:="ab"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R45C2"
+    Application.Goto Reference:="R46C2"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R46C2"
+    Application.Goto Reference:="R46C5"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R46C5"
+    Application.CutCopyMode = False
+    Range("C8").Select
+    Application.Goto Reference:="R7C4"
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R7C4"
+    Application.Goto Reference:="R21C9"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Call t_49
+End Sub
+Sub t_49()
+Attribute t_49.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e49").Select
+If Range("d49") = True Then
+Call t_51
+Else
+Call t_67
+End If
+End Sub
+Sub t_51()
+Attribute t_51.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e51").Select
+If Range("d51") = True Then
+Call t_52an  't_52t
+Else
+Call t_58
+End If
+End Sub
+Sub t_52an()
+Attribute t_52an.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e52").Select
+If Range("d52") = True Then
+Call t_52t
+Else
+Call t_53an
+End If
+End Sub
+Sub t_53an()
+Attribute t_53an.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R52C9"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R53C9"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R54C9"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+        Call rVI
+End Sub
+Sub t_52t()
+Attribute t_52t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R52C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R52C3"
+    Application.Goto Reference:="R53C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R53C3"
+    Application.Goto Reference:="R54C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R54C3"
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub t_58()
+Attribute t_58.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R59C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R59C3"
+    Application.Goto Reference:="R60C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R60C3"
+    Application.Goto Reference:="R61C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R61C3"
+    Application.Goto Reference:="R62C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub t_67()
+Attribute t_67.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e67").Select
+If Range("d67") = True Then
+Call t_68t
+Else
+Call t_83
+End If
+End Sub
+Sub t_68t()
+Attribute t_68t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R68C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R68C3"
+    Application.Goto Reference:="R70C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R70C3"
+    Application.Goto Reference:="R71C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call t_73
+End Sub
+Sub t_73()
+Attribute t_73.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e73").Select
+If Range("d73") = True Then
+Call t_74t
+Else
+Call t_78
+End If
+End Sub
+Sub t_74t()
+Attribute t_74t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R74C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R75C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R75C3"
+    Application.CutCopyMode = False
+    ActiveWindow.ScrollWorkbookTabs Position:=xlLast
+    ActiveWindow.ScrollWorkbookTabs Position:=xlLast
+    Sheets("Module6").Select
+    Call rVI
+End Sub
+Sub t_78()
+Attribute t_78.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R79C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R79C3"
+    Application.Goto Reference:="R80C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+        Call rVI
+End Sub
+Sub t_83()
+Attribute t_83.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R84C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R84C3"
+    Application.Goto Reference:="R85C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R86C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R86C3"
+    Application.Goto Reference:="R87C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub aType_2()
+Attribute aType_2.VB_ProcData.VB_Invoke_Func = " \n14"
+Sheets("Нач+Type 12").Select
+    Application.Goto Reference:="al_1"
+    Range("I173:I177").Select
+    Selection.ClearContents
+    Range("J182").Select
+ Application.Goto Reference:="R174C3"
+    Selection.Copy
+    Application.Goto Reference:="ab"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R175C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call s_177
+End Sub
+Sub s_177()
+Attribute s_177.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e177").Select
+If Range("d177") = True Then
+Call s_179
+Else
+Call s_190 's_188
+End If
+End Sub
+Sub s_179()
+Attribute s_179.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e179").Select
+If Range("d179") = True Then
+Call s_180
+Else
+Call s_188 's_190
+End If
+End Sub
+Sub s_180()
+Attribute s_180.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R180C3"
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R181C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R182C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R183C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R184C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R185C3"
+    ActiveWindow.SmallScroll ToRight:=-2
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R186C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="fe_1"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R7C4"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub s_188()
+Attribute s_188.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e188").Select
+If Range("d188") = True Then
+Call s_190
+Else
+Call s_198
+End If
+End Sub
+Sub s_190()
+Attribute s_190.VB_ProcData.VB_Invoke_Func = " \n14"
+Call s_192
+End Sub
+Sub s_192()
+Attribute s_192.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e192").Select
+If Range("d192") = True Then
+Call s_192t
+Else
+Call s_197
+End If
+End Sub
+Sub s_192t()
+Attribute s_192t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R193C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R194C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R195C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R196C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R196C3"
+    Application.CutCopyMode = False
+    Call s_204
+End Sub
+Sub s_197()
+Attribute s_197.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e199").Select
+If Range("d199") = True Then
+Call s_198
+Else
+Call s_198an
+End If
+End Sub
+Sub s_198an()
+Attribute s_198an.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R199C9"
+    Selection.Copy
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R200C9"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R201C9"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R202C9"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R202C9"
+    Application.CutCopyMode = False
+    Call s_204
+End Sub
+
+Sub s_198()
+Attribute s_198.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R199C3"
+    Selection.Copy
+    Application.Goto Reference:="an"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R200C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R301C3"
+    Application.Goto Reference:="R201C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al_1"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R202C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ca_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R202C3"
+    Application.CutCopyMode = False
+    Call s_204
+End Sub
+Sub s_204()
+Attribute s_204.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e204").Select
+If Range("d204") = True Then
+Call s_208
+Else
+Call s_271
+End If
+End Sub
+Sub s_208()
+Attribute s_208.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e208").Select
+If Range("d208") = True Then
+Call s_213
+Else
+Call s_251
+End If
+End Sub
+Sub s_213()
+Attribute s_213.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e213").Select
+If Range("d213") = True Then
+Call s_213t
+Else
+Call s_221
+End If
+End Sub
+Sub s_213t()
+Attribute s_213t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R214C3"
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R215C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R216C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R217C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R218C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R218C3"
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub s_221()
+Attribute s_221.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e221").Select
+If Range("d221") = True Then
+Call s_221t
+Else
+Call s_230
+End If
+End Sub
+Sub s_221t()
+Attribute s_221t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R222C3"
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R223C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R224C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R225C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R226C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R227C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R227C3"
+    Application.CutCopyMode = False
+    Call s_238
+End Sub
+Sub s_230()
+Attribute s_230.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R230C3"
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R231C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R232C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R233C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R234C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Range("M178").Select
+    Application.Goto Reference:="R235C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R235C3"
+    Application.CutCopyMode = False
+    Call s_238
+End Sub
+Sub s_238()
+Attribute s_238.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e238").Select
+If Range("d238") = True Then
+Call s_238t
+Else
+Call s_243
+End If
+End Sub
+Sub s_238t()
+Attribute s_238t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R239C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R240C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R240C1"
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub s_243()
+Attribute s_243.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R244C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R245C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R246C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub s_251()
+Attribute s_251.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e251").Select
+If Range("d251") = True Then
+Call s_251t
+Else
+Call s_274
+End If
+End Sub
+Sub s_251t()
+Attribute s_251t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R252C3"
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R253C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_3"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R254C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R255C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="al_2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R256C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R255C5"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R255C5"
+    Application.CutCopyMode = False
+    Call s_258
+End Sub
+Sub s_258()
+Attribute s_258.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e258").Select
+If Range("d258") = True Then
+Call s_258t
+Else
+Call s_263
+End If
+End Sub
+Sub s_258t()
+Attribute s_258t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R259C3"
+    Selection.Copy
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R260C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R260C3"
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub s_263()
+Attribute s_263.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R264C3"
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Application.Goto Reference:="kn"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R160C3"
+    ActiveWindow.ScrollColumn = 1
+    Application.Goto Reference:="R264C3"
+    Application.Goto Reference:="R265C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R266C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+Sub s_271()
+Attribute s_271.VB_ProcData.VB_Invoke_Func = " \n14"
+Call s_274
+End Sub
+Sub s_274()
+Attribute s_274.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("e274").Select
+If Range("d274") = True Then
+Call s_274t
+Else
+Call s_221
+End If
+End Sub
+Sub s_274t()
+Attribute s_274t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R275C1"
+    Application.Goto Reference:="R275C3"
+    Selection.Copy
+    Application.Goto Reference:="ill"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R276C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="or"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R277C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="gb"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R278C3"
+    ActiveWindow.SmallScroll ToRight:=-2
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="fe_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R279C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mg_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R280C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="si_n"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R280C3"
+    Application.CutCopyMode = False
+    Call rVI
+End Sub
+
+'расчет окислов
+Sub rVI()
+Attribute rVI.VB_ProcData.VB_Invoke_Func = " \n14"
+Sheets("Нач+Type 12").Select
+For i = 1 To 1
+Beep
+Next i
+Range("D98").Select
+If Range("d97") = True Then
+Call s_97t
+Else
+Call s_104
+End If
+End Sub
+Sub s_97t()
+Attribute s_97t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R98C3"
+    Selection.Copy
+    Application.Goto Reference:="dl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R99C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ank"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R100C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="cc"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R101C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="q"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R100C5"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="rch"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+        Range("a287").Select
+        Call aut_2
+End Sub
+Sub s_104()
+Attribute s_104.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("D105").Select
+If Range("d105") = True Then
+Call s_104t
+Else
+Call s_121
+End If
+End Sub
+Sub s_104t()
+Attribute s_104t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Range("B106").Select
+    Application.Goto Reference:="R106C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="dl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R108C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ank"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+        Call s_111
+End Sub
+'
+Sub s_111()
+Attribute s_111.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("d112").Select
+If Range("d111") = True Then
+Call s_111t
+Else
+Call s_111e
+End If
+End Sub
+Sub s_111t()
+Attribute s_111t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R112C3"
+    Selection.Copy
+    Application.Goto Reference:="ht"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R113C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="prl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R114C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="q"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+        For i = 1 To 1
+        Beep
+        Next i
+        Range("a287").Select
+        Call aut_2
+        End Sub
+Sub s_111e()
+Attribute s_111e.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R117C3"
+    Selection.Copy
+    Application.Goto Reference:="sd"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R118C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="rch"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R119C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="q"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+        For i = 1 To 1
+        Beep
+        Next i
+        Range("A287").Select
+        Call aut_2
+End Sub
+
+'Sub s_121()
+'    Application.Goto Reference:="R122C3"
+'    Selection.Copy
+'    Application.Goto Reference:="dl"
+'    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+'        SkipBlanks:=False, Transpose:=False
+'        Call s_125
+'End Sub
+Sub s_121()
+Attribute s_121.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R122C3"
+    Selection.Copy
+    Application.Goto Reference:="dl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R122C3"
+    Application.CutCopyMode = False
+    Call s_125
+End Sub
+
+Sub s_125()
+Attribute s_125.VB_ProcData.VB_Invoke_Func = " \n14"
+Range("D126").Select
+If Range("D125") = True Then
+Call s_125t
+Else
+Call s_125e
+End If
+End Sub
+Sub s_125t()
+Attribute s_125t.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R126C3"
+    Selection.Copy
+    Application.Goto Reference:="srp"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R127C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="q"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R128C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ht"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R129C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="prl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    For i = 1 To 1
+    Beep
+    Next i
+    Range("a287").Select
+    Call aut_2
+End Sub
+Sub s_125e()
+Attribute s_125e.VB_ProcData.VB_Invoke_Func = " \n14"
+'Range("d126").Select
+Range("e131").Select
+If Range("d131") = True Then
+Call s_131
+Else
+Call s_137
+End If
+End Sub
+Sub s_131()
+Attribute s_131.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R132C3"
+    Selection.Copy
+    Application.Goto Reference:="srp"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R133C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="mst"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R134C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="ht"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R135C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="prl"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+    For i = 1 To 1
+    Beep
+    Next i
+    Range("a287").Select
+    Call aut_2
+End Sub
+Sub s_137()
+Attribute s_137.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="R138C3"
+    Selection.Copy
+    Application.Goto Reference:="mst"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R139C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="sd"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.Goto Reference:="R140C3"
+    Application.CutCopyMode = False
+    Selection.Copy
+    Application.Goto Reference:="rch"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Application.CutCopyMode = False
+      For i = 1 To 1
+    Beep
+    Next i
+    Range("a287").Select
+    Call aut_2
+End Sub
+ 
+' Macro recorded 13.05.98 by Institute of Lithosphere
+Sub aut_2()
+Attribute aut_2.VB_ProcData.VB_Invoke_Func = "e\n14"
+    Sheets("Нач+Type 12").Select
+    Application.Goto Reference:="R291C1"
+    Rows("291:291").Select
+    Selection.Insert Shift:=xlDown
+    Range("A294").Select
+    Application.Goto Reference:="R287C1"
+    Rows("287:287").Select
+    Selection.Copy
+    Application.Goto Reference:="R291C1"
+    Rows("291:291").Select
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Range("C293").Select
+    Application.CutCopyMode = False
+    Application.Goto Reference:="R163C4"
+    Range("D163:D171").Select
+    Selection.Copy
+    Sheets("defect").Select
+    Application.Goto Reference:="R1C2"
+    Selection.PasteSpecial Paste:=xlValues, Operation:=xlNone, _
+        SkipBlanks:=False, Transpose:=False
+    Range("C2").Select
+    Application.Goto Reference:="R1C2"
+    Columns("B:B").Select
+    Application.CutCopyMode = False
+    Selection.Insert Shift:=xlToRight
+    Range("B1").Select
+    Sheets("Нач+Type 12").Select
+    Range("aj289").Select
+    If Range("s284") = True Then
+    Call aut_21
+    Else
+    Call aut_3
+    End If
+    End Sub
+  ' aut_21 Macro
+' Macro recorded 21.05.98 by Institute of Lithosphere
+Sub aut_21()
+Attribute aut_21.VB_ProcData.VB_Invoke_Func = " \n14"
+    Sheets("Нач+Type 12").Select
+    Application.Goto Reference:="R285C8"
+End Sub
+' aut_3 Macro
+' Macro recorded 13.05.98 by Institute of Lithosphere
+Sub aut_3()
+Attribute aut_3.VB_ProcData.VB_Invoke_Func = " \n14"
+    Sheets("Нач+Type 12").Select
+    Application.Goto Reference:="R289C1"
+    Rows("289:289").Select
+    ActiveWindow.LargeScroll Down:=1
+    Rows("289:321").Select
+    ActiveWindow.LargeScroll Down:=1
+    Rows("289:352").Select
+    ActiveWindow.LargeScroll Down:=1
+    Rows("289:343").Select
+    Selection.Copy
+    Sheets("minerals").Select
+    Application.Goto Reference:="R1C1"
+    Rows("1:1").Select
+    ActiveSheet.Paste
+    Range("A6").Select
+End Sub
+
+
+
+
+
+
+ 
+
+
+
+
+
+

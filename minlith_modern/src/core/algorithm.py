@@ -12,8 +12,8 @@ To integrate VBA macro:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from dataclasses import dataclass, field
+from typing import Optional, Protocol, runtime_checkable
 
 import numpy as np
 
@@ -97,6 +97,9 @@ class AlgorithmOutput:
     Mst: float = 0.0   # Magnesite
     Ht: float = 0.0    # Hematite
     Prl: float = 0.0   # Pyrolusite
+
+    # Остаточные пулы оксидов (defect по теории). Заполняется TheoryAlgorithm.
+    residuals: Optional[dict[str, float]] = None
 
 
 @runtime_checkable

@@ -24,6 +24,29 @@ MOLAR_MASSES_IUPAC: dict[str, float] = {
     "so": 48.064,
 }
 
+# Molar masses (теоретические, из таблицы 00_overview_and_math_basis.md)
+MOLAR_MASSES_THEORY: dict[str, float] = {
+    "sio2": 60.08,
+    "tio2": 79.90,
+    "al2o3": 101.96,
+    "fe2o3": 159.69,
+    "feo": 71.85,
+    "mgo": 40.30,
+    "cao": 56.08,
+    "na2o": 61.98,
+    "k2o": 94.20,
+    "p2o5": 141.94,
+    "mno": 70.94,
+    "c": 12.011,
+    "so3": 80.06,
+    "f": 19.00,
+    "cl": 35.45,
+    "s": 32.07,
+    "co2": 44.01,
+    "so": 48.064,
+    "h2o": 18.02,
+}
+
 # Molar masses (MINLITH legacy)
 MOLAR_MASSES_MINLITH: dict[str, float] = {
     "sio2": 60.09,

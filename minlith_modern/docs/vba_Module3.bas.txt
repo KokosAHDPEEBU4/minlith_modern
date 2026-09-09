@@ -1,0 +1,135 @@
+Attribute VB_Name = "Module3"
+Sub input_3()
+Attribute input_3.VB_ProcData.VB_Invoke_Func = " \n14"
+       Range("B15").Select
+    Application.Goto Reference:="si3_2"
+    Application.CutCopyMode = False
+    Selection.ClearContents
+    Application.Goto Reference:="al3_2"
+    Selection.ClearContents
+    Application.Goto Reference:="al3_3"
+    Range("G73:G77").Select
+    Selection.ClearContents
+    Range("F80").Select
+    Application.Goto Reference:="si3_4"
+    Selection.ClearContents
+    Application.Goto Reference:="al3_4"
+    Selection.ClearContents
+    Application.Goto Reference:="ca_n"
+    Selection.ClearContents
+    Application.Goto Reference:="mg_n"
+    Selection.ClearContents
+    Application.Goto Reference:="fe_n"
+        Selection.ClearContents
+    Application.Goto Reference:="si_n"
+    Selection.ClearContents
+    Application.Goto Reference:="si_2"
+    Selection.ClearContents
+    Application.Goto Reference:="al_1"
+    Selection.ClearContents
+    Application.Goto Reference:="si_3"
+    Selection.ClearContents
+    Application.Goto Reference:="al_2"
+    Selection.ClearContents
+    Application.Goto Reference:="ab"
+    Selection.ClearContents
+    ActiveWindow.SmallScroll Down:=-14
+    ActiveWindow.SmallScroll ToRight:=2
+    Application.Goto Reference:="an"
+    Selection.ClearContents
+    Application.Goto Reference:="chl"
+    Selection.ClearContents
+    Application.Goto Reference:="ill"
+    Selection.ClearContents
+    Application.Goto Reference:="or"
+    Selection.ClearContents
+    Application.Goto Reference:="ank"
+    Selection.ClearContents
+    Application.Goto Reference:="cc"
+    Selection.ClearContents
+    Application.Goto Reference:="q"
+    Selection.ClearContents
+    Application.Goto Reference:="dl"
+    Selection.ClearContents
+    ActiveWindow.SmallScroll ToRight:=3
+    Application.Goto Reference:="rch"
+    Selection.ClearContents
+    Application.Goto Reference:="sd"
+    Selection.ClearContents
+    Application.Goto Reference:="prl"
+    Selection.ClearContents
+    Application.Goto Reference:="srp"
+    Selection.ClearContents
+    Application.Goto Reference:="ht"
+    Selection.ClearContents
+    ActiveWindow.SmallScroll ToRight:=5
+    Application.Goto Reference:="mst"
+    Selection.ClearContents
+    Application.Goto Reference:="gb"
+    Selection.ClearContents
+    Application.Goto Reference:="kn"
+    Selection.ClearContents
+    Application.Goto Reference:="mm"
+    Selection.ClearContents
+      Sheets("Нач+Type 3").Select
+      Range("b2").Select
+End Sub
+Sub input_1()
+Attribute input_1.VB_ProcData.VB_Invoke_Func = " \n14"
+    Application.Goto Reference:="ca_n"
+    Selection.ClearContents
+    Application.Goto Reference:="mg_n"
+    Selection.ClearContents
+    Application.Goto Reference:="fe_n"
+    Selection.ClearContents
+    Application.Goto Reference:="si_n"
+    Selection.ClearContents
+    Application.Goto Reference:="si_2"
+    Selection.ClearContents
+    Application.Goto Reference:="al_1"
+    Selection.ClearContents
+    Application.Goto Reference:="si_3"
+    Selection.ClearContents
+    Application.Goto Reference:="al_2"
+    Selection.ClearContents
+    Application.Goto Reference:="ab"
+    Selection.ClearContents
+    ActiveWindow.SmallScroll Down:=-14
+    ActiveWindow.SmallScroll ToRight:=2
+    Application.Goto Reference:="an"
+    Selection.ClearContents
+    Application.Goto Reference:="chl"
+    Selection.ClearContents
+    Application.Goto Reference:="ill"
+    Selection.ClearContents
+    Application.Goto Reference:="or"
+    Selection.ClearContents
+    Application.Goto Reference:="ank"
+    Selection.ClearContents
+    Application.Goto Reference:="cc"
+    Selection.ClearContents
+    Application.Goto Reference:="q"
+    Selection.ClearContents
+    Application.Goto Reference:="dl"
+    Selection.ClearContents
+    ActiveWindow.SmallScroll ToRight:=3
+    Application.Goto Reference:="rch"
+    Selection.ClearContents
+    Application.Goto Reference:="sd"
+    Selection.ClearContents
+    Application.Goto Reference:="prl"
+    Selection.ClearContents
+    Application.Goto Reference:="srp"
+    Selection.ClearContents
+    Application.Goto Reference:="ht"
+    Selection.ClearContents
+    ActiveWindow.SmallScroll ToRight:=5
+    Application.Goto Reference:="mst"
+    Selection.ClearContents
+    Application.Goto Reference:="gb"
+    Selection.ClearContents
+    Application.Goto Reference:="kn"
+    Selection.ClearContents
+    Call clean_3
+End Sub
+

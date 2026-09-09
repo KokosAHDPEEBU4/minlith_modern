@@ -8,7 +8,7 @@ from typing import Optional
 import numpy as np
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput, MineralAlgorithm
-from src.core.algorithm_real import RealAlgorithm
+from src.core.theory_algorithm import TheoryAlgorithm
 from src.core.anomaly_detector import AnomalyDetector
 from src.core.models import (
     AdaptiveCoefficients,
@@ -73,7 +73,7 @@ class Calculator:
         algorithm: Optional[MineralAlgorithm] = None,
     ):
         self.config = config or CalculationConfig()
-        self.algorithm = algorithm or RealAlgorithm()
+        self.algorithm = algorithm or TheoryAlgorithm()
 
     def _get_molar_masses(self) -> dict[str, float]:
         """Get molar masses based on config source."""
@@ -356,7 +356,13 @@ class Calculator:
         )
 
         # Calculate defect
-        defect = self._calculate_defect(sample.composition, minerals_weight, coeff)
+        if alg_output.residuals is not None:
+            defect = {
+                oxide: float(alg_output.residuals.get(oxide, 0.0))
+                for oxide in OXIDE_ORDER
+            }
+        else:
+            defect = self._calculate_defect(sample.composition, minerals_weight, coeff)
 
         # Calculate geochemical parameters
         from src.charts.built_in.parameters import compute_parameters

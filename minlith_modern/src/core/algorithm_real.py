@@ -1,11 +1,15 @@
-"""Real algorithm — uses types_logic.py for actual MINLITH calculations.
+"""Заглушка VBA-порта — попытка портировать VBA макрос из Excel.
 
-This replaces the stub algorithm with the real type-specific logic.
+.. deprecated::
+    Используйте :class:`src.core.theory_algorithm.TheoryAlgorithm` вместо
+    этого класса. VbaPortStub сохраняется как заглушка для будущего порта
+    VBA-макроса и для сравнения результатов.
 """
 
 from __future__ import annotations
 
 import logging
+import warnings
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput
 from src.core.models import AdaptiveCoefficients, FormulaUnits, MineralComposition
@@ -21,11 +25,19 @@ from src.core.types_logic import (
 logger = logging.getLogger(__name__)
 
 
-class RealAlgorithm:
-    """Real MINLITH algorithm using type-specific logic from types_logic.py."""
+class VbaPortStub:
+    """Заглушка VBA-порта. Использование устарело.
+
+    TODO: Заменить на TheoryAlgorithm.
+    """
 
     def compute(self, inp: AlgorithmInput) -> AlgorithmOutput:
-        """Run real calculation using types_logic.py."""
+        """Run VBA-port calculation (stub)."""
+        warnings.warn(
+            "VbaPortStub is deprecated. Use TheoryAlgorithm instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         # Build FormulaUnits from AlgorithmInput
         fu = FormulaUnits(
             sio2=inp.sio2,
@@ -113,3 +125,7 @@ class RealAlgorithm:
             Ht=minerals.ht,
             Prl=minerals.prl,
         )
+
+
+# Обратная совместимость: старый импорт from algorithm_real import RealAlgorithm
+RealAlgorithm = VbaPortStub
