@@ -49,6 +49,15 @@ def xround(value: float, ndigits: int = 0) -> float:
     return float(d.quantize(q, rounding=ROUND_HALF_UP))
 
 
+def identity_round(value: float, ndigits: int = 0) -> float:
+    """«Чистый» режим: ROUND не округляет (полная точность float64)."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return 1.0 if value else 0.0
+    return float(value)
+
+
 # ---------------------------------------------------------------------------
 # Токенизация
 # ---------------------------------------------------------------------------
@@ -314,10 +323,13 @@ class FormulaEvaluator:
     """Вычисляет AST формул.
 
     resolver: объект с методом resolve(ref: str, abs_row: bool) -> value.
+    round_fn: функция округления ROUND. По умолчанию — Excel-семантика
+    (xround). Для «чистого» режима без округлений передайте ``identity_round``.
     """
 
-    def __init__(self, resolver):
+    def __init__(self, resolver, round_fn=None):
         self.resolver = resolver
+        self.round_fn = round_fn or xround
 
     def eval_formula(self, formula: str) -> object:
         body = formula.strip()
@@ -398,7 +410,7 @@ class FormulaEvaluator:
                 raise FormulaError("ROUND требует 2 аргумента")
             x = self._num(self.eval_node(args[0]))
             n = int(self._num(self.eval_node(args[1])))
-            return xround(x, n)
+            return self.round_fn(x, n)
         if name == "SUM":
             total = 0.0
             for a in args:

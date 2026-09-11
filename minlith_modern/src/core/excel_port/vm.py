@@ -43,8 +43,14 @@ class VbaVM:
         self.clipboard: list = []
         self.clipboard_shape = (1, 1)
         self.call_log: list[str] = []
+        self.assignments: list[str] = []  # имена в порядке первого присваивания
+        self._assigned: set[str] = set()
         self.max_calls = max_calls
         self._calls = 0
+        # обратная карта: (лист, координата) -> имя
+        self._cell_to_name: dict[tuple[str, str], str] = {}
+        for nm, (sheet, coord) in self.wb.names.items():
+            self._cell_to_name.setdefault((sheet, coord), nm)
 
     # ------------------------------------------------------------------ API
 
@@ -126,6 +132,14 @@ class VbaVM:
             for i, (s, c) in enumerate(cells):
                 v = values[i] if i < len(values) else (values[-1] if values else None)
                 self.wb.set_value(s, c, v)
+                self._record_assignment(s, c)
+
+    def _record_assignment(self, sheet: str, coord: str) -> None:
+        """Зафиксировать первое присваивание именованной переменной."""
+        name = self._cell_to_name.get((sheet, coord))
+        if name is not None and name not in self._assigned:
+            self._assigned.add(name)
+            self.assignments.append(name)
 
     # ------------------------------------------------------------ execution
 

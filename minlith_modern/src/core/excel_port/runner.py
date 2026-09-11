@@ -10,16 +10,18 @@ import json
 from pathlib import Path
 from typing import Optional
 
+from src.core.excel_port.interpreter import identity_round
 from src.core.excel_port.vm import VbaVM
 from src.core.excel_port.workbook import Workbook
 
 DATA = Path(__file__).resolve().parent / "data"
 
 
-def load_workbook(data_dir: Optional[Path] = None) -> Workbook:
+def load_workbook(data_dir: Optional[Path] = None, rounding: bool = True) -> Workbook:
     d = data_dir or DATA
     raw = json.loads((d / "workbook_raw.json").read_text(encoding="utf-8"))
-    return Workbook(raw)
+    round_fn = None if rounding else identity_round
+    return Workbook(raw, round_fn=round_fn)
 
 
 def load_structure(data_dir: Optional[Path] = None) -> dict:
@@ -28,13 +30,17 @@ def load_structure(data_dir: Optional[Path] = None) -> dict:
 
 
 def run_sample(oxide_values: dict[str, float], data_dir: Optional[Path] = None,
-               entry: str = "aDefin") -> dict:
+               entry: str = "aDefin", rounding: bool = True) -> dict:
     """Прогнать образец через формульный движок + VBA VM.
+
+    Args:
+        rounding: True — как в Excel (ROUND на каждом шаге);
+                  False — «чистый» режим без округлений (полная точность).
 
     Returns:
         dict с значениями именованных переменных (имена -> значения).
     """
-    wb = load_workbook(data_dir)
+    wb = load_workbook(data_dir, rounding=rounding)
     structure = load_structure(data_dir)
 
     # Вход записываем на лист Нач+Type 3 (VBA затем копирует в Type 12)
@@ -52,4 +58,5 @@ def run_sample(oxide_values: dict[str, float], data_dir: Optional[Path] = None,
         except Exception as e:  # noqa: BLE001
             result[name] = f"ERR:{e}"
     result["_calls"] = list(vm.call_log)
+    result["_assignments"] = list(vm.assignments)
     return result

@@ -46,7 +46,7 @@ def rc_to_a1(row: int, col: int) -> str:
 class Workbook:
     """Модель расчётной книги на основе JSON-дампа."""
 
-    def __init__(self, raw: dict):
+    def __init__(self, raw: dict, round_fn=None):
         self.raw = raw
         self.cells: dict[str, dict[str, dict]] = {}  # sheet -> coord -> entry
         for sn in CALC_SHEETS:
@@ -58,7 +58,7 @@ class Workbook:
             if parsed:
                 self.names[name] = parsed
         self._resolver = _Resolver(self)
-        self.evaluator = FormulaEvaluator(self._resolver)
+        self.evaluator = FormulaEvaluator(self._resolver, round_fn=round_fn)
 
     @staticmethod
     def _parse_name_target(target: str) -> Optional[tuple[str, str]]:
