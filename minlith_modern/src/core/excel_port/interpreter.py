@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from decimal import ROUND_HALF_UP, Decimal
 from typing import Callable, Optional
 
 # ---------------------------------------------------------------------------
@@ -29,20 +30,23 @@ from typing import Callable, Optional
 # ---------------------------------------------------------------------------
 
 def xround(value: float, ndigits: int = 0) -> float:
-    """Excel ROUND: округление половины от нуля.
+    """Excel ROUND: округление половины от нуля с учётом десятичного вида.
 
-    Python round — banker's (round-half-to-even); Excel — half-away-from-zero.
+    Excel округляет не «сырой» double, а значение с ~15 значащими цифрами
+    (из-за чего ROUND(0.145,2)=0.15, а наивный round-half-up по double дал бы
+    0.14). Поэтому используем Decimal(repr(value)) — кратчайшее десятичное
+    представление, восстанавливающее double.
     """
-    if ndigits == 0:
-        # быстрый путь
-        if value >= 0:
-            return float(int(value + 0.5))
-        return float(int(value - 0.5))
-    factor = 10 ** ndigits
-    scaled = value * factor
-    if scaled >= 0:
-        return float(int(scaled + 0.5)) / factor
-    return float(int(scaled - 0.5)) / factor
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        value = 1.0 if value else 0.0
+    f = float(value)
+    if f != f or f in (float("inf"), float("-inf")):
+        return f
+    d = Decimal(repr(f))
+    q = Decimal(1).scaleb(-int(ndigits))
+    return float(d.quantize(q, rounding=ROUND_HALF_UP))
 
 
 # ---------------------------------------------------------------------------

@@ -57,6 +57,18 @@ class VbaVM:
     def _resolve_ref(self, ref: str) -> tuple[str, str]:
         """Разрешить ссылку в (лист, координата)."""
         ref = ref.strip()
+        # ссылка с указанием листа: 'Имя листа'!R305C3  или  Sheet!A1
+        if "!" in ref:
+            sheet_part, coord_part = ref.split("!", 1)
+            sheet = sheet_part.strip().strip("'")
+            coord_part = coord_part.strip().replace("$", "")
+            m = _R1C1_RE.match(coord_part)
+            if m:
+                return sheet, rc_to_a1(int(m.group(1)), int(m.group(2)))
+            m = _A1_RE.match(coord_part)
+            if m:
+                return sheet, coord_part.upper()
+            raise ValueError(f"Не удалось разрешить ссылку: {ref!r}")
         # именованный диапазон
         if ref in self.wb.names:
             return self.wb.names[ref]
@@ -66,12 +78,17 @@ class VbaVM:
         m = _A1_RE.match(ref)
         if m:
             return self.active_sheet, ref.upper()
-        # возможно, координата с $ (не должно встречаться)
         raise ValueError(f"Не удалось разрешить ссылку: {ref!r}")
 
     def _resolve_selection(self, ref: str) -> list[tuple[str, str]]:
         """Разрешить ссылку/диапазон в список ячеек (строка за строкой)."""
         ref = ref.strip()
+        # квалификатор листа
+        sheet = self.active_sheet
+        if "!" in ref:
+            sheet_part, ref = ref.split("!", 1)
+            sheet = sheet_part.strip().strip("'")
+            ref = ref.strip()
         m = _RANGE_RE.match(ref)
         if m:
             r1, c1 = a1_to_rc(m.group(1).upper())
@@ -79,9 +96,10 @@ class VbaVM:
             cells = []
             for r in range(r1, r2 + 1):
                 for c in range(c1, c2 + 1):
-                    cells.append((self.active_sheet, rc_to_a1(r, c)))
+                    cells.append((sheet, rc_to_a1(r, c)))
             return cells
-        return [self._resolve_ref(ref)]
+        return [self._resolve_ref(ref) if sheet == self.active_sheet
+                else self._resolve_ref(f"'{sheet}'!{ref}")]
 
     def _read_cells(self, cells: list[tuple[str, str]]) -> list:
         return [self.wb.eval_cell(s, c) for s, c in cells]
