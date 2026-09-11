@@ -290,11 +290,6 @@
      "op": "Call",
      "arg": "ca_1",
      "line": 97
-    },
-    {
-     "op": "Call",
-     "arg": "u0",
-     "line": 98
     }
    ],
    "end_line": 99
@@ -2738,11 +2733,6 @@
      "op": "Goto",
      "arg": "R536C3",
      "line": 731
-    },
-    {
-     "op": "Call",
-     "arg": "m_279",
-     "line": 733
     },
     {
      "op": "Call",
@@ -8074,26 +8064,6 @@
      "op": "Paste",
      "arg": "xlNone",
      "line": 2284
-    },
-    {
-     "op": "Goto",
-     "arg": "'Нач+Type 3'!R314C3",
-     "line": 2286
-    },
-    {
-     "op": "Copy",
-     "arg": "",
-     "line": 2288
-    },
-    {
-     "op": "Goto",
-     "arg": "si_n",
-     "line": 2289
-    },
-    {
-     "op": "Paste",
-     "arg": "xlNone",
-     "line": 2290
     },
     {
      "op": "Sheets",
@@ -19121,11 +19091,6 @@
    "name": "s_125e",
    "start_line": 2473,
    "ops": [
-    {
-     "op": "Select",
-     "arg": "d126",
-     "line": 2475
-    },
     {
      "op": "Select",
      "arg": "e131",

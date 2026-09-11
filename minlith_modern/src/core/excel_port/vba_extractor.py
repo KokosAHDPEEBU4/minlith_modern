@@ -74,6 +74,9 @@ def _parse_code(code: str) -> list[dict]:
     current: dict | None = None
     for lineno, raw in enumerate(lines, start=1):
         line = raw.strip()
+        # Пропускаем пустые строки и комментарии (строки, начинающиеся с ')
+        if not line or line.startswith("'"):
+            continue
         # Начало Sub/Function
         m = re.match(r"^(?:Public |Private )?(Sub|Function)\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", line)
         if m and not line.startswith("Attribute"):
@@ -102,7 +105,7 @@ def _parse_code(code: str) -> list[dict]:
                 current["ops"].append({"op": op_name, "arg": arg, "line": lineno})
                 matched = True
                 break
-        if not matched and line and not line.startswith("'"):
+        if not matched:
             # прочие значимые строки (например, Rows/Columns, ActiveSheet.Paste)
             if re.match(r"^(Rows|Columns|ActiveSheet\.|Selection\.|Sheets\(|If |Else|End If)", line):
                 current["ops"].append({"op": "other", "arg": line[:80], "line": lineno})
