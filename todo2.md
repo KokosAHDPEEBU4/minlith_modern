@@ -333,7 +333,9 @@ src/core/clean_engine/
 
 ### ФАЗА 3 — чистый Python
 
-- [ ] clean_engine по MD: stage0, type12, type3, type45, stage_vi, output, runner
+- [x] clean_engine по MD: stage0, типам (types.py: типы 1-5), stage_vi, output, runner
+- [x] Тесты: `tests/test_clean_engine.py` — сверка с excel_port(rounding=False)
+      по именам, строке 287 и дефекту для 7 образцов (29 тестов, float-точно)
 
 ### ФАЗА 4 — верификатор
 
