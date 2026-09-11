@@ -340,11 +340,11 @@ src/core/clean_engine/
 ### ФАЗА 4 — верификатор
 
 - [x] Верификатор: канонический порядок переменных (generated from data), CSV-таблицы + графики роста ошибки (`compare.py` → `data/compare_round_vs_full.csv/png`; per-переменные диффы для 7 образцов)
-- [ ] Отчёты comparison + property-тесты на синтетике
+- [x] Отчёты comparison + property-тесты на синтетике
 
 ### Финализация
 
-- [ ] Адаптеры MineralAlgorithm, интеграционные тесты, итоговый отчёт
+- [x] Адаптеры MineralAlgorithm, интеграционные тесты, итоговый отчёт
 
 ---
 

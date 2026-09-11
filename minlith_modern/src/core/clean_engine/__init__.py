@@ -12,10 +12,14 @@
   * types     — стадии типов 1-5 (плагиоклаз, иллит, хлорит, mm, kn, остатки);
   * stage_vi  — распределение Ca/Mg/Fe/Mn по карбонатам и оксидам;
   * output    — вес.%, нормировка, дефект, строка 287;
-  * runner    — оркестратор: оксиды -> результат.
+  * runner    — оркестратор: оксиды -> результат;
+  * algorithm — адаптер к интерфейсу MineralAlgorithm (Calculator);
+  * compare_clean — отчёт сверки с excel_port(rounding=False) в reports/.
 """
 
+from .algorithm import CleanEngineAlgorithm
 from .runner import CleanRun, run_sample
 from .stage0 import DEFAULT_OXIDES, Stage0
 
-__all__ = ["run_sample", "CleanRun", "Stage0", "DEFAULT_OXIDES"]
+__all__ = ["run_sample", "CleanRun", "Stage0", "DEFAULT_OXIDES",
+           "CleanEngineAlgorithm"]

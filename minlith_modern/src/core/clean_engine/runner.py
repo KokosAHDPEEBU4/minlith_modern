@@ -45,6 +45,14 @@ class CleanRun:
         return n
 
 
+def run_from_stage0(st0: Stage0) -> CleanRun:
+    """Прогнать уже посчитанную стадию 0 через типы/VI-этап/вывод."""
+    tsol = solve_type(st0)
+    vi = solve_stage_vi(st0, tsol)
+    out = output(st0, tsol, vi)
+    return CleanRun(st0=st0, tsol=tsol, vi=vi, out=out)
+
+
 def run_sample(oxide_values: dict[str, float],
                data_dir: object | None = None,
                entry: str = "aDefin",
@@ -56,8 +64,4 @@ def run_sample(oxide_values: dict[str, float],
     """
     merged = {**DEFAULT_OXIDES, **{k: (0.0 if v is None else v)
                                    for k, v in oxide_values.items()}}
-    st0 = compute_stage0(merged)
-    tsol = solve_type(st0)
-    vi = solve_stage_vi(st0, tsol)
-    out = output(st0, tsol, vi)
-    return CleanRun(st0=st0, tsol=tsol, vi=vi, out=out)
+    return run_from_stage0(compute_stage0(merged))
