@@ -282,7 +282,6 @@ def _t5(sol: TypeSolution, ca_in: float, mg_1: float, fe3_2: float,
         sol.gb = al3_3 - k3 * chl                # C230
         sol.si_n = 0.0                            # C231 (статичный 0)
         sol.ca_n = ca_in                          # D8
-        sol.or_ = or_p
         return
     c233 = al3_3 / k3 - si3_3 / k4
     c234 = al3_3 / k3 - fe3_2 / k2
@@ -310,7 +309,6 @@ def _t5(sol: TypeSolution, ca_in: float, mg_1: float, fe3_2: float,
         al3_4 = al3_3 - k4 * chl                 # C249 (k4! квирк оригинала)
         sol.fe_n = 0.0                           # C250
     sol.ca_n = ca_in                              # D8
-    sol.or_ = or_p
     _t3_balance(sol, si3_4, al3_4)                # p_257
     sol.trace.append("t5")
 
@@ -507,14 +505,14 @@ def type3(st0: Stage0) -> TypeSolution:
         return sol
 
     if f93 and c97 > 0:                        # p_97 → p_93t (Mg-путь)
-        sol.or_ = k - 2.0 * c97                # C98
-        c100 = fe3_1 - c97 - k2 * c95          # C100
+        sol.ill = c97                        # C97 (ill_3+ill)
+        sol.chl = c95                        # C95 — пишется всегда
+        sol.or_ = k - 2.0 * c97              # C98
+        sol.mg_n = 0.0                       # C99 — статичный ноль
+        c100 = fe3_1 - c97 - k2 * c95        # C100
         c101 = si3_2 - 16.0 * c97 - k4 * c95 - 6.0 * sol.or_   # C101
         if c100 >= 0 and c101 >= 0:            # D106 → rVI
-            sol.ill = c97
-            sol.chl = c95
             sol.fe_n = c100
-            sol.mg_n = 0.0                     # C99 — статичный ноль
             sol.si_n = c101
             sol.trace.append("D106")
             return sol
@@ -563,15 +561,19 @@ def type3(st0: Stage0) -> TypeSolution:
 # Типы 4-5 (алюминиевые): обычный путь (кварцит) и mm-путь (highal)
 # --------------------------------------------------------------------------
 def _t45_after_m37x(sol: TypeSolution, si: float, al: float, k: float,
-                    mg: float, na: float, ca: float) -> None:
-    """m_366→m_371→(m_376→m_379): возврат из Ca-дефицита (C366..C383)."""
-    an = ca                                # C366
-    ca_n = 0.0                             # C367
-    si_n0 = (si - 6.0 * k) - 2.0 * ca      # C368 (C276)
-    al4_2 = (al - k) - ca                  # C369 (C277)
-    sol.an = an
-    sol.ca_n = ca_n
-    sol.si_n = si_n0
+                    mg: float, na: float, ca: float, m366_rewrite: bool) -> None:
+    """m_371→(m_376→m_379) с опциональным входом через m_366 (C366..C383).
+
+    m_343-вход (из m_334, d343: ca_n<0) → сначала m_366 переписывает
+    an=ca, ca_n=0, si_n=C368, al4_2=C369. m_294-вход (из m_287t,
+    d294: ca_n<=0) → m_366 не выполняется, an/ca_n сохраняются."""
+    si_n0 = (si - 6.0 * k) - 2.0 * ca      # C368 (= C276 − 2·C366)
+    al4_2 = (al - k) - ca                  # C369 (= C277 − C366)
+    if m366_rewrite:
+        sol.an = ca                        # C366
+        sol.ca_n = 0.0                     # C367
+        sol.si_n = si_n0
+        sol.al4_2 = al4_2
     mm = (al4_2 - na) / 4.0                # C371
     ab = na - mm                           # C372
     sol.mm, sol.ab = mm, ab
@@ -610,8 +612,8 @@ def _t45_m334(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         sol.gb = gb
         sol.fe_n = fe3_1                        # fe_n ← fe3_1
         sol.si_n = 0.0                          # C339
-        if ca_n < 0:                           # d343 → m_366
-            _t45_after_m37x(sol, si, al, k, mg, na, ca)
+        if ca_n < 0:                           # d343 → m_366 (m_366 rewrite)
+            _t45_after_m37x(sol, si, al, k, mg, na, ca, True)
             sol.trace.append("m_334t->m_343")
             return sol
         sol.trace.append("mm-path (D334)")
@@ -668,7 +670,7 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
             if ca_n > 0:                   # d294 → rVI
                 sol.trace.append("m_281t-m_287t")
                 return sol
-            _t45_after_m37x(sol, si, al, k, mg, na, ca)   # m_371
+            _t45_after_m37x(sol, si, al, k, mg, na, ca, False)   # m_371
             return sol
         # d287 false → m_334
         return _t45_m334(sol, si4_1, al4_1, mg0v, na, k1, k2, k3, k4,
@@ -722,10 +724,10 @@ def _t45_m279(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
     if mg0v - 2.0 * na > 0:                    # d322 → m_322t
         sol.mm = na                            # C323
         sol.mg_n = mg0v - 2.0 * na             # C324
-        al4 = al4_1 - 5.0 * na                 # C325
-        si4 = si4_1 - 24.0 * na                # C326
-        sol.si_n = si4
-        if si4 < 0:                            # d328 → m_334
+        al4 = al4_1 - 5.0 * na                 # C325 (1-я оценка → al4_1)
+        si4 = si4_1 - 24.0 * na                # C326 (1-я оценка → si4_1)
+        sol.si_n = si4 - 24.0 * na             # C326 (повторная: si4_1 уже обновлён)
+        if si4 - 24.0 * na < 0:                # d328 (C328=C326 повт.) → m_334
             return _t45_m334(sol, si4, al4, mg0v, na, k1, k2, k3,
                              k4, ca, ca_in, fe3_1, si, al, k, mg, na)
         _t3_balance(sol, si4, al4)             # p_81
@@ -988,12 +990,11 @@ def type45(st0: Stage0) -> TypeSolution:
             sol.trace.append("type45-normal")
             if fe_n >= 0 and si_n >= 0 and ca_n >= 0:    # d448 → rVI
                 return sol
-            # m_450 → m_454
-            an2 = ca                           # C450
-            al4_2 = al4_1 - an2                # C451
-            si4_2n = si4_1 - 2.0 * an2         # C452
+# m_450 → m_454
+            an2 = ca                       # C450
+            al4_2 = al4_1 - an2            # C451
+            si4_2n = si4_1 - 2.0 * an2    # C452
             sol.an = an2
-            sol.ca_n = ca - an2                # (перекрыто далее при t5)
             sol.si_n = si4_2n
             if 2.0 * mg4_1 + na - al4_2 < 0:   # d454 → m_455t
                 mm2 = (al4_2 - na) / 4.0       # C455
@@ -1045,9 +1046,9 @@ def type45(st0: Stage0) -> TypeSolution:
                 si4_1b = si4_1 - k4 * chl3            # C489
                 mg0b = mg4_1 - k1 * chl3              # C490
                 sol.si_n = si4_1b
-                if si4_1b - 6.0 * na >= 0:            # d492 → m_279 (mg0=mg)
+                if si4_1b - 6.0 * na >= 0:            # d492 → m_279 (mg0 ← C490)
                     sol.trace.append("t45-m486->m279")
-                    return _t45_m279(sol, si4_1b, al4_1b, mg, na,
+                    return _t45_m279(sol, si4_1b, al4_1b, mg0b, na,
                                      k1, k2, k3, k4, ca, ca_in, fe3_1,
                                      al, si, k, mg)
                 sol.ab = na                           # m_494
