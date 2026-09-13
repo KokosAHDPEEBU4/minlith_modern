@@ -20,6 +20,10 @@ class CleanRun:
     out: Output = field(default_factory=Output)
 
     @property
+    def trace(self) -> list[str]:
+        return self.tsol.trace + self.vi.trace
+
+    @property
     def names(self) -> dict[str, float]:
         """Имена переменных, совпадающие с набором excel_port (для сверки)."""
         fe = self.st0.fe

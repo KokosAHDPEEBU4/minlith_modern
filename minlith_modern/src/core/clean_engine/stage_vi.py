@@ -30,7 +30,7 @@ class StageVI:
 
 
 def solve_stage_vi(st0: Stage0, tsol: TypeSolution) -> StageVI:
-    """Выполняет VI этап по остаткам ca_n/mg_n/fe_n/si_n."""
+    """Выполняет VI этап по остаткам ca_n/mg_n/fe_n/si_n (rVI, s_97t..s_137)."""
     ca_n = tsol.ca_n
     mg_n = tsol.mg_n
     fe_n = tsol.fe_n
@@ -38,8 +38,8 @@ def solve_stage_vi(st0: Stage0, tsol: TypeSolution) -> StageVI:
     mn_fe = st0.fe["MnO"]
     vi = StageVI()
 
-    # Ветка A: ca_n >= mg_n + fe_n (карбонатная щёлочноземельная)
-    # Mn -> родохрозит (rch); в ветках B/C Mn -> prl.
+    # Ветка A (s_97t): ca_n >= mg_n + fe_n
+    # Fe -> анкерит, Mn -> родохрозит, весь Si -> кварц.
     if ca_n - mg_n - fe_n >= 0.0:
         vi.dl = mg_n
         vi.ank = fe_n
@@ -49,43 +49,42 @@ def solve_stage_vi(st0: Stage0, tsol: TypeSolution) -> StageVI:
         vi.trace.append("A")
         return vi
 
-    # Ветка B: mg_n <= ca_n < mg_n + fe_n
+    # Ветка B (s_104t + s_111): mg_n <= ca_n < mg_n + fe_n
     if mg_n <= ca_n < mg_n + fe_n:
         vi.dl = mg_n
         vi.ank = ca_n - mg_n
         fe_left = fe_n - vi.ank
-        vi.prl = mn_fe
-        if ca_n - vi.dl <= 250.0:
+        if ca_n - vi.dl <= 250.0:        # s_111t: гётит, Fe/2
             vi.ht = fe_left / 2.0
-        else:
-            vi.ht = fe_left
+            vi.prl = mn_fe
+        else:                            # s_111e: сидерит, rch=Mn
+            vi.sd = fe_left
+            vi.rch = mn_fe
         vi.q = si_n
         vi.trace.append("B")
         return vi
 
-    # Ветка C: ca_n - mg_n < 0
+    # Ветка C (s_121): ca_n - mg_n < 0
     if ca_n - mg_n < 0.0:
         vi.dl = ca_n
         c123 = mg_n - ca_n
-        vi.prl = mn_fe
-        if si_n - (2.0 / 3.0) * c123 > 0.0:
+        if si_n - (2.0 / 3.0) * c123 > 0.0:   # s_125t: серпентин
             vi.srp = c123 / 3.0
             vi.q = si_n - 2.0 * vi.srp
             vi.ht = fe_n / 2.0
+            vi.prl = mn_fe
             vi.trace.append("C-srp")
-        elif si_n - c123 < 0.0:
-            vi.q = si_n / 2.0
-            vi.mst = c123 - 3.0 * vi.q
+        elif si_n - c123 < 0.0:               # s_131: магнезит (srp=si_n/2)
+            vi.srp = si_n / 2.0
+            vi.mst = c123 - 3.0 * vi.srp
             vi.ht = fe_n / 2.0
+            vi.prl = mn_fe
             vi.trace.append("C-mst")
-        elif si_n == 0.0:
-            vi.srp = c123
-            vi.ht = fe_n
-            vi.trace.append("C-srp0")
-        else:
-            raise NotImplementedError(
-                "Этап VI: ветка C (si_n>0, без остатка) не реализована."
-            )
+        else:                                 # s_137: магнезит+сидерит
+            vi.mst = c123
+            vi.sd = fe_n
+            vi.rch = mn_fe
+            vi.trace.append("C-mst2")
         return vi
 
     raise NotImplementedError("Этап VI: ни одна ветка A/B/C не сошлась.")
