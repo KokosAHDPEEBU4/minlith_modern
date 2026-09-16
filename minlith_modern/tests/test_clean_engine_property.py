@@ -83,13 +83,11 @@ def test_synthetic_row287_nonnegative(oxides):
 
 
 def test_branch_gaps_are_explicit_and_counted():
-    """Часть веток оригинала сознательно не реализована -> NotImplementedError."""
+    """Все ветки оригинала реализованы: на синтетическом гриде нет NotImplementedError."""
     gaps = 0
     for oxides in _SYNTH:
         try:
             run_sample(oxides)
         except NotImplementedError:
             gaps += 1
-    # на подвыборке (3^7/11 ~ 199 комбинаций) есть и успех, и явные gap-и
-    assert gaps > 0
-    assert gaps < len(_SYNTH)
+    assert gaps == 0

@@ -235,3 +235,17 @@ tests/test_validation.py           4 passed
 `excel_port(run_sample(rounding=False))` с точностью ≤1e-9 (фактически бит-в-бит).
 
 Полный сьют: 450 passed, 5 skipped.
+
+
+---
+
+## 2026-09-16 — ПОЛНЫЙ ПАРИТЕТ clean_engine vs excel_port (rounding=False)
+
+- 3000-crawl: n_ok=3000 n_gap=0 n_mis=0; **16000-crawl (полная решётка): n_ok=16000 n_gap=0 n_mis=0** (worst |delta| ~2e-12).
+- Закрыты последние ветки:
+  - **p_222 → s_271** (тип 3, s_274→s_221→s_221t→s_238→s_243→rVI): ill=0, or=0 (C222/C223 пусты), fe_n=C224, mg_n=C225, kn=C244, gb=C245, si_n=C246; s_238 gate d238 отсутствует -> всегда s_243.
+  - **p222->t5**: `or` сохраняется из p_93t (C98) — в `_t5` передаётся `sol.or_`, не 0.
+  - **m_322t->p_81**: цепочка live-копий C325/C326 -> `_t3_balance(si4-24na, al4-5na)`.
+  - **m_450**: ca_n не пишется (только an/an_4, al4_2, si4_2/si_n).
+  - **Плагиоклазовые редкие ветки**: p_53t (D51&D53) и p_68->p_68t (безусловно).
+- verify_m37x.py и verify_rem.py: все группы OK. property-тесты: 627 passed (gap-тест обновлён: gaps==0).

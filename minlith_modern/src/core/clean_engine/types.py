@@ -137,6 +137,24 @@ def type2(st0: Stage0) -> TypeSolution:
 
     si_1 = si - 6.0 * na                # C175
 
+    # ---- s_177/s_179 → s_180: илито-кварцевый коридор (or=k, an из кремнезёма) ----
+    if si_1 - 6.0 * k - 0.4 * na < 0:            # d177 → s_179
+        if ca - (si_1 - 6.0 * k) / 2.0 >= 0:     # d179 → s_180
+            or_k = k                             # C180
+            si_2k = si_1 - 6.0 * k               # C181
+            an_k = si_2k / 2.0                   # C182
+            al_1k = al - k - na                  # C183
+            sol.or_ = or_k
+            sol.si_n = 0.0                       # C185
+            sol.an = an_k
+            sol.ca_n = ca - an_k                 # C186
+            sol.gb = al_1k - an_k                # C184
+            sol.fe_n = fe3_1                     # = fe_1 (I21)
+            sol.mg_n = mg                        # mg_n ← D7
+            sol.trace.append("ill-kz (D177-D179)")
+            return sol
+    # иначе s_188(d188)/s_190 → s_192: анортит
+
     # ---- анортит: s_192 / s_197 (s_198 / s_198an) ----
     if ca >= 0.2 * na:                  # D192: Ca хватает на анортит
         sol.an = 0.2 * na
@@ -435,8 +453,22 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
     sol.si_n = si3_3
     sol.trace.append("3333b")
     if si3_3 < 0:                              # p_222 (d221) → s_271
-        raise NotImplementedError("Тип 3: p_222 → s_271 (редкая ветка).")
-    _t5(sol, ca_in, mg_1, fe3_2, al3_3, si3_3, k1, k2, k3, k4, 0.0)
+        if k2 == 0:                            # s_274 → s_274t (k2=0, редко)
+            raise NotImplementedError(
+                "Тип 3: p_222 → s_271 → s_274t (k2=0).")
+        # s_274 → s_221 → s_221t (d221=si3_3<0)
+        sol.ill = 0.0                          # C222 (пусто)
+        sol.or_ = 0.0                          # C223 (пусто)
+        sol.fe_n = si3_3 / k4 - mg_1 / k1      # C224
+        sol.mg_n = si3_3 / k4 - fe3_2 / k2     # C225
+        # s_238: d238 не определён → s_243
+        sol.kn = fe3_2 / k2 - mg_1 / k1        # C244
+        sol.gb = fe3_2 / k2 - al3_3 / k3       # C245
+        sol.si_n = fe3_2 / k2                  # C246
+        sol.trace.append("s_271")
+        return sol
+    # Excel: p_222 (d221-false) → p_227; or сохраняется (не пишется в p_215)
+    _t5(sol, ca_in, mg_1, fe3_2, al3_3, si3_3, k1, k2, k3, k4, sol.or_)
     sol.trace.append("p222->t5")
 
 
@@ -456,27 +488,38 @@ def type3(st0: Stage0) -> TypeSolution:
     si3_1 = si - 6.0 * na                      # C47
     al3_1 = al - na                            # C48
     c50 = ca - 0.2 * na
-    c51 = si3_1 - 6.0 * k - 0.4 * na           # D51 (редкая)
-    c53 = si3_1 - 6.0 * k - 2.0 * ca           # D53 (редкая)
-    if (c50 >= 0 and c51 < 0) or (c50 < 0 and c53 < 0):
-        raise NotImplementedError("Тип 3: редкие ветки плагиоклаза (D51/D53).")
-    c60 = ca - 0.2 * na
-    c61 = si3_1 - 6.0 * k - 0.4 * na
-    if c60 >= 0 and c61 >= 0:                  # D61
-        sol.an = 0.2 * na
+    c51 = si3_1 - 6.0 * k - 0.4 * na           # C51
+    c52 = ca - 0.2 * na                        # C52 (повтор C50)
+    c53 = si3_1 - 6.0 * k - 2.0 * ca           # C53
+    c60 = ca - 0.2 * na                        # C60
+    c61 = si3_1 - 6.0 * k - 0.4 * na           # C61
+    if c50 >= 0 and c51 < 0 and c52 < 0 and c53 < 0:
+        # p_53 → p_53t → rVI (редкая плагиоклазовая ветка D51&D53)
+        an_p = (si3_1 - 6.0 * k) / 2.0         # C55
+        sol.or_ = k                            # C54
+        sol.an = an_p
+        sol.si_n = 0.0                         # C56 (статичный 0)
+        sol.ca_n = ca - an_p                   # C57
+        sol.gb = al3_1 - k - an_p              # C58
+        sol.fe_n = fe3_1                       # fe_n ← fe3_1
+        sol.mg_n = mg                          # mg_n ← mg (ф.к)
+        sol.trace.append("p_53t")
+        return sol
+    if c60 >= 0 and c61 >= 0:                  # p_61t (D61)
+        sol.an = 0.2 * na                      # C62
         si3_2 = si3_1 - 2.0 * sol.an           # C63
         al3_2 = al3_1 - sol.an                 # C64
+        sol.fe_n = fe3_1
+        sol.mg_n = mg
         sol.trace.append("D61")
-    else:                                      # D68
-        c67 = ca - 0.2 * na
-        c68 = si3_1 - 6.0 * k - 2.0 * ca
-        if not (c67 < 0 and c68 >= 0):
-            raise NotImplementedError("Тип 3: плагиоклаз D61/D68 не сошёлся.")
-        sol.an = ca
+    else:                                      # p_68 → p_68t (безусловно)
+        sol.an = ca                            # C69
         si3_2 = si3_1 - 2.0 * sol.an           # C70
         al3_2 = al3_1 - sol.an                 # C71
+        sol.fe_n = fe3_1
+        sol.mg_n = mg
         sol.trace.append("D68")
-    sol.ca_n = ca - sol.an                     # C65/C72 (0 при D68)
+    sol.ca_n = ca - sol.an                     # C65 (D61) / C72=0 (D68)
 
     # ---- иллит/хлорит ----
     c90 = 4.5 * mg - al3_2 + k                 # C90
@@ -507,14 +550,14 @@ def type3(st0: Stage0) -> TypeSolution:
         return sol
 
     if f93 and c97 > 0:                        # p_97 → p_93t (Mg-путь)
-        sol.or_ = k - 2.0 * c97                # C98
-        c100 = fe3_1 - c97 - k2 * c95          # C100
+        sol.ill = c97                        # C97 (ill_3+ill) — пишется сразу
+        sol.chl = c95                        # C95 — пишется всегда
+        sol.or_ = k - 2.0 * c97              # C98
+        sol.mg_n = 0.0                       # C99 — статичный ноль
+        c100 = fe3_1 - c97 - k2 * c95        # C100
         c101 = si3_2 - 16.0 * c97 - k4 * c95 - 6.0 * sol.or_   # C101
         if c100 >= 0 and c101 >= 0:            # D106 → rVI
-            sol.ill = c97
-            sol.chl = c95
             sol.fe_n = c100
-            sol.mg_n = 0.0                     # C99 — статичный ноль
             sol.si_n = c101
             sol.trace.append("D106")
             return sol
@@ -563,14 +606,21 @@ def type3(st0: Stage0) -> TypeSolution:
 # Типы 4-5 (алюминиевые): обычный путь (кварцит) и mm-путь (highal)
 # --------------------------------------------------------------------------
 def _t45_after_m37x(sol: TypeSolution, si: float, al: float, k: float,
-                    mg: float, na: float, ca: float) -> None:
-    """m_366→m_371→(m_376→m_379): возврат из Ca-дефицита (C366..C383)."""
+                    mg: float, na: float, ca: float,
+                    m366_rewrite: bool = False) -> None:
+    """m_366→m_371→(m_376→m_379): возврат из Ca-дефицита (C366..C383).
+
+    m366_rewrite — True при входе из m_334 (d343): Excel затирает
+    an=ca, ca_n=0. False при входе из m_281t (d294-false): an/ca_n=0
+    уже выставлены в m_287t и не перезаписываются.
+    """
     an = ca                                # C366
     ca_n = 0.0                             # C367
+    if m366_rewrite:
+        sol.an = an
+        sol.ca_n = ca_n
     si_n0 = (si - 6.0 * k) - 2.0 * ca      # C368 (C276)
     al4_2 = (al - k) - ca                  # C369 (C277)
-    sol.an = an
-    sol.ca_n = ca_n
     sol.si_n = si_n0
     mm = (al4_2 - na) / 4.0                # C371
     ab = na - mm                           # C372
@@ -611,7 +661,7 @@ def _t45_m334(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         sol.fe_n = fe3_1                        # fe_n ← fe3_1
         sol.si_n = 0.0                          # C339
         if ca_n < 0:                           # d343 → m_366
-            _t45_after_m37x(sol, si, al, k, mg, na, ca)
+            _t45_after_m37x(sol, si, al, k, mg, na, ca, m366_rewrite=True)
             sol.trace.append("m_334t->m_343")
             return sol
         sol.trace.append("mm-path (D334)")
@@ -722,13 +772,16 @@ def _t45_m279(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
     if mg0v - 2.0 * na > 0:                    # d322 → m_322t
         sol.mm = na                            # C323
         sol.mg_n = mg0v - 2.0 * na             # C324
-        al4 = al4_1 - 5.0 * na                 # C325
-        si4 = si4_1 - 24.0 * na                # C326
-        sol.si_n = si4
-        if si4 < 0:                            # d328 → m_334
+        al4 = al4_1 - 5.0 * na                 # C325 (1-я оценка → al4_1)
+        si4 = si4_1 - 24.0 * na                # C326 (1-я оценка → si4_1)
+        # C326 реевалируется после записи si4_1 (=первый eval): si4_2/si3_3/si_n
+        # и ворота d328 (C328=C326) получают цепочку si4_1-48na.
+        sol.si_n = si4 - 24.0 * na
+        if si4 - 24.0 * na < 0:                # d328 → m_334
             return _t45_m334(sol, si4, al4, mg0v, na, k1, k2, k3,
                              k4, ca, ca_in, fe3_1, si, al, k, mg, na)
-        _t3_balance(sol, si4, al4)             # p_81
+        # p_81: si3_3=si4_1e-48na, al3_3=al4_1e-10na (цепочка копий C326/C325)
+        _t3_balance(sol, si4 - 24.0 * na, al4 - 5.0 * na)
         sol.trace.append("m_322t->p81")
         return sol
     # m_296 (mg0v-2na<=0) → m_296t
@@ -788,9 +841,12 @@ def _t45_513(sol: TypeSolution, si4_1: float, al4_1: float, mg4_1: float,
     si3 = si4_1 - 24.0 * na                     # C514
     mg1 = mg4_1 - 2.0 * na                      # C515
     al3 = al4_1 - 5.0 * na                      # C516
+    # D520 = AND(C518>=0,C519>=0,C520>=0); C518=al4_1-10*na, т.к. m_513
+    # уже перезаписал имя al4_1 (=C516) и формула C516 реевалируется.
+    al3_gate = al4_1 - 10.0 * na
     sol.mg_n = mg1
     sol.si_n = si3
-    if al3 >= 0 and mg1 >= 0 and si3 >= 0:      # m_520 (d520) → p_227
+    if si3 >= 0 and mg1 >= 0 and al3_gate >= 0:      # m_520 (d520) → p_227
         _t5(sol, ca_in, mg1, fe4_2, al3, si3, k1, k2, k3, k4, 0.0)
         sol.trace.append("t45-m513->t5")
         return sol
@@ -993,7 +1049,6 @@ def type45(st0: Stage0) -> TypeSolution:
             al4_2 = al4_1 - an2                # C451
             si4_2n = si4_1 - 2.0 * an2         # C452
             sol.an = an2
-            sol.ca_n = ca - an2                # (перекрыто далее при t5)
             sol.si_n = si4_2n
             if 2.0 * mg4_1 + na - al4_2 < 0:   # d454 → m_455t
                 mm2 = (al4_2 - na) / 4.0       # C455
@@ -1045,9 +1100,9 @@ def type45(st0: Stage0) -> TypeSolution:
                 si4_1b = si4_1 - k4 * chl3            # C489
                 mg0b = mg4_1 - k1 * chl3              # C490
                 sol.si_n = si4_1b
-                if si4_1b - 6.0 * na >= 0:            # d492 → m_279 (mg0=mg)
+                if si4_1b - 6.0 * na >= 0:            # d492 → m_279 (mg0=J272)
                     sol.trace.append("t45-m486->m279")
-                    return _t45_m279(sol, si4_1b, al4_1b, mg, na,
+                    return _t45_m279(sol, si4_1b, al4_1b, mg0b, na,
                                      k1, k2, k3, k4, ca, ca_in, fe3_1,
                                      al, si, k, mg)
                 sol.ab = na                           # m_494
