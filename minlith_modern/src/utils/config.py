@@ -20,6 +20,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "include_defect": True,
     "timeout_seconds": 120,
     "algorithm_mode": "clean",  # "stub" | "clean" | "custom"
+    "chart.zoom_step": 1.2,  # шаг зума диаграмм, диапазон (1.0, 5.0]
     "theme": "dark",
     "chart_theme": "dark",  # "dark" | "light" — background for charts
     "language": "ru",
@@ -55,7 +56,7 @@ class ConfigManager:
         self._data = dict(DEFAULT_CONFIG)
         if self._path.exists():
             try:
-                with open(self._path, "r", encoding="utf-8") as f:
+                with open(self._path, encoding="utf-8") as f:
                     saved = json.load(f)
                 self._data.update(saved)
             except (json.JSONDecodeError, OSError) as e:
@@ -154,6 +155,10 @@ class ConfigManager:
         if mode not in ("stub", "clean", "custom"):
             errors.append(f"Unknown algorithm_mode: {mode!r}")
 
+        zs = self._data.get("chart.zoom_step", 1.2)
+        if not isinstance(zs, (int, float)) or isinstance(zs, bool) or not (1.0 < zs <= 5.0):
+            errors.append(f"chart.zoom_step must be in (1.0, 5.0], got {zs!r}")
+
         theme = self._data.get("theme", "dark")
         if theme not in ("dark", "light"):
             errors.append(f"Unknown theme: {theme!r}")
@@ -175,7 +180,7 @@ class ConfigManager:
 
     def import_settings(self, path: Path | str) -> None:
         """Import settings from a JSON file (merges with current)."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             imported = json.load(f)
         self._data.update(imported)
         self.save()

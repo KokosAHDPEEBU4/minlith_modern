@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction, QKeySequence, QShortcut
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
@@ -14,8 +12,6 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QScrollArea,
-    QSplitter,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -23,20 +19,20 @@ from PyQt6.QtWidgets import (
 
 from src.core.calculator import Calculator
 from src.core.models import CalculationConfig, Sample
-from src.io.excel import load_samples, save_results
-from src.utils.config import ConfigManager
-from src.utils.cache import ResultCache
-from src.gui.pages.welcome_page import WelcomePage
-from src.gui.pages.files_page import FilesPage
-from src.gui.pages.input_page import InputPage
-from src.gui.pages.results_page import ResultsPage
-from src.gui.pages.settings_page import SettingsPage
-from src.gui.pages.history_page import HistoryPage
+from src.gui.dialogs.calculation_dialog import CalculationDialog
 from src.gui.pages.charts_page import ChartsPage
-from src.gui.pages.reports_page import ReportsPage
+from src.gui.pages.files_page import FilesPage
+from src.gui.pages.history_page import HistoryPage
+from src.gui.pages.input_page import InputPage
 from src.gui.pages.logs_page import LogsPage
 from src.gui.pages.output_page import OutputPage
-from src.gui.dialogs.calculation_dialog import CalculationDialog
+from src.gui.pages.reports_page import ReportsPage
+from src.gui.pages.results_page import ResultsPage
+from src.gui.pages.settings_page import SettingsPage
+from src.gui.pages.welcome_page import WelcomePage
+from src.io.excel import save_results
+from src.utils.cache import ResultCache
+from src.utils.config import ConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +119,8 @@ class MainWindow(QMainWindow):
         self._charts_page = ChartsPage()
         self._output_page = OutputPage()
         self._reports_page = ReportsPage()
+        self._apply_zoom_step()
+
         self._settings_page = SettingsPage(self._config)
         self._settings_page.settings_changed.connect(self._on_settings_changed)
         self._history_page = HistoryPage()
@@ -241,7 +239,7 @@ class MainWindow(QMainWindow):
             self._reports_page.set_results(dialog.results)
             self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, event) -> None:  # noqa: N802  # PyQt override
         geom = self.saveGeometry().toHex().data().decode()
         self._config["window_geometry"] = geom
         self._config.save()
@@ -270,8 +268,20 @@ class MainWindow(QMainWindow):
         logger.info("Algorithm mode: %s", config.algorithm_mode)
         return Calculator(config=config)
 
+    def _apply_zoom_step(self) -> None:
+        """Распространить ``chart.zoom_step`` из конфига на страницы диаграмм.
+
+        Шаг применяется мгновенно ко всем существующим плиткам без пересоздания.
+        """
+        step = self._config.get("chart.zoom_step", 1.2)
+        for page in (self._charts_page, self._output_page):
+            page._view.set_zoom_step(step)
+
     def _on_settings_changed(self) -> None:
         """Rebuild calculator and apply all settings immediately."""
+        # 0. Apply chart interaction settings (zoom step)
+        self._apply_zoom_step()
+
         # 1. Rebuild calculator with new config
         self._calculator = self._create_calculator()
         self._input_page._calculator = self._calculator

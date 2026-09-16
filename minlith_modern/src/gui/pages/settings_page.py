@@ -8,6 +8,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
@@ -88,6 +89,14 @@ class SettingsPage(QWidget):
         )
         calc_form.addRow("Режим алгоритма:", self._algorithm_mode)
 
+        self._zoom_step = QDoubleSpinBox()
+        self._zoom_step.setRange(1.05, 5.0)
+        self._zoom_step.setSingleStep(0.05)
+        self._zoom_step.setDecimals(2)
+        self._zoom_step.setValue(float(config.get("chart.zoom_step", 1.2)))
+        self._zoom_step.setToolTip("Фактор зума за один шаг колеса/кнопки (1.0..5.0)")
+        calc_form.addRow("Шаг зума диаграмм:", self._zoom_step)
+
         layout.addWidget(calc_group)
 
         # Интерфейс
@@ -139,6 +148,7 @@ class SettingsPage(QWidget):
         self._config["decimal_places"] = self._decimal_places.value()
         self._config["timeout_seconds"] = self._timeout.value()
         self._config["algorithm_mode"] = self._algorithm_mode.currentText()
+        self._config["chart.zoom_step"] = round(self._zoom_step.value(), 2)
         self._config["theme"] = self._theme.currentText()
         self._config["chart_theme"] = self._chart_theme.currentText()
         self._config["language"] = self._language.currentText()
@@ -176,6 +186,7 @@ class SettingsPage(QWidget):
         self._decimal_places.setValue(self._config.get("decimal_places", 2))
         self._timeout.setValue(self._config.get("timeout_seconds", 120))
         self._algorithm_mode.setCurrentText(self._config.get("algorithm_mode", "clean"))
+        self._zoom_step.setValue(float(self._config.get("chart.zoom_step", 1.2)))
         self._theme.setCurrentText(self._config.get("theme", "dark"))
         self._chart_theme.setCurrentText(self._config.get("chart_theme", "dark"))
         self._language.setCurrentText(self._config.get("language", "ru"))

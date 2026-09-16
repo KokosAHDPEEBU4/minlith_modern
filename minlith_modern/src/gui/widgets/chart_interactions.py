@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 __all__ = [
     "ChartCategory",
@@ -63,8 +62,8 @@ class InteractionSpec:
     resettable: bool = True
     hover_info: bool = False
     click_action: bool = False
-    sync_group: Optional[str] = None
-    default_limits: Optional[tuple[float, float]] = None
+    sync_group: str | None = None
+    default_limits: tuple[float, float] | None = None
     min_range_width: float = MIN_RANGE_WIDTH_DEFAULT
 
     @property
@@ -101,7 +100,7 @@ BUILTIN_TYPE_IDS: tuple[str, ...] = (
 )
 
 
-def _cat_bar_tiered(sync: Optional[str]) -> InteractionSpec:
+def _cat_bar_tiered(sync: str | None) -> InteractionSpec:
     """Категория B: колесо/rect-зум только по числовой оси Y."""
     return InteractionSpec(
         category=ChartCategory.CATEGORY_AXIS,
@@ -112,7 +111,7 @@ def _cat_bar_tiered(sync: Optional[str]) -> InteractionSpec:
     )
 
 
-def _cat_equal_aspect(sync: Optional[str]) -> InteractionSpec:
+def _cat_equal_aspect(sync: str | None) -> InteractionSpec:
     """Категория C: зум единым фактором обеих осей (равный аспект)."""
     return InteractionSpec(
         category=ChartCategory.EQUAL_ASPECT,

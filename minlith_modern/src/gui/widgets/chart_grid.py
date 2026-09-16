@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -27,6 +26,15 @@ from src.gui.widgets.chart_interactions import (
     get_spec,
     resolve_type_id,
 )
+from src.gui.widgets.zoom_math import (
+    DEFAULT_ZOOM_STEP,
+    ModifierMode,
+    is_categorical_axis,
+    modifier_mode,
+    normalize_zoom_step,
+    pan_lims,
+    zoom_lims,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +53,11 @@ class _ChartTile(QWidget):
     (box-zoom, pan, home/reset, save) plus explicit zoom in/out buttons.
     """
 
-    ZOOM_STEP = 1.25
+    ZOOM_STEP = DEFAULT_ZOOM_STEP
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, zoom_step: float = DEFAULT_ZOOM_STEP) -> None:
         super().__init__(parent)
+        self._zoom_step = normalize_zoom_step(zoom_step)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(2)
@@ -68,13 +77,13 @@ class _ChartTile(QWidget):
         self._btn_zoom_out = QPushButton("Отдалить")
         self._btn_zoom_out.setFixedHeight(28)
         self._btn_zoom_out.setToolTip("Отдалить (колесо мыши — вниз)")
-        self._btn_zoom_out.clicked.connect(lambda: self.zoom(1 / self.ZOOM_STEP))
+        self._btn_zoom_out.clicked.connect(self._on_zoom_out)
         btn_row.addWidget(self._btn_zoom_out)
 
         self._btn_zoom_in = QPushButton("Приблизить")
         self._btn_zoom_in.setFixedHeight(28)
         self._btn_zoom_in.setToolTip("Приблизить (колесо мыши — вверх)")
-        self._btn_zoom_in.clicked.connect(lambda: self.zoom(self.ZOOM_STEP))
+        self._btn_zoom_in.clicked.connect(self._on_zoom_in)
         btn_row.addWidget(self._btn_zoom_in)
 
         self._btn_reset = QPushButton("По умолчанию")
@@ -202,12 +211,50 @@ class _ChartTile(QWidget):
                     continue
         self._cids.clear()
 
-    def zoom(self, factor: float, anchor: tuple | None = None) -> None:
-        """Изменить масштаб всех осей вокруг ``anchor``.
+    def _supports_zoom(self) -> bool:
+        """True, если плитке разрешён зум (иначе пределы менять нельзя)."""
+        return self._spec is None or self._spec.supports_zoom
 
-        ``anchor`` — точка в координатах данных (см. ``event.xdata/ydata``);
-        если не задана, используется центр осей. ``factor > 1`` — приблизить,
-        ``factor < 1`` — отдалить.
+    def set_zoom_step(self, step: float) -> None:
+        """Обновить шаг зума плитки (конфиг читать запрещено — параметр).
+
+        После вызова кнопки «Приблизить/Отдалить» и колесо используют
+        новый фактор без пересоздания плитки.
+        """
+        new_step = normalize_zoom_step(step)
+        if new_step != step:
+            logger.warning("zoom_step %r вне (1.0, 5.0] — использован дефолт %s", step, new_step)
+        self._zoom_step = new_step
+
+    def _on_zoom_in(self) -> None:
+        self.zoom(self._zoom_step)
+
+    def _on_zoom_out(self) -> None:
+        self.zoom(1 / self._zoom_step)
+
+    def zoom(self, factor: float, anchor: tuple | None = None) -> None:
+        """Изменить масштаб осей вокруг ``anchor`` (зум обеих осей).
+
+        ``anchor`` — точка в координатах данных (``event.xdata/ydata``);
+        если не задана, используется центр каждой оси. ``factor > 1`` —
+        приблизить, ``factor < 1`` — отдалить. Категориальные оси (номинальные
+        метки) при зуме не масштабируются — пропускаются.
+        """
+        if self._fig is None or self._canvas is None:
+            return
+        self._apply_zoom(factor, anchor, ModifierMode.ZOOM_XY)
+
+    def _apply_zoom(
+        self,
+        factor: float,
+        anchor: tuple | None,
+        mode: ModifierMode,
+        redraw: bool = True,
+    ) -> None:
+        """Общая логика зума/пана: изменить пределы осей (без обязательного draw).
+
+        ``mode`` определяет, какие оси затрагиваются и выполняется ли пан.
+        При ``redraw=False`` отрисовка откладывается (групповые операции).
         """
         if self._fig is None or self._canvas is None:
             return
@@ -215,56 +262,95 @@ class _ChartTile(QWidget):
             try:
                 xlog = ax.get_xscale() == "log"
                 ylog = ax.get_yscale() == "log"
-                ax_anchor = (float(anchor[0]), float(anchor[1])) if anchor is not None else None
-                xlim = ax.get_xlim()
-                ylim = ax.get_ylim()
-                cx = (xlim[0] + xlim[1]) / 2.0
-                cy = (ylim[0] + ylim[1]) / 2.0
-                if ax_anchor is not None:
-                    cx = ax_anchor[0]
-                    cy = ax_anchor[1]
-                new_xlim = self._zoom_lims(xlim, cx, factor, log=xlog)
-                new_ylim = self._zoom_lims(ylim, cy, factor, log=ylog)
-                ax.set_xlim(*new_xlim)
-                ax.set_ylim(*new_ylim)
+                ax_anchor = (
+                    (float(anchor[0]), float(anchor[1])) if anchor is not None else None
+                )
+                if (
+                    mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_X)
+                    and not is_categorical_axis(ax, "x")
+                ):
+                    xlim = ax.get_xlim()
+                    if ax_anchor is not None and ax_anchor[0] is not None:
+                        cx = ax_anchor[0]
+                    else:
+                        cx = (xlim[0] + xlim[1]) / 2.0
+                    new_x = zoom_lims(xlim, cx, factor, log=xlog)
+                    ax.set_xlim(*new_x)
+                if (
+                    mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_Y)
+                    and not is_categorical_axis(ax, "y")
+                ):
+                    ylim = ax.get_ylim()
+                    if ax_anchor is not None and ax_anchor[1] is not None:
+                        cy = ax_anchor[1]
+                    else:
+                        cy = (ylim[0] + ylim[1]) / 2.0
+                    new_y = zoom_lims(ylim, cy, factor, log=ylog)
+                    ax.set_ylim(*new_y)
             except (ValueError, TypeError, AttributeError) as exc:
                 logger.debug("Zoom skip axis %s: %s", ax, exc)
                 continue
+        if redraw:
+            self._canvas.draw_idle()
+
+    def pan_x(self, direction: float, mode: ModifierMode = ModifierMode.PAN_X) -> None:
+        """Панорамирование по X: ``direction > 0`` — вправо, ``< 0`` — влево.
+
+        Используется прямыми вызовами (Shift+колесо, кнопки). Категориальная
+        ось X — пропуск (номинальные метки не сдвигаются).
+        """
+        if mode != ModifierMode.PAN_X:
+            return
+        if self._fig is None or self._canvas is None:
+            return
+        for ax in self._fig.axes:
+            try:
+                if is_categorical_axis(ax, "x"):
+                    continue
+                xlog = ax.get_xscale() == "log"
+                xlim = ax.get_xlim()
+                new_x = pan_lims(xlim, direction, log=xlog)
+                ax.set_xlim(*new_x)
+            except (ValueError, TypeError, AttributeError) as exc:
+                logger.debug("Pan skip axis %s: %s", ax, exc)
+                continue
         self._canvas.draw_idle()
 
-    @staticmethod
-    def _zoom_lims(lim: tuple, anchor: float, factor: float, log: bool) -> tuple:
-        """Новые границы, при которых точка ``anchor`` остаётся на месте."""
-        lo, hi = float(lim[0]), float(lim[1])
-        if log and lo > 0 and hi > 0 and anchor > 0:
-            import math
-            lo_l = math.log10(lo)
-            hi_l = math.log10(hi)
-            a_l = math.log10(anchor)
-            new_lo = 10 ** (lo_l - (a_l - lo_l) * factor)
-            new_hi = 10 ** (hi_l + (hi_l - a_l) * factor)
-            return (new_lo, new_hi)
-        new_lo = anchor - (anchor - lo) * factor
-        new_hi = anchor + (hi - anchor) * factor
-        return (new_lo, new_hi)
-
     def _on_scroll(self, event) -> None:
-        """Колесо мыши: вращение вверх — приблизить, вниз — отдалить."""
-        if event.inaxes is None:
+        """Колесо мыши: с модификаторами — зум по осям или пан, без — зум обеих осей."""
+        mode = modifier_mode(event)
+        if mode is ModifierMode.NONE:
             return
-        if self._spec is not None and not self._spec.supports_zoom:
+        if not self._supports_zoom():
             return
-        factor = self.ZOOM_STEP ** event.step if event.step > 0 else (1 / self.ZOOM_STEP) ** abs(event.step)
-        self.zoom(factor, anchor=(event.xdata, event.ydata))
+        step = self._zoom_step
+        if event.step > 0:
+            factor = step
+            direction = -1.0
+        else:
+            factor = 1 / step
+            direction = 1.0
+        if mode is ModifierMode.PAN_X:
+            self.pan_x(direction)
+        else:
+            anchor = (event.xdata, event.ydata)
+            self._apply_zoom(factor, anchor, mode)
 
     def reset_view(self) -> None:
-        """Вернуть масштаб диаграммы к исходному («по умолчанию»)."""
+        """Вернуть масштаб диаграммы к исходному («по умолчанию»).
+
+        ``set_*lims`` во время зума отключает флаги autoscale; повторное
+        включение ``autoscale(enable=True)`` обязательно для восстановления.
+        Плитки без поддержки зума (pie) не меняются — сброс для них no-op.
+        """
         if self._fig is None or self._canvas is None:
+            return
+        if not self._supports_zoom():
             return
         try:
             for ax in self._fig.axes:
                 ax.relim()
-                ax.autoscale_view()
+                ax.autoscale(enable=True)
         except (ValueError, TypeError, AttributeError) as exc:
             logger.debug("Reset view skip axis %s: %s", ax, exc)
         self._canvas.draw_idle()
@@ -278,9 +364,10 @@ class MultiChartView(QWidget):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self._data: Optional[ChartData] = None
+        self._data: ChartData | None = None
         self._tiles: list[_ChartTile] = []
         self._checkboxes: list[QCheckBox] = []
+        self._zoom_step: float = DEFAULT_ZOOM_STEP
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -311,6 +398,18 @@ class MultiChartView(QWidget):
         self._btn_render.setStyleSheet("font-weight: bold; padding: 6px 16px;")
         self._btn_render.clicked.connect(self.render)
         ctrl_row.addWidget(self._btn_render)
+
+        self._btn_zoom_all_in = QPushButton("Приблизить все")
+        self._btn_zoom_all_in.clicked.connect(lambda: self.zoom_all(1))
+        ctrl_row.addWidget(self._btn_zoom_all_in)
+
+        self._btn_zoom_all_out = QPushButton("Отдалить все")
+        self._btn_zoom_all_out.clicked.connect(lambda: self.zoom_all(-1))
+        ctrl_row.addWidget(self._btn_zoom_all_out)
+
+        self._btn_reset_all = QPushButton("Сбросить все")
+        self._btn_reset_all.clicked.connect(self.reset_all)
+        ctrl_row.addWidget(self._btn_reset_all)
 
         self._btn_export_all = QPushButton("Экспорт всех в PNG")
         self._btn_export_all.clicked.connect(self.export_all)
@@ -347,7 +446,13 @@ class MultiChartView(QWidget):
 
     # ── Public API ──
 
-    def set_data(self, data: Optional[ChartData]) -> None:
+    def set_zoom_step(self, step: float) -> None:
+        """Задать шаг зума для сетки и всех живых плиток (без пересоздания)."""
+        self._zoom_step = normalize_zoom_step(step)
+        for tile in self._tiles:
+            tile.set_zoom_step(self._zoom_step)
+
+    def set_data(self, data: ChartData | None) -> None:
         self._data = data
 
     def has_tiles(self) -> bool:
@@ -355,6 +460,48 @@ class MultiChartView(QWidget):
 
     def count_tiles(self) -> int:
         return len(self._tiles)
+
+    def zoom_all(self, sign: int) -> None:
+        """Приблизить (``sign=1``) или отдалить (``sign=-1``) все плитки.
+
+        Круговые и прочие без поддержки зума пропускаются молча. Пределы
+        мутируются без промежуточных отрисовок; каждая затронутая плитка
+        рисуется один раз (бюджет §12).
+        """
+        factor = self._zoom_step if sign > 0 else 1 / self._zoom_step
+        canvases: list = []
+        for tile in self._tiles:
+            if not tile._supports_zoom():
+                continue
+            tile._apply_zoom(factor, None, ModifierMode.ZOOM_XY, redraw=False)
+            if tile.canvas is not None:
+                canvases.append(tile.canvas)
+        for canvas in canvases:
+            try:
+                canvas.draw_idle()
+            except Exception as exc:
+                logger.debug("Group zoom draw skip: %s", exc)
+
+    def reset_all(self) -> None:
+        """Сбросить масштаб всех плиток (одна отрисовка на плитку)."""
+        canvases: list = []
+        for tile in self._tiles:
+            if tile.figure is None or tile.canvas is None:
+                continue
+            if not tile._supports_zoom():
+                continue
+            for ax in tile.figure.axes:
+                try:
+                    ax.relim()
+                    ax.autoscale(enable=True)
+                except (ValueError, TypeError, AttributeError) as exc:
+                    logger.debug("Reset all skip axis %s: %s", ax, exc)
+            canvases.append(tile.canvas)
+        for canvas in canvases:
+            try:
+                canvas.draw_idle()
+            except Exception as exc:
+                logger.debug("Group reset draw skip: %s", exc)
 
     # ── Actions ──
 
@@ -394,7 +541,7 @@ class MultiChartView(QWidget):
             try:
                 fig = chart.render(self._data)
                 chart_type = resolve_type_id(chart_idx)
-                tile = _ChartTile()
+                tile = _ChartTile(zoom_step=self._zoom_step)
                 tile.set_figure(chart_idx, fig, chart.get_name(), chart_type=chart_type)
                 tile._btn_export.clicked.connect(
                     lambda checked, t=tile: self._export_tile(t)

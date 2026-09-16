@@ -76,21 +76,21 @@ QLineEdit:focus {
 
 /* ── Buttons ── */
 QPushButton {
-    background-color: #313244;
+    background-color: #585b70;
     color: #cdd6f4;
-    border: 1px solid #45475a;
+    border: 1px solid #7f849c;
     border-radius: 6px;
     padding: 6px 16px;
     font-weight: bold;
 }
 
 QPushButton:hover {
-    background-color: #45475a;
-    border-color: #585b70;
+    background-color: #6c7086;
+    border-color: #9399b2;
 }
 
 QPushButton:pressed {
-    background-color: #585b70;
+    background-color: #7f849c;
 }
 
 QPushButton:disabled {
