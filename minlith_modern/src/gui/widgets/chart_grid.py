@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 
+from typing import NamedTuple
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -22,23 +24,33 @@ from PyQt6.QtWidgets import (
 
 from src.charts import BUILTIN_CHARTS, ChartData
 from src.gui.widgets.chart_interactions import (
+    ChartCategory,
     InteractionSpec,
     get_spec,
     resolve_type_id,
 )
 from src.gui.widgets.zoom_math import (
     DEFAULT_ZOOM_STEP,
+    MIN_RANGE_WIDTH,
     ModifierMode,
     is_categorical_axis,
     modifier_mode,
     normalize_zoom_step,
     pan_lims,
     zoom_lims,
+    zoom_radial,
 )
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_COLUMNS = 2
+
+
+class _AxisHome(NamedTuple):
+    xlim: tuple[float, float] | None = None
+    ylim: tuple[float, float] | None = None
+    rlim: tuple[float, float] | None = None
+    aspect: str | None = None
 
 
 def _noop_scroll_zoom(event) -> None:
@@ -58,6 +70,7 @@ class _ChartTile(QWidget):
     def __init__(self, parent=None, zoom_step: float = DEFAULT_ZOOM_STEP) -> None:
         super().__init__(parent)
         self._zoom_step = normalize_zoom_step(zoom_step)
+        self._home: dict[int, _AxisHome] = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(2)
@@ -158,7 +171,55 @@ class _ChartTile(QWidget):
         self._canvas = canvas
         self._toolbar = toolbar
 
+        self._snapshot_home()
         self._apply_spec()
+
+    def _snapshot_home(self) -> None:
+        """Запомнить исходные пределы и аспект осей для сброса «По умолчанию»."""
+        self._home.clear()
+        if self._fig is None:
+            return
+        for ax in self._fig.axes:
+            try:
+                xlim = (float(ax.get_xlim()[0]), float(ax.get_xlim()[1]))
+                ylim = (float(ax.get_ylim()[0]), float(ax.get_ylim()[1]))
+                aspect = str(ax.get_aspect())
+            except (TypeError, ValueError, IndexError):
+                xlim, ylim, aspect = None, None, None
+
+            rlim = None
+            if hasattr(ax, "get_rlim"):
+                try:
+                    rlim = (float(ax.get_rlim()[0]), float(ax.get_rlim()[1]))
+                except (TypeError, ValueError):
+                    rlim = None
+
+            self._home[id(ax)] = _AxisHome(xlim=xlim, ylim=ylim, rlim=rlim, aspect=aspect)
+
+    def _min_range_for(self, ax, which: str) -> float:
+        """Вычислить минимальную ширину диапазона зума (с учётом SPEC 3.1)."""
+        base = MIN_RANGE_WIDTH
+        if self._spec is not None:
+            base = self._spec.min_range_width
+            frac = self._spec.min_range_fraction
+            if frac is not None:
+                home = self._home.get(id(ax))
+                if home is not None:
+                    lims = home.xlim if which == "x" else home.ylim
+                    if lims is not None:
+                        width = abs(lims[1] - lims[0])
+                        if width > 0:
+                            return width * frac
+        return base
+
+    def _keep_aspect(self, ax) -> None:
+        """Восстановить equal aspect, если он был задан изначально."""
+        home = self._home.get(id(ax))
+        if home and home.aspect == "equal":
+            try:
+                ax.set_aspect("equal", adjustable="datalim")
+            except (ValueError, TypeError, AttributeError):
+                pass
 
     def _apply_spec(self) -> None:
         """Применить спецификацию: скрыть кнопки, отключить тулбарные инструменты."""
@@ -253,20 +314,33 @@ class _ChartTile(QWidget):
     ) -> None:
         """Общая логика зума/пана: изменить пределы осей (без обязательного draw).
 
-        ``mode`` определяет, какие оси затрагиваются и выполняется ли пан.
-        При ``redraw=False`` отрисовка откладывается (групповые операции).
+        ``mode`` определяет, какие оси затрагиваются.
+        Для категории EQUAL_ASPECT принудительно ZOOM_XY.
         """
         if self._fig is None or self._canvas is None:
             return
+        
+        apply_mode = mode
+        if self._spec is not None and self._spec.category is ChartCategory.EQUAL_ASPECT:
+            apply_mode = ModifierMode.ZOOM_XY
+
         for ax in self._fig.axes:
             try:
+                if hasattr(ax, "get_rlim"):
+                    if apply_mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_Y):
+                        rlim = ax.get_rlim()
+                        new_r = zoom_radial(rlim, factor, min_range_width=self._min_range_for(ax, "y"))
+                        ax.set_rlim(*new_r)
+                        self._keep_aspect(ax)
+                    continue
+
                 xlog = ax.get_xscale() == "log"
                 ylog = ax.get_yscale() == "log"
                 ax_anchor = (
                     (float(anchor[0]), float(anchor[1])) if anchor is not None else None
                 )
                 if (
-                    mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_X)
+                    apply_mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_X)
                     and not is_categorical_axis(ax, "x")
                 ):
                     xlim = ax.get_xlim()
@@ -274,10 +348,16 @@ class _ChartTile(QWidget):
                         cx = ax_anchor[0]
                     else:
                         cx = (xlim[0] + xlim[1]) / 2.0
-                    new_x = zoom_lims(xlim, cx, factor, log=xlog)
+                    new_x = zoom_lims(
+                        xlim,
+                        cx,
+                        factor,
+                        log=xlog,
+                        min_range_width=self._min_range_for(ax, "x"),
+                    )
                     ax.set_xlim(*new_x)
                 if (
-                    mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_Y)
+                    apply_mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_Y)
                     and not is_categorical_axis(ax, "y")
                 ):
                     ylim = ax.get_ylim()
@@ -285,8 +365,15 @@ class _ChartTile(QWidget):
                         cy = ax_anchor[1]
                     else:
                         cy = (ylim[0] + ylim[1]) / 2.0
-                    new_y = zoom_lims(ylim, cy, factor, log=ylog)
+                    new_y = zoom_lims(
+                        ylim,
+                        cy,
+                        factor,
+                        log=ylog,
+                        min_range_width=self._min_range_for(ax, "y"),
+                    )
                     ax.set_ylim(*new_y)
+                self._keep_aspect(ax)
             except (ValueError, TypeError, AttributeError) as exc:
                 logger.debug("Zoom skip axis %s: %s", ax, exc)
                 continue
@@ -296,25 +383,73 @@ class _ChartTile(QWidget):
     def pan_x(self, direction: float, mode: ModifierMode = ModifierMode.PAN_X) -> None:
         """Панорамирование по X: ``direction > 0`` — вправо, ``< 0`` — влево.
 
-        Используется прямыми вызовами (Shift+колесо, кнопки). Категориальная
-        ось X — пропуск (номинальные метки не сдвигаются).
+        Для категории C — пан обеих осей с сохранением аспекта.
         """
         if mode != ModifierMode.PAN_X:
             return
         if self._fig is None or self._canvas is None:
             return
+        if self._spec is not None and not self._spec.pan:
+            return
         for ax in self._fig.axes:
             try:
+                if hasattr(ax, "get_rlim"):
+                    continue
                 if is_categorical_axis(ax, "x"):
                     continue
                 xlog = ax.get_xscale() == "log"
                 xlim = ax.get_xlim()
                 new_x = pan_lims(xlim, direction, log=xlog)
                 ax.set_xlim(*new_x)
+                if (
+                    self._spec is not None
+                    and self._spec.category is ChartCategory.EQUAL_ASPECT
+                ):
+                    ylog = ax.get_yscale() == "log"
+                    new_y = pan_lims(ax.get_ylim(), direction, log=ylog)
+                    ax.set_ylim(*new_y)
+                self._keep_aspect(ax)
             except (ValueError, TypeError, AttributeError) as exc:
                 logger.debug("Pan skip axis %s: %s", ax, exc)
                 continue
         self._canvas.draw_idle()
+
+    def _restore_view(self, redraw: bool = True) -> None:
+        """Восстановить пределы из snapshot (C, Polar, Pie) или автоскейлом."""
+        if self._fig is None or self._canvas is None:
+            return
+        if not self._supports_zoom():
+            return
+
+        if self._spec and self._spec.category in (
+            ChartCategory.EQUAL_ASPECT,
+            ChartCategory.POLAR,
+        ):
+            for ax in self._fig.axes:
+                home = self._home.get(id(ax))
+                if home:
+                    try:
+                        if home.rlim and hasattr(ax, "set_rlim"):
+                            ax.set_rlim(*home.rlim)
+                        if home.xlim:
+                            ax.set_xlim(*home.xlim)
+                        if home.ylim:
+                            ax.set_ylim(*home.ylim)
+                        if home.aspect and home.aspect != "auto":
+                            ax.set_aspect(home.aspect, adjustable="datalim")
+                        continue
+                    except (ValueError, TypeError, AttributeError) as exc:
+                        logger.debug("Reset home skip axis %s: %s", ax, exc)
+                        continue
+
+        for ax in self._fig.axes:
+            try:
+                ax.relim()
+                ax.autoscale(enable=True)
+            except (ValueError, TypeError, AttributeError) as exc:
+                logger.debug("Reset view skip axis %s: %s", ax, exc)
+        if redraw:
+            self._canvas.draw_idle()
 
     def _on_scroll(self, event) -> None:
         """Колесо мыши: с модификаторами — зум по осям или пан, без — зум обеих осей."""
@@ -337,23 +472,8 @@ class _ChartTile(QWidget):
             self._apply_zoom(factor, anchor, mode)
 
     def reset_view(self) -> None:
-        """Вернуть масштаб диаграммы к исходному («по умолчанию»).
-
-        ``set_*lims`` во время зума отключает флаги autoscale; повторное
-        включение ``autoscale(enable=True)`` обязательно для восстановления.
-        Плитки без поддержки зума (pie) не меняются — сброс для них no-op.
-        """
-        if self._fig is None or self._canvas is None:
-            return
-        if not self._supports_zoom():
-            return
-        try:
-            for ax in self._fig.axes:
-                ax.relim()
-                ax.autoscale(enable=True)
-        except (ValueError, TypeError, AttributeError) as exc:
-            logger.debug("Reset view skip axis %s: %s", ax, exc)
-        self._canvas.draw_idle()
+        """Вернуть масштаб диаграммы к исходному («по умолчанию»)."""
+        self._restore_view(redraw=True)
 
 
 class MultiChartView(QWidget):
@@ -483,25 +603,14 @@ class MultiChartView(QWidget):
                 logger.debug("Group zoom draw skip: %s", exc)
 
     def reset_all(self) -> None:
-        """Сбросить масштаб всех плиток (одна отрисовка на плитку)."""
+        """Сбросить масштаб всех плиток (кроме тех, что не поддерживают зум)."""
         canvases: list = []
         for tile in self._tiles:
-            if tile.figure is None or tile.canvas is None:
-                continue
-            if not tile._supports_zoom():
-                continue
-            for ax in tile.figure.axes:
-                try:
-                    ax.relim()
-                    ax.autoscale(enable=True)
-                except (ValueError, TypeError, AttributeError) as exc:
-                    logger.debug("Reset all skip axis %s: %s", ax, exc)
-            canvases.append(tile.canvas)
-        for canvas in canvases:
-            try:
-                canvas.draw_idle()
-            except Exception as exc:
-                logger.debug("Group reset draw skip: %s", exc)
+            tile._restore_view(redraw=False)
+            if tile.canvas is not None:
+                canvases.append(tile.canvas)
+        for c in canvases:
+            c.draw_idle()
 
     # ── Actions ──
 

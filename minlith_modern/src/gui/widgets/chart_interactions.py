@@ -65,6 +65,7 @@ class InteractionSpec:
     sync_group: str | None = None
     default_limits: tuple[float, float] | None = None
     min_range_width: float = MIN_RANGE_WIDTH_DEFAULT
+    min_range_fraction: float | None = None
 
     @property
     def supports_zoom(self) -> bool:
@@ -111,7 +112,7 @@ def _cat_bar_tiered(sync: str | None) -> InteractionSpec:
     )
 
 
-def _cat_equal_aspect(sync: str | None) -> InteractionSpec:
+def _cat_equal_aspect(sync: str | None, min_range_fraction: float | None = None) -> InteractionSpec:
     """Категория C: зум единым фактором обеих осей (равный аспект)."""
     return InteractionSpec(
         category=ChartCategory.EQUAL_ASPECT,
@@ -119,6 +120,7 @@ def _cat_equal_aspect(sync: str | None) -> InteractionSpec:
         zoom_x=False,
         zoom_y=False,
         sync_group=sync,
+        min_range_fraction=min_range_fraction,
     )
 
 
@@ -137,7 +139,7 @@ SPECS: dict[str, InteractionSpec] = {
     ),
     "defect": _cat_bar_tiered("bar-y"),
     "qapf": _cat_equal_aspect("ternary-100"),
-    "tas": _cat_equal_aspect("tas-field"),
+    "tas": _cat_equal_aspect("tas-field", min_range_fraction=0.25),
     "a_cn_k": _cat_equal_aspect("ternary-100"),
     "heatmap": InteractionSpec(
         category=ChartCategory.HEATMAP,
@@ -151,7 +153,7 @@ SPECS: dict[str, InteractionSpec] = {
         sync_group="harker-x:{oxide}",
     ),
     "afm": _cat_equal_aspect("ternary-100"),
-    "sio2_k2o": _cat_equal_aspect("tas-field"),
+    "sio2_k2o": _cat_equal_aspect("tas-field", min_range_fraction=0.25),
     "bland_altman": InteractionSpec(
         category=ChartCategory.DECARTESIAN,
         sync_group="ba",
