@@ -267,20 +267,8 @@ class MainWindow(QMainWindow):
     def _create_calculator(self) -> Calculator:
         """Create Calculator with current config and algorithm mode."""
         config = self._build_config()
-        mode = config.algorithm_mode
-
-        if mode == "custom":
-            # Placeholder for user's custom algorithm implementation.
-            # When ready, import and use the custom algorithm class here.
-            # Example:
-            #   from src.core.my_algorithm import MyAlgorithm
-            #   return Calculator(config=config, algorithm=MyAlgorithm())
-            logger.info("Algorithm mode: custom (using stub as placeholder)")
-            return Calculator(config=config)
-        else:
-            # Default stub algorithm (approximate, waiting for VBA port)
-            logger.info("Algorithm mode: stub")
-            return Calculator(config=config)
+        logger.info("Algorithm mode: %s", config.algorithm_mode)
+        return Calculator(config=config)
 
     def _on_settings_changed(self) -> None:
         """Rebuild calculator and apply all settings immediately."""

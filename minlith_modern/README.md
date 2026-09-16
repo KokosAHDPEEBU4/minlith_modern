@@ -114,6 +114,7 @@ python calibrate.py --input MINLITH1.xlsx --output calibration_config.json --max
 | `--template`, `-t` | Шаблон отчёта (brief, standard, full, core, geochemical) |
 | `--dpi N` | Разрешение диаграммы |
 | `--interactive` | Экспорт в интерактивный HTML (Plotly) |
+| `--algorithm`, `-a` | Режим алгоритма: `clean` (полный паритет с Excel, по умолчанию), `stub` (резерв), `custom` |
 
 ### Python API
 
@@ -133,7 +134,15 @@ print(result.rock_type)          # RockType.TYPE_5
 print(result.minerals_weight.ab) # 7.82
 print(result.defect)             # oxide residuals
 print(result.anomalies)          # list[AnomalyHypothesis]
+
+# Режим алгоритма:
+#   clean  — clean_engine: полный паритет с Excel-версией (без округлений)
+#   stub   — резервный расчёт по теории (TheoryAlgorithm)
+#   custom — пользовательская реализация (пока не подключена)
+calc_clean = Calculator(config=CalculationConfig(algorithm_mode="clean"))
 ```
+
+> В GUI режим алгоритма выбирается на странице «Настройки» → «Режим алгоритма».
 
 ## Сборка
 
@@ -166,6 +175,8 @@ minlith_modern/
 ├── src/
 │   ├── core/           # Расчётный движок
 │   │   ├── calculator.py       # Оркестратор
+│   │   ├── clean_engine/       # Чистый Python (полный паритет с Excel, без ROUND)
+│   │   ├── excel_port/         # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
 │   │   ├── algorithm_stub.py   # Заглушка VBA
 │   │   ├── algorithm.py        # Протокол алгоритма
 │   │   ├── models.py           # Датаклассы

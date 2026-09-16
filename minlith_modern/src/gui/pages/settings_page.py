@@ -79,10 +79,11 @@ class SettingsPage(QWidget):
         calc_form.addRow("Таймаут:", self._timeout)
 
         self._algorithm_mode = QComboBox()
-        self._algorithm_mode.addItems(["stub", "custom"])
-        self._algorithm_mode.setCurrentText(config.get("algorithm_mode", "stub"))
+        self._algorithm_mode.addItems(["clean", "stub", "custom"])
+        self._algorithm_mode.setCurrentText(config.get("algorithm_mode", "clean"))
         self._algorithm_mode.setToolTip(
-            "stub — заглушка (ожидает перенос VBA-макроса)\n"
+            "clean — clean_engine: полный паритет с Excel-версией (без округлений)\n"
+            "stub — резервный расчёт по теории\n"
             "custom — пользовательская реализация алгоритма"
         )
         calc_form.addRow("Режим алгоритма:", self._algorithm_mode)
@@ -174,7 +175,7 @@ class SettingsPage(QWidget):
         self._auto_correct.setChecked(self._config.get("auto_correct_sum", False))
         self._decimal_places.setValue(self._config.get("decimal_places", 2))
         self._timeout.setValue(self._config.get("timeout_seconds", 120))
-        self._algorithm_mode.setCurrentText(self._config.get("algorithm_mode", "stub"))
+        self._algorithm_mode.setCurrentText(self._config.get("algorithm_mode", "clean"))
         self._theme.setCurrentText(self._config.get("theme", "dark"))
         self._chart_theme.setCurrentText(self._config.get("chart_theme", "dark"))
         self._language.setCurrentText(self._config.get("language", "ru"))

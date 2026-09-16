@@ -19,7 +19,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "include_formula_units": False,
     "include_defect": True,
     "timeout_seconds": 120,
-    "algorithm_mode": "stub",  # "stub" | "custom"
+    "algorithm_mode": "clean",  # "stub" | "clean" | "custom"
     "theme": "dark",
     "chart_theme": "dark",  # "dark" | "light" — background for charts
     "language": "ru",
@@ -150,8 +150,8 @@ class ConfigManager:
         if not isinstance(timeout, int) or timeout < 1:
             errors.append(f"timeout_seconds must be positive, got {timeout}")
 
-        mode = self._data.get("algorithm_mode", "stub")
-        if mode not in ("stub", "custom"):
+        mode = self._data.get("algorithm_mode", "clean")
+        if mode not in ("stub", "clean", "custom"):
             errors.append(f"Unknown algorithm_mode: {mode!r}")
 
         theme = self._data.get("theme", "dark")

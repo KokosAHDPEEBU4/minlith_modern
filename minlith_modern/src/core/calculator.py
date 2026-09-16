@@ -73,7 +73,28 @@ class Calculator:
         algorithm: Optional[MineralAlgorithm] = None,
     ):
         self.config = config or CalculationConfig()
-        self.algorithm = algorithm or TheoryAlgorithm()
+        if algorithm is not None:
+            self.algorithm = algorithm
+        else:
+            self.algorithm = self._algorithm_for_mode(self.config.algorithm_mode)
+
+    @staticmethod
+    def _algorithm_for_mode(mode: str) -> MineralAlgorithm:
+        """Выбрать алгоритм по ``algorithm_mode`` из конфигурации.
+
+        - "clean" — clean_engine: полный паритет с excel_port (без округлений);
+        - "custom" — пользовательская реализация (пока fallback на теорию);
+        - любое другое ("stub") — TheoryAlgorithm (резерв).
+        """
+        if mode == "clean":
+            from src.core.clean_engine.algorithm import CleanEngineAlgorithm
+            logger.info("Algorithm mode: clean_engine")
+            return CleanEngineAlgorithm()
+        if mode == "custom":
+            logger.info("Algorithm mode: custom (placeholder, fallback to theory)")
+            return TheoryAlgorithm()
+        logger.info("Algorithm mode: stub (TheoryAlgorithm fallback)")
+        return TheoryAlgorithm()
 
     def _get_molar_masses(self) -> dict[str, float]:
         """Get molar masses based on config source."""

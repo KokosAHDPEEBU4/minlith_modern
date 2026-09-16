@@ -60,6 +60,20 @@ def test_adapter_is_mineral_algorithm_protocol():
     assert isinstance(CleanEngineAlgorithm(), MineralAlgorithm)
 
 
+def test_calculator_resolves_mode_clean():
+    """Calculator(config.algorithm_mode="clean") подключает clean_engine."""
+    from src.core.models import CalculationConfig
+    calc = Calculator(config=CalculationConfig(algorithm_mode="clean"))
+    assert isinstance(calc.algorithm, CleanEngineAlgorithm)
+
+
+def test_calculator_keeps_stub_default():
+    """Без явного алгоритма Calculator остаётся на TheoryAlgorithm (резерв)."""
+    from src.core.theory_algorithm import TheoryAlgorithm
+    calc = Calculator()
+    assert isinstance(calc.algorithm, TheoryAlgorithm)
+
+
 @pytest.mark.parametrize("name", NAMES)
 def test_adapter_round_trip(name, oxides):
     """Адаптер идемпотентен: ф.е. из движка -> AlgorithmOutput == движок."""

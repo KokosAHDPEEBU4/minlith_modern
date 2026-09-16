@@ -57,7 +57,13 @@ class ChartPlugin(ABC):
         """Render chart and return the matplotlib Figure."""
 
     def export(self, data: ChartData, path: Path, fmt: str = "png", dpi: int = 150, **kwargs) -> None:
-        """Export chart to file."""
+        """Export chart to file.
+
+        ``fmt`` defaults to the file extension of ``path`` (``png`` if unknown).
+        """
+        path = Path(path)
+        if fmt == "png" and path.suffix.lower() in (".pdf", ".svg", ".jpg", ".jpeg"):
+            fmt = path.suffix.lower().lstrip(".")
         fig = self.render(data, **kwargs)
         fig.savefig(str(path), format=fmt, dpi=dpi, bbox_inches="tight")
         import matplotlib.pyplot as plt

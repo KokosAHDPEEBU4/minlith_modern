@@ -132,6 +132,7 @@ class CalculationWorker(QThread):
             "warn_negative": self._calculator.config.warn_negative,
             "decimal_places": self._calculator.config.decimal_places,
             "timeout_seconds": self._calculator.config.timeout_seconds,
+            "algorithm_mode": self._calculator.config.algorithm_mode,
         }
 
         # Prepare tasks

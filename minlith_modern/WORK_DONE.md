@@ -249,3 +249,13 @@ tests/test_validation.py           4 passed
   - **m_450**: ca_n не пишется (только an/an_4, al4_2, si4_2/si_n).
   - **Плагиоклазовые редкие ветки**: p_53t (D51&D53) и p_68->p_68t (безусловно).
 - verify_m37x.py и verify_rem.py: все группы OK. property-тесты: 627 passed (gap-тест обновлён: gaps==0).
+
+## 2026-09-16 — GUI+CLI: режим алгоритма `clean` (clean_engine)
+
+- GUI «Настройки» → «Режим алгоритма»: добавлен режим `clean` (полный паритет
+  с Excel-версией, без округлений), по умолчанию. `stub` остаётся резервом,
+  `custom` — плейсхолдер.
+- Решение алгоритма централизовано в `Calculator` (по `config.algorithm_mode`):
+  распространяется на GUI (одиночный и пакетный расчёт), CLI и batch-worker.
+- CLI: `--algorithm/-a` теперь принимает `clean|stub|custom` (по умолчанию `clean`).
+- Тесты: +3 (resolution режимов clean/stub), 1064 passed total.
