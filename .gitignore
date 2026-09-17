@@ -1,0 +1,60 @@
+# ── Python: байт-код и кеши ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ── Виртуальные окружения ──
+.venv/
+venv/
+env/
+ENV/
+
+# ── Сборка и упаковка ──
+build/
+dist/
+*.egg-info/
+.eggs/
+wheels/
+sdist/
+MANIFEST
+
+# ── Кеши инструментов и тестов ──
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+.nox/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# ── IDE и редакторы ──
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ── ОС ──
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ── Логи, временные и резервные файлы ──
+*.log
+*.tmp
+*.bak
+
+# ── Локальная конфигурация ──
+.env
+
+# ── Разовые артефакты в корне репозитория (экспорт графиков и т.п.) ──
+/123123123.xlsx
+/mineral_box_plot.png
+/sio2_k2o.png
+/tas.png

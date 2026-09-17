@@ -805,6 +805,10 @@ class MultiChartView(QWidget):
         self._btn_export_all.clicked.connect(self.export_all)
         ctrl_row.addWidget(self._btn_export_all)
 
+        self._btn_export_pdf = QPushButton("Экспорт всех в PDF")
+        self._btn_export_pdf.clicked.connect(self.export_all_pdf)
+        ctrl_row.addWidget(self._btn_export_pdf)
+
         self._chk_sync = QCheckBox("Синхронизировать зум")
         self._chk_sync.setToolTip(
             "Зум/пан плитки применяется ко всем плиткам той же группы "
@@ -1064,6 +1068,56 @@ class MultiChartView(QWidget):
             self, "Экспорт",
             f"Экспортировано {exported} из {len(self._tiles)} диаграмм.",
         )
+
+    def export_all_pdf(self) -> None:
+        """Сохранить все плитки в один многостраничный PDF (по странице на плитку).
+
+        Экспортируется текущий вид каждой плитки (зум/пан не сбрасываются).
+        """
+        if not self._tiles:
+            QMessageBox.information(self, "Экспорт", "Сначала постройте диаграммы.")
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Экспорт всех в PDF", "diagrams.pdf", "PDF (*.pdf)",
+        )
+        if not path:
+            return
+        try:
+            exported = self._export_all_pdf_to(path)
+            QMessageBox.information(
+                self, "Экспорт",
+                f"Сохранено {exported} из {len(self._tiles)} диаграмм: {path}",
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка экспорта", str(e))
+
+    def _export_all_pdf_to(self, path: str) -> int:
+        from matplotlib.backends.backend_pdf import PdfPages
+
+        pages: list = []
+        temporary: list = []
+        for tile in self._tiles:
+            if tile.chart_idx < 0:
+                continue
+            fig = tile.figure
+            if fig is None:
+                if self._data is None:
+                    continue
+                fig = BUILTIN_CHARTS[tile.chart_idx].render(self._data)
+                temporary.append(fig)
+            pages.append(fig)
+        if not pages:
+            return 0
+        try:
+            with PdfPages(path) as pdf:
+                for fig in pages:
+                    pdf.savefig(fig, bbox_inches="tight")
+        finally:
+            if temporary:
+                import matplotlib.pyplot as plt
+                for fig in temporary:
+                    plt.close(fig)
+        return len(pages)
 
     def _clear_grid(self) -> None:
         while self._grid_layout.count():
