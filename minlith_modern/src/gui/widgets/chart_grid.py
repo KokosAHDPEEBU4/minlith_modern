@@ -33,10 +33,12 @@ from src.gui.widgets.zoom_math import (
     DEFAULT_ZOOM_STEP,
     MIN_RANGE_WIDTH,
     ModifierMode,
+    anchor_fraction,
     is_categorical_axis,
     modifier_mode,
     normalize_zoom_step,
     pan_lims,
+    value_at_fraction,
     zoom_lims,
     zoom_radial,
 )
@@ -74,6 +76,7 @@ class _ChartTile(QWidget):
         self._pie_exploded: dict[int, bool] = {}
         self._pie_base: dict[int, tuple[float, float]] = {}
         self._pie_labels: dict[int, float] = {}
+        self._view_notify = None
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(2)
@@ -389,7 +392,12 @@ class _ChartTile(QWidget):
     def _on_zoom_out(self) -> None:
         self.zoom(1 / self._zoom_step)
 
-    def zoom(self, factor: float, anchor: tuple | None = None) -> None:
+    def zoom(
+        self,
+        factor: float,
+        anchor: tuple | None = None,
+        notify: bool = True,
+    ) -> None:
         """Изменить масштаб осей вокруг ``anchor`` (зум обеих осей).
 
         ``anchor`` — точка в координатах данных (``event.xdata/ydata``);
@@ -399,7 +407,7 @@ class _ChartTile(QWidget):
         """
         if self._fig is None or self._canvas is None:
             return
-        self._apply_zoom(factor, anchor, ModifierMode.ZOOM_XY)
+        self._apply_zoom(factor, anchor, ModifierMode.ZOOM_XY, notify=notify)
 
     def _apply_zoom(
         self,
@@ -407,11 +415,16 @@ class _ChartTile(QWidget):
         anchor: tuple | None,
         mode: ModifierMode,
         redraw: bool = True,
+        notify: bool = False,
     ) -> None:
         """Общая логика зума/пана: изменить пределы осей (без обязательного draw).
 
         ``mode`` определяет, какие оси затрагиваются.
         Для категории EQUAL_ASPECT принудительно ZOOM_XY.
+
+        При ``notify=True`` после применения пределов плитка оповещает сетку
+        о произошедшем зуме (синхронизация §9.2); сама сетка по каналу
+        ``apply_synced`` не оповещает (защита от циклов).
         """
         if self._fig is None or self._canvas is None:
             return
@@ -419,6 +432,11 @@ class _ChartTile(QWidget):
         apply_mode = mode
         if self._spec is not None and self._spec.category is ChartCategory.EQUAL_ASPECT:
             apply_mode = ModifierMode.ZOOM_XY
+
+        frac_x: float | None = None
+        frac_y: float | None = None
+        lim_out_x: tuple | None = None
+        lim_out_y: tuple | None = None
 
         for ax in self._fig.axes:
             try:
@@ -453,6 +471,8 @@ class _ChartTile(QWidget):
                         min_range_width=self._min_range_for(ax, "x"),
                     )
                     ax.set_xlim(*new_x)
+                    lim_out_x = new_x
+                    frac_x = anchor_fraction(cx, new_x)
                 if (
                     apply_mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_Y)
                     and not is_categorical_axis(ax, "y")
@@ -470,14 +490,48 @@ class _ChartTile(QWidget):
                         min_range_width=self._min_range_for(ax, "y"),
                     )
                     ax.set_ylim(*new_y)
+                    lim_out_y = new_y
+                    frac_y = anchor_fraction(cy, new_y)
                 self._keep_aspect(ax)
             except (ValueError, TypeError, AttributeError) as exc:
                 logger.debug("Zoom skip axis %s: %s", ax, exc)
                 continue
+        if notify and self._view_notify is not None:
+            payload: dict = {
+                "kind": "zoom",
+                "mode": apply_mode.value,
+                "factor": factor,
+                "anchor_frac_x": frac_x,
+                "anchor_frac_y": frac_y,
+            }
+            if self._spec and self._spec.category is ChartCategory.EQUAL_ASPECT:
+                payload["xlim"] = lim_out_x
+                payload["ylim"] = lim_out_y
+                for a in self._fig.axes:
+                    if hasattr(a, "get_rlim"):
+                        continue
+                    payload["xlog"] = a.get_xscale() == "log"
+                    payload["ylog"] = a.get_yscale() == "log"
+                    break
+            self._emit_view_changed(payload)
         if redraw:
             self._canvas.draw_idle()
 
-    def pan_x(self, direction: float, mode: ModifierMode = ModifierMode.PAN_X) -> None:
+    def _emit_view_changed(self, payload: dict) -> None:
+        """Сообщить сетке о пользовательском изменении вида (зум/пан)."""
+        if self._view_notify is None:
+            return
+        try:
+            self._view_notify(self, payload)
+        except Exception as exc:
+            logger.debug("Sync notify skip: %s", exc)
+
+    def pan_x(
+        self,
+        direction: float,
+        mode: ModifierMode = ModifierMode.PAN_X,
+        notify: bool = True,
+    ) -> None:
         """Панорамирование по X: ``direction > 0`` — вправо, ``< 0`` — влево.
 
         Для категории C — пан обеих осей с сохранением аспекта.
@@ -509,7 +563,115 @@ class _ChartTile(QWidget):
             except (ValueError, TypeError, AttributeError) as exc:
                 logger.debug("Pan skip axis %s: %s", ax, exc)
                 continue
+        if notify and self._view_notify is not None:
+            xy = bool(
+                self._spec is not None
+                and self._spec.category is ChartCategory.EQUAL_ASPECT
+            )
+            self._emit_view_changed({"kind": "pan", "fraction": direction, "xy": xy})
         self._canvas.draw_idle()
+
+    def apply_synced(self, payload: dict, src_category: ChartCategory | None) -> None:
+        """Применить синхронизированное изменение вида от другой плитки (§9).
+
+        ``payload``: результат ``zoom`` (фактор + доли якоря; для категории C
+        также абсолютные пределы) или ``pan`` (доля диапазона). Сетка вызывает
+        метод, удерживая флаг трансляции — повторное оповещение не возникает.
+        """
+        if self._fig is None or self._canvas is None:
+            return
+        kind = payload.get("kind")
+        if kind == "zoom":
+            self._apply_synced_zoom(payload, src_category)
+        elif kind == "pan":
+            self._apply_synced_pan(payload)
+
+    def _apply_synced_zoom(self, payload: dict, src_category: ChartCategory | None) -> None:
+        mode = ModifierMode(payload["mode"])
+        factor = float(payload["factor"])
+        for ax in self._fig.axes:
+            try:
+                if hasattr(ax, "get_rlim"):
+                    continue
+                same_c = (
+                    src_category is ChartCategory.EQUAL_ASPECT
+                    and self._spec is not None
+                    and self._spec.category is ChartCategory.EQUAL_ASPECT
+                )
+                if same_c:
+                    xset = payload.get("xlim")
+                    yset = payload.get("ylim")
+                    if xset and not is_categorical_axis(ax, "x"):
+                        if payload.get("xlog") == (ax.get_xscale() == "log"):
+                            ax.set_xlim(*xset)
+                    if yset and not is_categorical_axis(ax, "y"):
+                        if payload.get("ylog") == (ax.get_yscale() == "log"):
+                            ax.set_ylim(*yset)
+                    self._keep_aspect(ax)
+                    continue
+
+                xlog = ax.get_xscale() == "log"
+                ylog = ax.get_yscale() == "log"
+                if (
+                    mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_X)
+                    and not is_categorical_axis(ax, "x")
+                ):
+                    xlim = ax.get_xlim()
+                    frac = payload.get("anchor_frac_x")
+                    if frac is None:
+                        cx = (xlim[0] + xlim[1]) / 2.0
+                    else:
+                        cx = value_at_fraction(float(frac), xlim)
+                    ax.set_xlim(
+                        *zoom_lims(
+                            xlim,
+                            cx,
+                            factor,
+                            log=xlog,
+                            min_range_width=self._min_range_for(ax, "x"),
+                        )
+                    )
+                if (
+                    mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_Y)
+                    and not is_categorical_axis(ax, "y")
+                ):
+                    ylim = ax.get_ylim()
+                    frac = payload.get("anchor_frac_y")
+                    if frac is None:
+                        cy = (ylim[0] + ylim[1]) / 2.0
+                    else:
+                        cy = value_at_fraction(float(frac), ylim)
+                    ax.set_ylim(
+                        *zoom_lims(
+                            ylim,
+                            cy,
+                            factor,
+                            log=ylog,
+                            min_range_width=self._min_range_for(ax, "y"),
+                        )
+                    )
+                self._keep_aspect(ax)
+            except (ValueError, TypeError, AttributeError) as exc:
+                logger.debug("Sync zoom skip axis %s: %s", ax, exc)
+                continue
+
+    def _apply_synced_pan(self, payload: dict) -> None:
+        fraction = float(payload.get("fraction", 0.0))
+        xy = bool(payload.get("xy", False))
+        for ax in self._fig.axes:
+            try:
+                if hasattr(ax, "get_rlim"):
+                    continue
+                if not is_categorical_axis(ax, "x"):
+                    xlog = ax.get_xscale() == "log"
+                    ax.set_xlim(*pan_lims(ax.get_xlim(), fraction, log=xlog))
+                if xy and not is_categorical_axis(ax, "y"):
+                    ylog = ax.get_yscale() == "log"
+                    ax.set_ylim(*pan_lims(ax.get_ylim(), fraction, log=ylog))
+                self._keep_aspect(ax)
+            except (ValueError, TypeError, AttributeError) as exc:
+                logger.debug("Sync pan skip axis %s: %s", ax, exc)
+                continue
 
     def _restore_view(self, redraw: bool = True) -> None:
         """Восстановить форму/пределы: pie — базовые центры, C/Polar — snapshot.
@@ -576,7 +738,7 @@ class _ChartTile(QWidget):
             self.pan_x(direction)
         else:
             anchor = (event.xdata, event.ydata)
-            self._apply_zoom(factor, anchor, mode)
+            self._apply_zoom(factor, anchor, mode, notify=True)
 
     def reset_view(self) -> None:
         """Вернуть масштаб диаграммы к исходному («по умолчанию»)."""
@@ -595,6 +757,7 @@ class MultiChartView(QWidget):
         self._tiles: list[_ChartTile] = []
         self._checkboxes: list[QCheckBox] = []
         self._zoom_step: float = DEFAULT_ZOOM_STEP
+        self._syncing: bool = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -641,6 +804,13 @@ class MultiChartView(QWidget):
         self._btn_export_all = QPushButton("Экспорт всех в PNG")
         self._btn_export_all.clicked.connect(self.export_all)
         ctrl_row.addWidget(self._btn_export_all)
+
+        self._chk_sync = QCheckBox("Синхронизировать зум")
+        self._chk_sync.setToolTip(
+            "Зум/пан плитки применяется ко всем плиткам той же группы "
+            "(по sync_group спецификации: bar-y, ternary-100, tas-field, samples и др.)"
+        )
+        ctrl_row.addWidget(self._chk_sync)
 
         layout.addLayout(ctrl_row)
 
@@ -719,6 +889,52 @@ class MultiChartView(QWidget):
         for c in canvases:
             c.draw_idle()
 
+    def on_tile_view_changed(self, tile: _ChartTile, payload: dict) -> None:
+        """Синхронизировать изменение вида одной плитки в её sync_group (§9).
+
+        Вызывается плиткой после её собственного зума/пана. Транслируется
+        только плиткам той же ``sync_group``, кроме круговых. Категория C —
+        абсолютные пределы (общий домен); A/B/E — фактор + доли якоря
+        к своим пределам; паны — в долях диапазона. Защита от циклов:
+        ``self._syncing`` держится на время трансляции и подавляет
+        повторное оповещение плиток.
+        """
+        if self._syncing:
+            return
+        if not self._chk_sync.isChecked():
+            return
+        src_spec = tile.spec
+        if src_spec is None or not src_spec.sync_group:
+            return
+        group = src_spec.sync_group
+        if "{oxide}" in group:
+            group = group.replace("{oxide}", "sio2")
+        canvases: list = []
+        self._syncing = True
+        try:
+            for other in self._tiles:
+                if other is tile:
+                    continue
+                spec = other.spec
+                if spec is None or not spec.sync_group:
+                    continue
+                other_group = spec.sync_group
+                if "{oxide}" in other_group:
+                    other_group = other_group.replace("{oxide}", "sio2")
+                if other_group != group:
+                    continue
+                if spec.category is ChartCategory.PIE:
+                    continue
+                other.apply_synced(payload, src_spec.category)
+                if other.canvas is not None:
+                    canvases.append(other.canvas)
+        except Exception as exc:
+            logger.debug("Sync broadcast error: %s", exc)
+        finally:
+            self._syncing = False
+        for c in canvases:
+            c.draw_idle()
+
     # ── Actions ──
 
     def _select_all(self) -> None:
@@ -759,6 +975,7 @@ class MultiChartView(QWidget):
                 chart_type = resolve_type_id(chart_idx)
                 tile = _ChartTile(zoom_step=self._zoom_step)
                 tile.set_figure(chart_idx, fig, chart.get_name(), chart_type=chart_type)
+                tile._view_notify = self.on_tile_view_changed
                 tile._btn_export.clicked.connect(
                     lambda checked, t=tile: self._export_tile(t)
                 )
