@@ -22,6 +22,7 @@
 | Синхронизация | Чекбокс «Синхронизировать зум»: группы `sync_group`, пропорционально/абсолютно | `on_tile_view_changed`, `chart_grid.py:892` |
 | Шаг зума из настроек | Один параметр на оба вида, применяется к живым плиткам | `set_zoom_step`, `chart_grid.py:378,846` |
 | Экспорт текущего вида | Плитка/все плитки → PNG/PDF/SVG; все плитки → один многостраничный PDF без сброса зума | `export_tile`, `export_all`, `export_all_pdf`, `chart_grid.py:1017,1041,1073` |
+| Стандарты размеров | Целевой аспект и `max_width` на каждый тип; канвас центрируется, не растягивается | `_apply_display_size`, `chart_sizes.py` |
 
 Ключевые принципы: диаграммы встраиваются как **живые канвасы matplotlib QtAgg**; встроенный scroll-зум matplotlib **отключён**; каждый тип диаграммы получает поведение из **реестра** `InteractionSpec`, без ветвлений по типу в `chart_grid.py`.
 
@@ -31,7 +32,8 @@
 
 ```
 chart_interactions.py   — реестр InteractionSpec для 23 типов (категория, возможности, sync_group)
-        │  get_spec(type_id) / resolve_type_id(chart_idx)
+chart_sizes.py          — реестр ChartSizeSpec для 23 типов (целевой аспект, max_width, границы)
+        │  get_spec(type_id) / get_size_spec(type_id) / resolve_type_id(chart_idx)
         ▼
 chart_grid.py           — UI: _ChartTile (канвас + кнопки) и MultiChartView (сетка, синк, экспорт)
         │  zoom_lims / pan_lims / anchor_fraction / value_at_fraction / zoom_radial
@@ -74,6 +76,49 @@ _ChartTile.set_figure(idx, fig, title, chart_type)   chart_grid.py:148
 | **C** EQUAL_ASPECT | qapf, tas, a_cn_k, feldspar_triangle, afm, mg_fe_al_ternary, sio2_k2o | единый фактор обеих осей | сохранение аспекта, snapshot; `min_range_fraction=0.25` для tas/sio2_k2o |
 | **D** PIE | pie (rock_type при `chart_type="pie"`) | нет | hover %, explode, сброс формы |
 | **E** POLAR | radar | через `r`-пределы | snapshot `rlim` |
+
+### 3.1 Стандарты размеров отображения
+
+Заданы в `chart_sizes.py` (`ChartSizeSpec`) для каждого из 23 типов. Решают
+проблему «слишком широких» диаграмм: `FigureCanvasQTAgg` растягивает фигуру под
+виджет, и без ограничений фигура с пропорцией 4:3 в режиме одной колонки
+растягивалась почти до 4:1 и становилась нечитаемой. Плитка держит канвас в
+рамках стандарта и центрирует его (`_ChartTile._apply_display_size`,
+`aspect_for`).
+
+Поля: `aspect` — целевой аспект (ширина/высота), `None` → «родной» аспект фигуры,
+зажатый в `[min_aspect, max_aspect]`; `max_width` — предел ширины содержимого в
+px (для квадратных/радиальных/тройных, `None` — на всю ширину ячейки);
+`min_height`/`max_height` — границы высоты.
+
+| Тип | Аспект | max_width | Назначение |
+|---|---|---|---|
+| bar | родной ≤2.6 | 1100 | групповые столбцы (категорий = образцов) |
+| pie | 1.00 | 620 | круг — квадрат |
+| defect | родной ≤2.6 | 900 | столбцы отклонений по оксидам |
+| qapf | 1.00 | 620 | тройная классификационная |
+| tas | 1.35 | 780 | классификационное поле |
+| a_cn_k | 1.00 | 620 | тройная |
+| heatmap | родной ≤2.4 | 1100 | матрица образцы×минералы |
+| rock_type | родной ≤2.0 | 720 | столбцы или круг |
+| feldspar_triangle | 1.00 | 620 | тройная |
+| harker | родной ≤2.4 | 1100 | сетка подграфиков |
+| afm | 1.00 | 620 | тройная |
+| sio2_k2o | 1.15 | 720 | классификационное поле |
+| bland_altman | 1.35 | 760 | рассеяние |
+| correlation | 1.10 | 760 | матрица корреляций |
+| k1_k4 | 1.67 | 860 | K-параметры |
+| box_plot | родной ≤2.4 | 1100 | ящики по выборкам |
+| radar | 1.00 | 620 | полярный |
+| coefficient_heatmap | родной ≤3.0 | 1100 | низкая широкая карта |
+| defect_accumulation | родной ≤2.6 | 1100 | накопление дефекта |
+| pca_biplot | 1.25 | 820 | биплот |
+| dendrogram | родной ≤2.4 | 1100 | дендрограмма |
+| parallel_coordinates | родной ≤2.6 | 1100 | параллельные оси |
+| mg_fe_al_ternary | 1.00 | 620 | тройная |
+
+Минимальная ширина канваса — `MIN_CANVAS_WIDTH = 320`; целевой аспект
+сохраняется (высота = ширина / аспект, зажата в границах).
 
 ---
 
@@ -161,7 +206,7 @@ new_hi = 8 + (10 - 8)*1.25  = 10.5
 
 ## 9. Память, перестройка, экспорт
 
-- `_release_tiles` (`chart_grid.py:1004`) закрывает фигуры через `plt.close` перед заменой; `_clear_grid` (`:1068`) — только разметка, живые плитки переиспользуются при смене числа колонок (`_reflow_tiles`, `:994`).
+- `_release_tiles` (`chart_grid.py:1004`) закрывает фигуры через `plt.close` перед заменой; `_clear_grid` (`:1122`) — только разметка, живые плитки переиспользуются при смене числа колонок (`_reflow_tiles`, `:998`). При reflow виджеты отсоединяются через `_clear_grid(keep=tiles)` **без** `deleteLater()` — иначе отложенное удаление уничтожало бы переиспользуемые плитки, и при смене колонок падало `RuntimeError: wrapped C/C++ object ... has been deleted`.
 - Экспорт плитки (`export_tile`, `:1017`) сохраняет фигуру в текущем состоянии (зум/пан не сбрасываются); формат по расширению (PNG/PDF/SVG). `export_all` (`:1041`) сохраняет все плитки в папку PNG. `export_all_pdf` (`:1073`) пишет все плитки в один многостраничный PDF (`_export_all_pdf_to`, по странице на плитку, текущий вид).
 
 ---
@@ -172,6 +217,7 @@ new_hi = 8 + (10 - 8)*1.25  = 10.5
 
 ```
 PASS multi-chart grid (ChartsPage/OutputPage): 4 tiles, columns reflow, wheel+anchor zoom, reset
+PASS size standards: per-type canvas aspect and width caps
 PASS registry: 23 type_ids, KeyError/ValueError on unknown
 PASS pie: wheel no-op, buttons hidden, reset visible, toolbar tools disabled
 PASS pie: hover %, click explode/return, reset restores shape
@@ -183,7 +229,7 @@ PASS export: multi-page PDF with 2 pages
 ALL GUI SMOKE TESTS PASSED
 ```
 
-Полный тест-сьют: **1105 passed, 5 skipped**. Статический анализ (`ruff`, `select=E,F,I,N,W,UP`) — чисто.
+Полный тест-сьют: **1133 passed, 5 skipped** (включая `tests/test_chart_sizes.py`). Статический анализ (`ruff`, `select=E,F,I,N,W,UP`) — чисто.
 
 Примечания:
 - GUI-проверки идут в offscreen (`QT_QPA_PLATFORM=offscreen`); события синтезируются объектами с полями `inaxes/xdata/ydata/step` и MouseEvent.
@@ -202,6 +248,8 @@ ALL GUI SMOKE TESTS PASSED
 | Курсор вне осей | Событие игнорируется |
 | Встроенный инструмент «лупа» | Встроенный scroll-зум отключён — сдвоенного зума нет |
 | Смена числа колонок | Только переразметка, зум плиток сохраняется |
+| Широкая ячейка (1 колонка) | Канвас держится в стандарте типа: целевой аспект + `max_width`, центрируется; диаграмма не растягивается |
+| Узкая ячейка (<320 px) | Канвас не уже `MIN_CANVAS_WIDTH` — появляется горизонтальная прокрутка |
 | Сброс | Для C/polar/pie — по snapshot; для остальных — `relim + autoscale` |
 | Разные шкалы у синхронизируемых осей | Ось с несовпадающей шкалой (lin/log) при абсолютной синхронизации пропускается |
 
@@ -225,6 +273,8 @@ ALL GUI SMOKE TESTS PASSED
 | Тема | Место |
 |---|---|
 | Реестр спецификаций, категории, `sync_group` | `src/gui/widgets/chart_interactions.py` |
+| Реестр стандартов размеров (аспект, `max_width`) | `src/gui/widgets/chart_sizes.py` |
+| Применение стандарта размера, центрирование канваса | `_ChartTile._apply_display_size`, `resizeEvent`, `chart_grid.py:190-224` |
 | Чистая математика пределов | `src/gui/widgets/zoom_math.py` |
 | Плитка: канвас, тулбар, spec, snapshot | `_ChartTile.set_figure`, `chart_grid.py:148` |
 | Круговые события (hover/click/reset) | `chart_grid.py:184-274` |

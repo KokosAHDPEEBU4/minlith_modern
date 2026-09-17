@@ -639,7 +639,7 @@ class ReportsPage(QWidget):
             body {{ font-family: Segoe UI, Arial, sans-serif; margin: 8px; background: #fafafa; color: #333; font-size: 12px; }}
             h1 {{ color: #1e1e2e; border-bottom: 2px solid #4a9eff; padding-bottom: 6px; font-size: 15px; }}
             h2 {{ color: #45475a; margin-top: 14px; font-size: 13px; }}
-            table {{ border-collapse: collapse; width: 100%; margin: 6px 0; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-size: 11px; }}
+            table {{ border-collapse: collapse; width: auto; max-width: 100%; margin: 6px 0; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-size: 11px; }}
             th {{ background: #1e1e2e; color: white; padding: 5px 7px; text-align: left; }}
             td {{ padding: 3px 7px; border-bottom: 1px solid #eee; }}
             tr:nth-child(even) {{ background: #f8f9fa; }}

@@ -28,12 +28,14 @@ class InputPage(QWidget):
     """Страница ручного ввода оксидов и расчёта."""
 
     calculation_done = pyqtSignal(object)
+    batch_calculate_requested = pyqtSignal(list)
 
     def __init__(self, calculator: Calculator, parent=None) -> None:
         super().__init__(parent)
         self._calculator = calculator
         self._last_result: Optional[CalculationResult] = None
         self._history = ChangeHistory()
+        self._batch_samples: list[Sample] = []
 
         layout = QVBoxLayout(self)
 
@@ -127,6 +129,10 @@ class InputPage(QWidget):
             self._sum_label.setStyleSheet("padding: 4px; font-weight: bold; color: #ffa94d;")
 
     def _on_calculate(self) -> None:
+        if len(self._batch_samples) > 1:
+            self.batch_calculate_requested.emit(self._batch_samples)
+            return
+
         comp = self._oxide_table.get_composition()
         if comp.sio2 == 0:
             QMessageBox.warning(self, "Ошибка ввода", "SiO2 должен быть больше нуля.")
@@ -168,6 +174,9 @@ class InputPage(QWidget):
         self._history.suppress(False)
         self._update_undo_redo()
         self._update_sum()
+
+    def set_all_samples(self, samples: list[Sample]) -> None:
+        self._batch_samples = samples
 
     def get_composition(self) -> OxideComposition:
         return self._oxide_table.get_composition()

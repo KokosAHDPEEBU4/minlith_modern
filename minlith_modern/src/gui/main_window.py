@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 
 from PyQt6.QtGui import QKeySequence, QShortcut
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
@@ -13,6 +15,8 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QStackedWidget,
+    QToolBar,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -52,6 +56,32 @@ class MainWindow(QMainWindow):
         # Apply chart theme from settings
         from src.charts.engines.matplotlib_engine import set_chart_theme
         set_chart_theme(self._config.get("chart_theme", "dark"))
+
+        # ── Тулбар методов ──
+        self._method_bar = QToolBar("Методы")
+        self._method_bar.setStyleSheet("QToolBar { spacing: 4px; padding: 4px; }")
+        self._method_bar.setMovable(False)
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._method_bar)
+        
+        self._btn_clean = QToolButton()
+        self._btn_clean.setText("Clean")
+        self._btn_clean.setCheckable(True)
+        self._btn_clean.clicked.connect(lambda: self._set_method("clean"))
+        self._method_bar.addWidget(self._btn_clean)
+
+        self._btn_stub = QToolButton()
+        self._btn_stub.setText("Stub")
+        self._btn_stub.setCheckable(True)
+        self._btn_stub.clicked.connect(lambda: self._set_method("stub"))
+        self._method_bar.addWidget(self._btn_stub)
+
+        self._btn_custom = QToolButton()
+        self._btn_custom.setText("Custom")
+        self._btn_custom.setCheckable(True)
+        self._btn_custom.clicked.connect(lambda: self._set_method("custom"))
+        self._method_bar.addWidget(self._btn_custom)
+        
+        self._update_method_buttons()
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -114,6 +144,7 @@ class MainWindow(QMainWindow):
 
         self._input_page = InputPage(self._calculator)
         self._input_page.calculation_done.connect(self._on_calculation_done)
+        self._input_page.batch_calculate_requested.connect(self.calculate_batch)
 
         self._results_page = ResultsPage()
         self._charts_page = ChartsPage()
@@ -200,7 +231,8 @@ class MainWindow(QMainWindow):
         if samples:
             s = samples[0]
             self._input_page.set_composition(s.composition, s.name)
-            self.statusBar().showMessage(f"Загружен: {s.name}")
+            self._input_page.set_all_samples(samples)
+            self.statusBar().showMessage(f"Загружено: {len(samples)} образцов")
 
     def _on_calculate_from_files(self, samples: list) -> None:
         self.calculate_batch(samples)
@@ -281,6 +313,22 @@ class MainWindow(QMainWindow):
         """Rebuild calculator and apply all settings immediately."""
         # 0. Apply chart interaction settings (zoom step)
         self._apply_zoom_step()
+        self._calculator = self._create_calculator()
+        self._input_page._calculator = self._calculator
+
+    def _set_method(self, mode: str) -> None:
+        self._config["algorithm_mode"] = mode
+        self._config.save()
+        self._on_settings_changed()
+        self._update_method_buttons()
+        if hasattr(self._settings_page, "_algorithm_mode"):
+            self._settings_page._algorithm_mode.setCurrentText(mode)
+
+    def _update_method_buttons(self) -> None:
+        mode = self._config.get("algorithm_mode", "clean")
+        self._btn_clean.setChecked(mode == "clean")
+        self._btn_stub.setChecked(mode == "stub")
+        self._btn_custom.setChecked(mode == "custom")
 
         # 1. Rebuild calculator with new config
         self._calculator = self._create_calculator()

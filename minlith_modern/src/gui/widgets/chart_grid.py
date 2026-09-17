@@ -29,6 +29,7 @@ from src.gui.widgets.chart_interactions import (
     get_spec,
     resolve_type_id,
 )
+from src.gui.widgets.chart_sizes import ChartSizeSpec, aspect_for, get_size_spec
 from src.gui.widgets.zoom_math import (
     DEFAULT_ZOOM_STEP,
     MIN_RANGE_WIDTH,
@@ -46,6 +47,7 @@ from src.gui.widgets.zoom_math import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_COLUMNS = 2
+MIN_CANVAS_WIDTH = 320
 
 
 class _AxisHome(NamedTuple):
@@ -77,6 +79,7 @@ class _ChartTile(QWidget):
         self._pie_base: dict[int, tuple[float, float]] = {}
         self._pie_labels: dict[int, float] = {}
         self._view_notify = None
+        self._size_spec: ChartSizeSpec = get_size_spec(None)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(2)
@@ -158,14 +161,18 @@ class _ChartTile(QWidget):
         self._fig = fig
 
         self._spec = get_spec(chart_type) if chart_type else None
+        self._size_spec = get_size_spec(chart_type)
 
         from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 
         canvas = FigureCanvasQTAgg(fig)
-        canvas.setMinimumSize(320, 260)
+        canvas.setMinimumSize(MIN_CANVAS_WIDTH, 260)
         canvas.setStyleSheet("border: none;")
         self._cids["scroll_event"] = canvas.mpl_connect("scroll_event", self._on_scroll)
-        self._canvas_layout.addWidget(canvas, stretch=1)
+        self._canvas_layout.addWidget(
+            canvas, stretch=1,
+            alignment=Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+        )
 
         toolbar = NavigationToolbar2QT(canvas, self)
         toolbar.setStyleSheet(
@@ -180,6 +187,48 @@ class _ChartTile(QWidget):
         self._snapshot_home()
         self._apply_spec()
         self._connect_pie_events()
+        self._apply_display_size()
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 (Qt override)
+        super().resizeEvent(event)
+        self._apply_display_size()
+
+    def _native_aspect(self) -> float | None:
+        """«Родной» аспект фигуры (ширина/высота), если известен."""
+        fig = self._fig
+        if fig is None:
+            return None
+        try:
+            width, height = fig.get_size_inches()
+            height = float(height)
+            if height <= 0:
+                return None
+            return float(width) / height
+        except Exception:
+            return None
+
+    def _apply_display_size(self) -> None:
+        """Держать канвас в рамках стандарта размера типа диаграммы.
+
+        Ширина ограничивается ``max_width`` и шириной хоста; высота считается
+        из целевого аспекта и зажимается в ``[min_height, max_height]``.
+        Канвас центрируется по горизонтали.
+        """
+        canvas = self._canvas
+        if canvas is None:
+            return
+        avail_w = self._canvas_host.width()
+        if avail_w <= 1:
+            return
+        spec = self._size_spec
+        aspect = aspect_for(spec, self._native_aspect())
+        width = avail_w if spec.max_width is None else min(avail_w, spec.max_width)
+        width = max(MIN_CANVAS_WIDTH, width)
+        height = int(round(width / aspect)) if aspect > 0 else width
+        height = max(spec.min_height, min(height, spec.max_height))
+        if canvas.width() == width and canvas.height() == height:
+            return
+        canvas.setFixedSize(width, height)
 
     def _connect_pie_events(self) -> None:
         """Подключить hover/click для круговых диаграмм (категория D).
@@ -1000,7 +1049,7 @@ class MultiChartView(QWidget):
             return
         cols = self._columns_spin.value()
         tiles = list(self._tiles)
-        self._clear_grid()
+        self._clear_grid(keep=tiles)
         for pos, tile in enumerate(tiles):
             row, col = divmod(pos, cols)
             self._grid_layout.addWidget(tile, row, col)
@@ -1119,9 +1168,19 @@ class MultiChartView(QWidget):
                     plt.close(fig)
         return len(pages)
 
-    def _clear_grid(self) -> None:
+    def _clear_grid(self, keep: list | None = None) -> None:
+        """Убрать виджеты из сетки.
+
+        ``keep`` — плитки, которые переиспользуются (reflow): их только
+        отсоединяют от layout, но не удаляют. Остальные виджеты удаляются
+        отложенно.
+        """
+        preserved = keep or ()
         while self._grid_layout.count():
             item = self._grid_layout.takeAt(0)
             widget = item.widget()
-            if widget:
-                widget.deleteLater()
+            if widget is None:
+                continue
+            if any(widget is tile for tile in preserved):
+                continue
+            widget.deleteLater()
