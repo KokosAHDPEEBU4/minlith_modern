@@ -71,6 +71,7 @@ class _ChartTile(QWidget):
         super().__init__(parent)
         self._zoom_step = normalize_zoom_step(zoom_step)
         self._home: dict[int, _AxisHome] = {}
+        self._pie_exploded: dict[int, bool] = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(2)
@@ -173,6 +174,53 @@ class _ChartTile(QWidget):
 
         self._snapshot_home()
         self._apply_spec()
+        self._connect_pie_events()
+
+    def _connect_pie_events(self) -> None:
+        """Подключить hover/click для pie, если спецификация требует."""
+        if not self._spec:
+            return
+        if self._spec.hover_info or self._spec.click_action:
+            if self._canvas is not None:
+                self._cids["hover"] = self._canvas.mpl_connect("motion_notify_event", self._on_hover)
+                self._cids["click"] = self._canvas.mpl_connect("button_press_event", self._on_click)
+
+    def _get_wedges(self, ax) -> list:
+        """Найти все Wedge (сектора круговой) на осях."""
+        return [p for p in ax.patches if p.__class__.__name__ == "Wedge"]
+
+    def _on_hover(self, event) -> None:
+        if not self._spec or self._spec.category is not ChartCategory.PIE or not self._spec.hover_info:
+            return
+        if event.inaxes:
+            for wedge in self._get_wedges(event.inaxes):
+                if wedge.contains(event)[0]:
+                    label = wedge.get_label()
+                    # value = wedge.get_width() # wait, wedges don't have get_value directly
+                    # Pie wedges don't store value, need to find from corresponding text
+                    self._toolbar.set_message(f"{label}")
+                    return
+        self._toolbar.set_message("")
+
+    def _on_click(self, event) -> None:
+        if not self._spec or self._spec.category is not ChartCategory.PIE or not self._spec.click_action:
+            return
+        if event.inaxes:
+            wedges = self._get_wedges(event.inaxes)
+            for i, wedge in enumerate(wedges):
+                if wedge.contains(event)[0]:
+                    is_exploded = self._pie_exploded.get(i, False)
+                    # Explode: offset 0.1 radius
+                    offset = 0.1 if not is_exploded else -0.1
+                    # Bisector angle
+                    theta = (wedge.theta1 + wedge.theta2) / 2
+                    rad = np.radians(theta)
+                    dx = offset * np.cos(rad)
+                    dy = offset * np.sin(rad)
+                    wedge.set_center((wedge.center[0] + dx, wedge.center[1] + dy))
+                    self._pie_exploded[i] = not is_exploded
+                    self._canvas.draw_idle()
+                    return
 
     def _snapshot_home(self) -> None:
         """Запомнить исходные пределы и аспект осей для сброса «По умолчанию»."""

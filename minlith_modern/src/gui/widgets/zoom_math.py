@@ -84,6 +84,26 @@ def zoom_lims(
     return _clamp(new_lo, new_hi)
 
 
+def zoom_radial(
+    rlim: tuple[float, float],
+    factor: float,
+    *,
+    min_range_width: float = MIN_RANGE_WIDTH,
+) -> tuple[float, float]:
+    """Новые радиальные пределы при зуме полярных осей.
+
+    Якорь фиксирован в центре: ``r=0`` (хотя бы текущая нижняя граница
+    ``rlim[0]``) остаётся неподвижной; ``factor > 1`` — приближение
+    к центру (диапазон по радиусу сжимается).
+    """
+    lo, hi = float(rlim[0]), float(rlim[1])
+    # Anchor = lo (r=0) фиксирован
+    new_lo, new_hi = zoom_lims((lo, hi), lo, factor, min_range_width=min_range_width)
+    if new_lo < 0:
+        new_lo = 0.0
+    return (new_lo, new_hi)
+
+
 # ── normalize_zoom_step ──────────────────────────────────────────────────────
 
 
