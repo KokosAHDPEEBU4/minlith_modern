@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-
 from typing import NamedTuple
 
+import numpy as np
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -72,6 +72,8 @@ class _ChartTile(QWidget):
         self._zoom_step = normalize_zoom_step(zoom_step)
         self._home: dict[int, _AxisHome] = {}
         self._pie_exploded: dict[int, bool] = {}
+        self._pie_base: dict[int, tuple[float, float]] = {}
+        self._pie_labels: dict[int, float] = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(2)
@@ -177,50 +179,96 @@ class _ChartTile(QWidget):
         self._connect_pie_events()
 
     def _connect_pie_events(self) -> None:
-        """Подключить hover/click для pie, если спецификация требует."""
+        """Подключить hover/click для круговых диаграмм (категория D).
+
+        События подключаются только если спецификация категории D требует
+        подсказки или действия по клику. Другие категории не трогаем.
+        """
         if not self._spec:
             return
-        if self._spec.hover_info or self._spec.click_action:
-            if self._canvas is not None:
-                self._cids["hover"] = self._canvas.mpl_connect("motion_notify_event", self._on_hover)
-                self._cids["click"] = self._canvas.mpl_connect("button_press_event", self._on_click)
+        if self._spec.category is not ChartCategory.PIE:
+            return
+        if not (self._spec.hover_info or self._spec.click_action):
+            return
+        if self._canvas is None:
+            return
+        self._pie_base.clear()
+        self._pie_labels.clear()
+        self._pie_exploded.clear()
+        for i, wedge in enumerate(self._all_wedges()):
+            self._pie_base[i] = (float(wedge.center[0]), float(wedge.center[1]))
+            self._pie_exploded[i] = False
+            pct = (float(wedge.theta2) - float(wedge.theta1)) / 360.0 * 100.0
+            self._pie_labels[i] = pct
+        self._cids["hover"] = self._canvas.mpl_connect("motion_notify_event", self._on_hover)
+        self._cids["click"] = self._canvas.mpl_connect("button_press_event", self._on_click)
+
+    def _all_wedges(self) -> list:
+        """Все сектора (Wedge) pie по всем осям фигуры."""
+        wedges: list = []
+        if self._fig is None:
+            return wedges
+        for ax in self._fig.axes:
+            for patch in ax.patches:
+                if patch.__class__.__name__ == "Wedge":
+                    wedges.append(patch)
+        return wedges
 
     def _get_wedges(self, ax) -> list:
         """Найти все Wedge (сектора круговой) на осях."""
         return [p for p in ax.patches if p.__class__.__name__ == "Wedge"]
 
     def _on_hover(self, event) -> None:
-        if not self._spec or self._spec.category is not ChartCategory.PIE or not self._spec.hover_info:
+        """Hover для круговой: подсказка «Название — значение (процент)»."""
+        if not self._spec or self._spec.category is not ChartCategory.PIE:
+            return
+        if not self._spec.hover_info:
+            return
+        if self._toolbar is None:
             return
         if event.inaxes:
-            for wedge in self._get_wedges(event.inaxes):
+            for i, wedge in enumerate(self._get_wedges(event.inaxes)):
                 if wedge.contains(event)[0]:
                     label = wedge.get_label()
-                    # value = wedge.get_width() # wait, wedges don't have get_value directly
-                    # Pie wedges don't store value, need to find from corresponding text
-                    self._toolbar.set_message(f"{label}")
+                    pct = self._pie_labels.get(i)
+                    if pct is None:
+                        pct = (float(wedge.theta2) - float(wedge.theta1)) / 360.0 * 100.0
+                    self._toolbar.set_message(f"{label} — {pct:.1f}%")
                     return
         self._toolbar.set_message("")
 
     def _on_click(self, event) -> None:
-        if not self._spec or self._spec.category is not ChartCategory.PIE or not self._spec.click_action:
+        """Клик по круговой: explode среза; повторный клик — возврат."""
+        if not self._spec or self._spec.category is not ChartCategory.PIE:
+            return
+        if not self._spec.click_action:
             return
         if event.inaxes:
             wedges = self._get_wedges(event.inaxes)
             for i, wedge in enumerate(wedges):
                 if wedge.contains(event)[0]:
                     is_exploded = self._pie_exploded.get(i, False)
-                    # Explode: offset 0.1 radius
-                    offset = 0.1 if not is_exploded else -0.1
-                    # Bisector angle
-                    theta = (wedge.theta1 + wedge.theta2) / 2
-                    rad = np.radians(theta)
-                    dx = offset * np.cos(rad)
-                    dy = offset * np.sin(rad)
-                    wedge.set_center((wedge.center[0] + dx, wedge.center[1] + dy))
+                    base = self._pie_base.get(i, (0.0, 0.0))
+                    if is_exploded:
+                        wedge.set_center((base[0], base[1]))
+                    else:
+                        offset = 0.1
+                        theta = (float(wedge.theta1) + float(wedge.theta2)) / 2
+                        rad = np.radians(theta)
+                        wedge.set_center(
+                            (base[0] + offset * np.cos(rad), base[1] + offset * np.sin(rad))
+                        )
                     self._pie_exploded[i] = not is_exploded
                     self._canvas.draw_idle()
                     return
+
+    def _reset_pie(self) -> None:
+        """Вернуть все срезы круговой в базовое положение (сброс формы)."""
+        for i, wedge in enumerate(self._all_wedges()):
+            if self._pie_exploded.get(i, False):
+                base = self._pie_base.get(i, (0.0, 0.0))
+                wedge.set_center((base[0], base[1]))
+                self._pie_exploded[i] = False
 
     def _snapshot_home(self) -> None:
         """Запомнить исходные пределы и аспект осей для сброса «По умолчанию»."""
@@ -367,7 +415,7 @@ class _ChartTile(QWidget):
         """
         if self._fig is None or self._canvas is None:
             return
-        
+
         apply_mode = mode
         if self._spec is not None and self._spec.category is ChartCategory.EQUAL_ASPECT:
             apply_mode = ModifierMode.ZOOM_XY
@@ -377,7 +425,8 @@ class _ChartTile(QWidget):
                 if hasattr(ax, "get_rlim"):
                     if apply_mode in (ModifierMode.ZOOM_XY, ModifierMode.ZOOM_Y):
                         rlim = ax.get_rlim()
-                        new_r = zoom_radial(rlim, factor, min_range_width=self._min_range_for(ax, "y"))
+                        min_r = self._min_range_for(ax, "y")
+                        new_r = zoom_radial(rlim, factor, min_range_width=min_r)
                         ax.set_rlim(*new_r)
                         self._keep_aspect(ax)
                     continue
@@ -463,8 +512,18 @@ class _ChartTile(QWidget):
         self._canvas.draw_idle()
 
     def _restore_view(self, redraw: bool = True) -> None:
-        """Восстановить пределы из snapshot (C, Polar, Pie) или автоскейлом."""
+        """Восстановить форму/пределы: pie — базовые центры, C/Polar — snapshot.
+
+        Для категории D возвращает выдвинутые срезы на место (explode off),
+        для C и полярных — пределы из snapshot рендерера. Остальные плитки
+        (если зум разрешён) — relim + autoscale.
+        """
         if self._fig is None or self._canvas is None:
+            return
+        if self._spec and self._spec.category is ChartCategory.PIE:
+            self._reset_pie()
+            if redraw:
+                self._canvas.draw_idle()
             return
         if not self._supports_zoom():
             return
