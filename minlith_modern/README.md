@@ -11,9 +11,10 @@ MINLITH Modern — это перезапись легендарной Excel-пр
 - Полная реализация алгоритма MINLITH (типы 1-5, ~500+ условий ветвления)
 - Auto-calibration — автоматическое восстановление параметров алгоритма из Excel через scipy
 - PyQt6 GUI с drag-and-drop, предпросмотром, прогресс-барами
+- Настройки: сайдбар-навигация (Расчёт / Экспорт / Диаграммы / Интерфейс), поиск настроек, карточки, адаптация под тёмную/светлую тему
 - SQLite база данных с версионированием
 - 23 типов диаграмм (matplotlib): bar, pie, defect, QAPF, TAS, A-CN-K, heatmap, rock type, feldspar triangle, harker, AFM, SiO₂-K₂O, Bland-Altman, correlation, k1-k4, box plot, radar, coefficient heatmap, defect accumulation, PCA biplot, dendrogram, parallel coordinates, Mg-Fe-Al ternary
-- 14 интерактивных диаграмм (Plotly HTML): bar, TAS, harker, pie, QAPF, A-CN-K, AFM, heatmap, correlation, k1-k4, boxplot, violin, parallel, rock type
+- 14 интерактивных диаграмм (Plotly HTML): bar, TAS, harker, pie, QAPF, A-CN-K, AFM, heatmap, correlation, k1-k4, boxplot, violin, parallel, rock type (экспорт из GUI: «Диаграммы» → «Интерактивный HTML…», и CLI `--interactive`)
 - Генератор отчётов (PDF, Word, HTML) с встроенными диаграммами
 - 5 шаблонов отчётов: brief, standard, full, core, geochemical
 - Параллельный расчёт через ProcessPoolExecutor

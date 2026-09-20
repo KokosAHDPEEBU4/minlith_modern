@@ -3,21 +3,26 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QDialog,
+    QFileDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
 from src.charts import ChartData
+from src.charts.data_builder import build_chart_data
+from src.charts.engines.plotly_engine import PLOTLY_LABELS, export_plotly_html
 from src.gui.widgets.chart_grid import MultiChartView
 
 logger = logging.getLogger(__name__)
@@ -106,7 +111,7 @@ class ChartsPage(QWidget):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self._data: Optional[ChartData] = None
+        self._data: ChartData | None = None
         self._results: list = []
         self._selected: set[int] = set()
 
@@ -124,6 +129,11 @@ class ChartsPage(QWidget):
         self._btn_select.clicked.connect(self._open_sample_selector)
         toolbar.addWidget(self._btn_select)
 
+        self._btn_plotly = QPushButton("Интерактивный HTML…")
+        self._btn_plotly.setEnabled(False)
+        self._btn_plotly.clicked.connect(self._export_plotly_html)
+        toolbar.addWidget(self._btn_plotly)
+
         self._lbl_selection = QLabel("")
         self._lbl_selection.setStyleSheet("color: #888;")
         toolbar.addWidget(self._lbl_selection)
@@ -133,7 +143,7 @@ class ChartsPage(QWidget):
         self._view = MultiChartView()
         layout.addWidget(self._view, stretch=1)
 
-    def set_data(self, data: Optional[ChartData]) -> None:
+    def set_data(self, data: ChartData | None) -> None:
         self._data = data
         self._view.set_data(data)
 
@@ -155,6 +165,7 @@ class ChartsPage(QWidget):
 
     def _rebuild(self) -> None:
         self._btn_select.setEnabled(bool(self._results))
+        self._btn_plotly.setEnabled(bool(self._results))
         if not self._results:
             self._lbl_selection.setText("")
             self.set_data(None)
@@ -167,33 +178,50 @@ class ChartsPage(QWidget):
         self.set_data(data)
         self.dataChanged.emit(data)
 
+    def _selected_results(self) -> list:
+        """Список результатов по текущему выбору образцов."""
+        return [self._results[i] for i in sorted(self._selected)]
+
+    def _export_plotly_html(self) -> None:
+        results = self._selected_results()
+        if not results:
+            return
+
+        labels = sorted(PLOTLY_LABELS.values())
+        label_by_title = {v: k for k, v in PLOTLY_LABELS.items()}
+        label, ok = QInputDialog.getItem(
+            self, "Интерактивный HTML (Plotly)",
+            "Тип диаграммы:", labels, 0, False)
+        if not ok:
+            return
+        chart_type = label_by_title[label]
+
+        default_name = f"{chart_type}.html"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить интерактивную диаграмму", default_name,
+            "HTML-файл (*.html)")
+        if not path:
+            return
+        if not path.lower().endswith(".html"):
+            path += ".html"
+
+        try:
+            if not export_plotly_html(chart_type, results, Path(path)):
+                QMessageBox.warning(
+                    self, "Ошибка",
+                    f"Интерактивный вариант для диаграммы '{chart_type}' "
+                    f"не поддерживается.")
+                return
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.exception("Plotly export failed")
+            QMessageBox.warning(self, "Ошибка", f"Не удалось сохранить HTML:\n{exc}")
+            return
+
+        QMessageBox.information(
+            self, "Готово",
+            f"Интерактивная диаграмма сохранена:\n{path}\n\n"
+            f"Откройте файл в браузере для взаимодействия.")
+
     def build_data_from_results(self, results: list) -> ChartData:
         """Построить ChartData из списка CalculationResult."""
-        import numpy as np
-        from src.charts import ChartData
-
-        data = ChartData()
-        data.sample_names = [r.sample_name for r in results]
-
-        mineral_fields = ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb",
-                          "ap", "cc", "dl", "ank", "rch", "sd", "srp", "mst", "ht", "prl"]
-        for field in mineral_fields:
-            arr = np.array([getattr(r.minerals_weight, field, 0.0) for r in results])
-            data.minerals_wt[field] = arr
-
-        oxide_fields = ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao", "na2o", "k2o", "p2o5", "mno"]
-        for field in oxide_fields:
-            arr = np.array([getattr(r.input_composition, field, 0.0) for r in results])
-            data.oxides[field] = arr
-
-        data.rock_types = [int(r.rock_type) for r in results]
-
-        if results and results[0].defect:
-            for oxide in results[0].defect:
-                arr = np.array([r.defect.get(oxide, 0.0) for r in results])
-                data.defect[oxide] = arr
-
-        data.F_values = [r.coefficients.F for r in results]
-        data.A_values = [r.coefficients.A for r in results]
-
-        return data
+        return build_chart_data(results)

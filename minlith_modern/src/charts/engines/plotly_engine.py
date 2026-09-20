@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 # Catppuccin Mocha colors for Plotly
 COLORS = [
@@ -42,3 +40,42 @@ def save_html(fig: go.Figure, path: str | Path, title: str = "") -> None:
         from src.charts.engines.matplotlib_engine import get_fg_color
         fig.update_layout(title=dict(text=title, font=dict(size=16, color=get_fg_color())))
     fig.write_html(str(path), include_plotlyjs="cdn")
+
+
+PLOTLY_LABELS: dict[str, str] = {
+    "bar": "Столбчатая (минералы)",
+    "pie": "Круговая (минералы)",
+    "tas": "TAS-диаграмма",
+    "qapf": "QAPF",
+    "acnk": "A-CN-K",
+    "afm": "AFM",
+    "harker": "Харкер (Harker)",
+    "heatmap": "Тепловая карта минералов",
+    "correlation": "Корреляция",
+    "kf": "Коэффициенты хлорита vs F",
+    "boxplot": "Ящики (box plot)",
+    "violin": "Скрипки (violin)",
+    "parallel": "Параллельные координаты",
+    "rock_type": "Распределение типов пород",
+}
+
+
+def export_plotly_html(
+    chart_type: str,
+    results,
+    path: str | Path,
+    title: str = "",
+) -> bool:
+    """Render interactive Plotly HTML from calculation results.
+
+    Returns ``False`` when ``chart_type`` is not in ``PLOTLY_CHARTS``.
+    """
+    from src.charts.data_builder import build_chart_data
+    from src.charts.engines.plotly_charts import PLOTLY_CHARTS
+
+    fn = PLOTLY_CHARTS.get(chart_type)
+    if fn is None:
+        return False
+    data = build_chart_data(results)
+    fn(data, path, title=title)
+    return True

@@ -229,7 +229,7 @@ PASS export: multi-page PDF with 2 pages
 ALL GUI SMOKE TESTS PASSED
 ```
 
-Полный тест-сьют: **1133 passed, 5 skipped** (включая `tests/test_chart_sizes.py`). Статический анализ (`ruff`, `select=E,F,I,N,W,UP`) — чисто.
+Полный тест-сьют: **1167 passed, 5 skipped** (включая `tests/test_chart_sizes.py`). Статический анализ (`ruff`, `select=E,F,I,N,W,UP`) — чисто.
 
 Примечания:
 - GUI-проверки идут в offscreen (`QT_QPA_PLATFORM=offscreen`); события синтезируются объектами с полями `inaxes/xdata/ydata/step` и MouseEvent.
