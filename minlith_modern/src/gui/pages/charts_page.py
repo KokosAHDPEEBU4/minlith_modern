@@ -10,12 +10,12 @@ from PyQt6.QtWidgets import (
     QDialog,
     QFileDialog,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -29,12 +29,15 @@ logger = logging.getLogger(__name__)
 
 
 class SampleSelectorDialog(QDialog):
-    """Диалог выбора образцов для построения диаграмм."""
+    """Диалог выбора элементов (минералы, диаграммы, образцы) из списка."""
 
-    def __init__(self, names: list[str], selected: set[int], parent=None) -> None:
+    def __init__(self, names: list[str], selected: set[int], parent=None,
+                 title: str = "Выбор образцов для диаграмм",
+                 hint: str | None = None,
+                 accept_label: str = "Применить") -> None:
         super().__init__(parent)
-        self.setWindowTitle("Выбор образцов для диаграмм")
-        self.setMinimumSize(360, 420)
+        self.setWindowTitle(title)
+        self.setMinimumSize(380, 420)
 
         self._names = names
         self._selected: set[int] = set(selected)
@@ -42,12 +45,13 @@ class SampleSelectorDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
 
-        hint = QLabel(
-            f"Отметьте образцы, которые будут участвовать в диаграммах. "
-            f"Всего: {len(names)}.")
-        hint.setWordWrap(True)
-        hint.setStyleSheet("color: #888; font-size: 11px;")
-        layout.addWidget(hint)
+        if hint is None:
+            hint = (f"Отметьте элементы, которые будут использованы. "
+                    f"Всего: {len(names)}.")
+        hint_lbl = QLabel(hint)
+        hint_lbl.setWordWrap(True)
+        hint_lbl.setStyleSheet("color: #888; font-size: 11px;")
+        layout.addWidget(hint_lbl)
 
         self._list = QListWidget()
         self._list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
@@ -76,7 +80,7 @@ class SampleSelectorDialog(QDialog):
         btn_cancel = QPushButton("Отмена")
         btn_cancel.clicked.connect(self.reject)
         btn_row.addWidget(btn_cancel)
-        btn_ok = QPushButton("Применить")
+        btn_ok = QPushButton(accept_label)
         btn_ok.setDefault(True)
         btn_ok.clicked.connect(self.accept)
         btn_row.addWidget(btn_ok)
@@ -140,12 +144,43 @@ class ChartsPage(QWidget):
         toolbar.addStretch()
         layout.addLayout(toolbar)
 
-        self._view = MultiChartView()
-        layout.addWidget(self._view, stretch=1)
+        self._tabs = QTabWidget()
+        self._tabs.setTabsClosable(True)
+        self._tabs.setMovable(True)
+        self._tabs.tabCloseRequested.connect(self._close_tab)
+        btn_add = QPushButton("+")
+        btn_add.setFixedSize(28, 28)
+        btn_add.setToolTip("Добавить вкладку с набором диаграмм")
+        btn_add.clicked.connect(self._add_tab)
+        self._tabs.setCornerWidget(btn_add, Qt.CornerFlag.TopRightCorner)
+        self._add_tab()
+        layout.addWidget(self._tabs, stretch=1)
+
+    def _current_view(self) -> MultiChartView:
+        return self._tabs.currentWidget()
+
+    def _add_tab(self, name: str | None = None) -> MultiChartView:
+        view = MultiChartView()
+        if name is None:
+            name = f"Вкладка {self._tabs.count() + 1}"
+        self._tabs.addTab(view, name)
+        self._tabs.setCurrentWidget(view)
+        if self._data is not None:
+            view.set_data(self._data)
+        return view
+
+    def _close_tab(self, index: int) -> None:
+        if self._tabs.count() <= 1:
+            return
+        widget = self._tabs.widget(index)
+        if hasattr(widget, "_release_tiles"):
+            widget._release_tiles()
+        self._tabs.removeTab(index)
 
     def set_data(self, data: ChartData | None) -> None:
         self._data = data
-        self._view.set_data(data)
+        for i in range(self._tabs.count()):
+            self._tabs.widget(i).set_data(data)
 
     def set_results(self, results: list) -> None:
         """Принять результаты, сбросить выбор на все образцы и построить."""
@@ -189,16 +224,25 @@ class ChartsPage(QWidget):
 
         labels = sorted(PLOTLY_LABELS.values())
         label_by_title = {v: k for k, v in PLOTLY_LABELS.items()}
-        label, ok = QInputDialog.getItem(
-            self, "Интерактивный HTML (Plotly)",
-            "Тип диаграммы:", labels, 0, False)
-        if not ok:
+        dlg = SampleSelectorDialog(
+            labels, set(range(len(labels))), self,
+            title="Интерактивный HTML (Plotly)",
+            hint=("Отметьте диаграммы, которые войдут в HTML-файл. "
+                  "При выборе нескольких они будут объединены в один отчёт "
+                  "со сводкой (минералы, дата/время, список диаграмм)."),
+            accept_label="Сохранить",
+        )
+        if not dlg.exec():
             return
-        chart_type = label_by_title[label]
+        chosen = sorted(dlg.selected_indexes())
+        if not chosen:
+            QMessageBox.warning(
+                self, "Интерактивный HTML", "Выберите хотя бы одну диаграмму.")
+            return
+        chart_types = [label_by_title[labels[i]] for i in chosen]
 
-        default_name = f"{chart_type}.html"
         path, _ = QFileDialog.getSaveFileName(
-            self, "Сохранить интерактивную диаграмму", default_name,
+            self, "Сохранить интерактивный HTML-отчёт", "diagrams.html",
             "HTML-файл (*.html)")
         if not path:
             return
@@ -206,20 +250,19 @@ class ChartsPage(QWidget):
             path += ".html"
 
         try:
-            if not export_plotly_html(chart_type, results, Path(path)):
-                QMessageBox.warning(
-                    self, "Ошибка",
-                    f"Интерактивный вариант для диаграммы '{chart_type}' "
-                    f"не поддерживается.")
-                return
+            ok = export_plotly_html(chart_types, results, Path(path))
         except Exception as exc:  # pragma: no cover - defensive
             logger.exception("Plotly export failed")
             QMessageBox.warning(self, "Ошибка", f"Не удалось сохранить HTML:\n{exc}")
             return
+        if not ok:
+            QMessageBox.warning(
+                self, "Ошибка", "Не удалось построить ни одной из выбранных диаграмм.")
+            return
 
         QMessageBox.information(
             self, "Готово",
-            f"Интерактивная диаграмма сохранена:\n{path}\n\n"
+            f"Интерактивный отчёт сохранён:\n{path}\n\n"
             f"Откройте файл в браузере для взаимодействия.")
 
     def build_data_from_results(self, results: list) -> ChartData:

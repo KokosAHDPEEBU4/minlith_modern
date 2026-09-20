@@ -20,6 +20,28 @@ OXIDE_FIELDS = [
     "na2o", "k2o", "p2o5", "mno",
 ]
 
+MINERAL_LABELS: dict[str, str] = {
+    "ab": "Альбит",
+    "an": "Анортит",
+    "or_": "Ортоклаз",
+    "q": "Кварц",
+    "ill": "Иллит",
+    "chl": "Хлорит",
+    "kn": "Каолинит",
+    "mm": "Монтмориллонит",
+    "gb": "Гиббсит",
+    "ap": "Апатит",
+    "cc": "Кальцит",
+    "dl": "Доломит",
+    "ank": "Анкерит",
+    "rch": "Родохрозит",
+    "sd": "Сидерит",
+    "srp": "Серпентин",
+    "mst": "Магнезит",
+    "ht": "Гематит",
+    "prl": "Пиролюзит",
+}
+
 
 def build_chart_data(results: list[CalculationResult]) -> ChartData:
     """Build a full ``ChartData`` from a list of calculation results."""

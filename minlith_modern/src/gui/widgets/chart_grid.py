@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.charts import BUILTIN_CHARTS, ChartData
+from src.charts.data_builder import MINERAL_FIELDS, MINERAL_LABELS
 from src.gui.widgets.chart_interactions import (
     ChartCategory,
     InteractionSpec,
@@ -49,6 +50,9 @@ logger = logging.getLogger(__name__)
 DEFAULT_COLUMNS = 2
 MIN_CANVAS_WIDTH = 320
 
+# Типы, которые всегда занимают всю ширину сетки (много подграфиков).
+FULL_WIDTH_TYPE_IDS: frozenset[str] = frozenset({"harker"})
+
 
 class _AxisHome(NamedTuple):
     xlim: tuple[float, float] | None = None
@@ -60,6 +64,32 @@ class _AxisHome(NamedTuple):
 def _noop_scroll_zoom(event) -> None:
     """Заглушка для встроенного scroll-зума matplotlib (отключение)."""
     return None
+
+
+def _now_stamp() -> str:
+    """Метка времени для имён файлов: ``YYYY-MM-DD_HH-MM-SS``."""
+    from datetime import datetime
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+
+def _savefig_with_stamp(fig, path: str, fmt: str) -> None:
+    """Сохранить фигуру с подписью даты/времени внизу (подпись потом убирается)."""
+    from datetime import datetime
+
+    caption = None
+    try:
+        caption = fig.text(
+            0.5, 0.01, f"Сгенерировано: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            ha="center", va="bottom", fontsize=8, alpha=0.6, color="#888888",
+            transform=fig.transFigure,
+        )
+        fig.savefig(path, format=fmt, dpi=150, bbox_inches="tight")
+    finally:
+        if caption is not None:
+            try:
+                caption.remove()
+            except Exception:
+                pass
 
 
 class _ChartTile(QWidget):
@@ -833,11 +863,6 @@ class MultiChartView(QWidget):
         self._columns_spin.valueChanged.connect(self._reflow_tiles)
         ctrl_row.addWidget(self._columns_spin)
 
-        self._btn_render = QPushButton("Построить выбранные")
-        self._btn_render.setStyleSheet("font-weight: bold; padding: 6px 16px;")
-        self._btn_render.clicked.connect(self.render)
-        ctrl_row.addWidget(self._btn_render)
-
         self._btn_zoom_all_in = QPushButton("Приблизить все")
         self._btn_zoom_all_in.clicked.connect(lambda: self.zoom_all(1))
         ctrl_row.addWidget(self._btn_zoom_all_in)
@@ -867,8 +892,13 @@ class MultiChartView(QWidget):
 
         layout.addLayout(ctrl_row)
 
-        # ── Body: checklist (left) + scrollable grid (right) ──
+        # ── Body: side panel (диаграммы → минералы → построить) + grid ──
         body = QHBoxLayout()
+
+        side = QWidget()
+        side_layout = QVBoxLayout(side)
+        side_layout.setContentsMargins(0, 0, 0, 0)
+        side_layout.setSpacing(6)
 
         check_group = QGroupBox("Диаграммы")
         check_layout = QVBoxLayout(check_group)
@@ -881,6 +911,44 @@ class MultiChartView(QWidget):
             check_layout.addWidget(cb)
 
         check_layout.addStretch()
+        side_layout.addWidget(check_group, stretch=1)
+
+        # Блок выбора минералов — между чекбоксами диаграмм и построением.
+        self._mineral_group = QGroupBox("Минералы для построения")
+        mineral_layout = QVBoxLayout(self._mineral_group)
+        mineral_layout.setContentsMargins(8, 12, 8, 8)
+
+        min_tools = QHBoxLayout()
+        btn_min_all = QPushButton("Все")
+        btn_min_all.setToolTip("Отметить все минералы")
+        btn_min_all.clicked.connect(lambda: self._set_minerals(True))
+        min_tools.addWidget(btn_min_all)
+        btn_min_none = QPushButton("Снять")
+        btn_min_none.setToolTip("Снять отметки со всех минералов")
+        btn_min_none.clicked.connect(lambda: self._set_minerals(False))
+        min_tools.addWidget(btn_min_none)
+        min_tools.addStretch()
+        mineral_layout.addLayout(min_tools)
+
+        self._mineral_widget = QWidget()
+        self._mineral_checkbox_layout = QVBoxLayout(self._mineral_widget)
+        self._mineral_checkbox_layout.setContentsMargins(0, 0, 0, 0)
+        self._mineral_checkbox_layout.setSpacing(2)
+        mineral_layout.addWidget(self._mineral_widget)
+
+        side_layout.addWidget(self._mineral_group, stretch=1)
+
+        self._btn_render = QPushButton("Построить выбранные")
+        self._btn_render.setStyleSheet("font-weight: bold; padding: 8px 16px;")
+        self._btn_render.clicked.connect(self.render)
+        side_layout.addWidget(self._btn_render)
+
+        side_scroll = QScrollArea()
+        side_scroll.setWidgetResizable(True)
+        side_scroll.setWidget(side)
+        side_scroll.setFixedWidth(300)
+        side_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        body.addWidget(side_scroll, stretch=0)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -889,10 +957,11 @@ class MultiChartView(QWidget):
         self._grid_layout.setSpacing(8)
         scroll.setWidget(self._grid_widget)
 
-        body.addWidget(check_group, stretch=0)
         body.addWidget(scroll, stretch=1)
 
         layout.addLayout(body, stretch=1)
+
+        self._mineral_checkboxes: dict[str, QCheckBox] = {}
 
     # ── Public API ──
 
@@ -904,6 +973,58 @@ class MultiChartView(QWidget):
 
     def set_data(self, data: ChartData | None) -> None:
         self._data = data
+        self._populate_minerals(data)
+
+    def _populate_minerals(self, data: ChartData | None) -> None:
+        """Пересоздать чекбоксы минералов по данным (отмечены все ненулевые)."""
+        while self._mineral_checkbox_layout.count():
+            item = self._mineral_checkbox_layout.takeAt(0)
+            w = item.widget()
+            if w is not None:
+                w.deleteLater()
+        self._mineral_checkboxes.clear()
+
+        if data is None or not data.minerals_wt:
+            self._mineral_group.setEnabled(False)
+            return
+        self._mineral_group.setEnabled(True)
+
+        nonzero = {k for k, arr in data.minerals_wt.items() if len(arr) and bool(np.any(arr))}
+        if not nonzero:
+            nonzero = set(data.minerals_wt)
+        for key in MINERAL_FIELDS:
+            if key not in data.minerals_wt:
+                continue
+            cb = QCheckBox(MINERAL_LABELS.get(key, key))
+            cb.setToolTip(key)
+            cb.setChecked(key in nonzero)
+            self._mineral_checkboxes[key] = cb
+            self._mineral_checkbox_layout.addWidget(cb)
+        self._mineral_checkbox_layout.addStretch()
+
+    def _set_minerals(self, checked: bool) -> None:
+        for cb in self._mineral_checkboxes.values():
+            cb.setChecked(checked)
+
+    def selected_minerals(self) -> list[str]:
+        """Порядок — по MINERAL_FIELDS (не менять под данные)."""
+        return [k for k in MINERAL_FIELDS
+                if k in self._mineral_checkboxes and self._mineral_checkboxes[k].isChecked()]
+
+    def _mineral_filtered_data(self) -> ChartData:
+        """Копия данных с minerals_wt, ограниченным выбранными минералами."""
+        data = self._data
+        if data is None:
+            return data  # type: ignore[return-value]
+        if not self._mineral_checkboxes:
+            return data
+        sel = set(self.selected_minerals())
+        if len(sel) == len(data.minerals_wt):
+            return data
+        import copy
+        filtered = copy.copy(data)
+        filtered.minerals_wt = {k: v for k, v in data.minerals_wt.items() if k in sel}
+        return filtered
 
     def has_tiles(self) -> bool:
         return bool(self._tiles)
@@ -1021,28 +1142,58 @@ class MultiChartView(QWidget):
         self._release_tiles()
         self._clear_grid()
 
-        for pos, chart_idx in enumerate(selected):
+        render_data = self._mineral_filtered_data()
+        widgets: list = []
+        for chart_idx in selected:
             chart = BUILTIN_CHARTS[chart_idx]
             try:
-                fig = chart.render(self._data)
+                fig = chart.render(render_data)
                 chart_type = resolve_type_id(chart_idx)
                 tile = _ChartTile(zoom_step=self._zoom_step)
                 tile.set_figure(chart_idx, fig, chart.get_name(), chart_type=chart_type)
+                tile._full_width = self._is_wide_chart(chart_idx)
                 tile._view_notify = self.on_tile_view_changed
                 tile._btn_export.clicked.connect(
                     lambda checked, t=tile: self._export_tile(t)
                 )
-                row, col = divmod(pos, cols)
-                self._grid_layout.addWidget(tile, row, col)
+                widgets.append(tile)
                 self._tiles.append(tile)
             except Exception as e:
                 logger.error("Chart '%s' failed: %s", chart.get_name(), e)
                 err_label = QLabel(f"Ошибка: {chart.get_name()}\n{e}")
                 err_label.setStyleSheet("color: #f38ba8; padding: 8px;")
-                row, col = divmod(pos, cols)
-                self._grid_layout.addWidget(err_label, row, col)
+                err_label._full_width = self._is_wide_chart(chart_idx)
+                widgets.append(err_label)
 
+        self._place_grid(widgets, cols)
         logger.info("Rendered %d charts", len(self._tiles))
+
+    def _is_wide_chart(self, chart_idx: int) -> bool:
+        """Полноширинный тип (много подграфиков — не умещается в колонку)."""
+        try:
+            return resolve_type_id(chart_idx) in FULL_WIDTH_TYPE_IDS
+        except ValueError:
+            return False
+
+    def _place_grid(self, widgets: list, cols: int, clear: bool = True) -> None:
+        """Разложить виджеты по сетке; широкие занимают всю строку."""
+        if clear:
+            self._clear_grid()
+        cur_row = 0
+        col = 0
+        for w in widgets:
+            if getattr(w, "_full_width", False):
+                if col != 0:
+                    cur_row += 1
+                    col = 0
+                self._grid_layout.addWidget(w, cur_row, 0, 1, cols)
+                cur_row += 1
+            else:
+                self._grid_layout.addWidget(w, cur_row, col)
+                col += 1
+                if col >= cols:
+                    cur_row += 1
+                    col = 0
 
     def _reflow_tiles(self) -> None:
         if not self._tiles:
@@ -1050,9 +1201,7 @@ class MultiChartView(QWidget):
         cols = self._columns_spin.value()
         tiles = list(self._tiles)
         self._clear_grid(keep=tiles)
-        for pos, tile in enumerate(tiles):
-            row, col = divmod(pos, cols)
-            self._grid_layout.addWidget(tile, row, col)
+        self._place_grid(tiles, cols, clear=False)
 
     def _release_tiles(self) -> None:
         """Закрыть matplotlib-фигуры плиток перед заменой (освобождение памяти)."""
@@ -1071,9 +1220,11 @@ class MultiChartView(QWidget):
         if tile.chart_idx < 0:
             return
         chart = BUILTIN_CHARTS[tile.chart_idx]
+        stamp = _now_stamp()
+        default = f"{chart.get_name().lower().replace(' ', '_')}_{stamp}.png"
         path, _ = QFileDialog.getSaveFileName(
             self, "Экспорт диаграммы",
-            f"{chart.get_name().lower().replace(' ', '_')}.png",
+            default,
             "PNG (*.png);;PDF (*.pdf);;SVG (*.svg)",
         )
         if not path:
@@ -1081,9 +1232,9 @@ class MultiChartView(QWidget):
         fmt = path.rsplit(".", 1)[-1].lower()
         try:
             if tile.figure is not None:
-                tile.figure.savefig(path, format=fmt, dpi=150, bbox_inches="tight")
+                _savefig_with_stamp(tile.figure, path, fmt)
             elif self._data is not None:
-                chart.export(self._data, path, fmt=fmt)
+                chart.export(self._mineral_filtered_data(), path, fmt=fmt)
             QMessageBox.information(self, "Экспорт", f"Сохранено: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка экспорта", str(e))
@@ -1102,14 +1253,16 @@ class MultiChartView(QWidget):
             return
         from pathlib import Path
         folder_path = Path(folder)
+        data = self._mineral_filtered_data()
+        stamp = _now_stamp()
         exported = 0
         for tile in self._tiles:
             if tile.chart_idx < 0:
                 continue
             chart = BUILTIN_CHARTS[tile.chart_idx]
-            fname = f"{chart.get_name().lower().replace(' ', '_')}.png"
+            fname = f"{chart.get_name().lower().replace(' ', '_')}_{stamp}.png"
             try:
-                chart.export(self._data, str(folder_path / fname), fmt="png")
+                chart.export(data, str(folder_path / fname), fmt="png")
                 exported += 1
             except Exception as e:
                 logger.error("Export '%s' failed: %s", chart.get_name(), e)
@@ -1127,7 +1280,7 @@ class MultiChartView(QWidget):
             QMessageBox.information(self, "Экспорт", "Сначала постройте диаграммы.")
             return
         path, _ = QFileDialog.getSaveFileName(
-            self, "Экспорт всех в PDF", "diagrams.pdf", "PDF (*.pdf)",
+            self, "Экспорт всех в PDF", f"diagrams_{_now_stamp()}.pdf", "PDF (*.pdf)",
         )
         if not path:
             return
@@ -1143,6 +1296,7 @@ class MultiChartView(QWidget):
     def _export_all_pdf_to(self, path: str) -> int:
         from matplotlib.backends.backend_pdf import PdfPages
 
+        data = self._mineral_filtered_data()
         pages: list = []
         temporary: list = []
         for tile in self._tiles:
@@ -1152,7 +1306,7 @@ class MultiChartView(QWidget):
             if fig is None:
                 if self._data is None:
                     continue
-                fig = BUILTIN_CHARTS[tile.chart_idx].render(self._data)
+                fig = BUILTIN_CHARTS[tile.chart_idx].render(data)
                 temporary.append(fig)
             pages.append(fig)
         if not pages:

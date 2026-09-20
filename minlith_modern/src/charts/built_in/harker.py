@@ -51,7 +51,7 @@ class HarkerPlugin(ChartPlugin):
         cols = 3
         rows = (n_plots + cols - 1) // cols
 
-        fig, axes = plt.subplots(rows, cols, figsize=(14, rows * 3.5),
+        fig, axes = plt.subplots(rows, cols, figsize=(12, rows * 3.4),
                                  facecolor=bg)
         if rows == 1:
             axes = np.array([axes])
@@ -64,29 +64,29 @@ class HarkerPlugin(ChartPlugin):
             ax = axes[i]
             y = data.oxides.get(field, np.zeros(len(sio2)))
             ax.set_facecolor(bg)
-            ax.tick_params(colors=fg, labelsize=8)
+            ax.tick_params(colors=fg, labelsize=11)
             ax.xaxis.label.set_color(fg)
             ax.yaxis.label.set_color(fg)
 
-            ax.scatter(sio2, y, c=accent, s=40, alpha=0.8,
-                       edgecolors=fg, linewidth=0.5, zorder=5)
+            ax.scatter(sio2, y, c=accent, s=62, alpha=0.85,
+                       edgecolors=fg, linewidth=0.8, zorder=5)
 
             # Trend line
             if len(sio2) >= 2:
                 coeffs = np.polyfit(sio2, y, 1)
                 x_line = np.linspace(min(sio2), max(sio2), 100)
                 ax.plot(x_line, np.polyval(coeffs, x_line), "--",
-                        color=COLORS[2], alpha=0.5, linewidth=1)
+                        color=COLORS[2], alpha=0.7, linewidth=1.6)
 
-            ax.set_xlabel("SiO₂ (wt%)", fontsize=9)
-            ax.set_ylabel(label, fontsize=9)
-            ax.set_title(label, fontsize=10, fontweight="bold", color=fg)
-            ax.grid(True, color=grid, alpha=0.3)
+            ax.set_xlabel("SiO₂ (wt%)", fontsize=12)
+            ax.set_ylabel(label, fontsize=12)
+            ax.set_title(label, fontsize=13, fontweight="bold", color=fg)
+            ax.grid(True, color=grid, alpha=0.35)
 
         for j in range(i + 1, len(axes)):
             axes[j].set_visible(False)
 
-        fig.suptitle("Harker Variation Diagrams", fontsize=14,
-                      fontweight="bold", color=fg, y=1.01)
-        fig.tight_layout()
+        fig.suptitle("Harker Variation Diagrams", fontsize=16,
+                      fontweight="bold", color=fg, y=1.02)
+        fig.tight_layout(pad=1.2)
         return fig

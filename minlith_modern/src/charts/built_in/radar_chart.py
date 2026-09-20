@@ -53,6 +53,11 @@ class RadarChart(ChartPlugin):
         values_plot = values + [values[0]]
         angles += [angles[0]]
 
+        def fmt(v: float) -> str:
+            return f"{v:.2g}" if max_val < 1 else f"{v:.1f}"
+
+        ticks = [0.25 * max_val, 0.5 * max_val, 0.75 * max_val, max_val]
+
         fig = create_figure(figsize=(8, 8), title=f"{sample_name} — Mineral Profile")
         ax = fig.add_subplot(111, polar=True)
         ax.set_facecolor(bg)
@@ -62,9 +67,8 @@ class RadarChart(ChartPlugin):
 
         ax.set_xticks(np.linspace(0, 2 * np.pi, n, endpoint=False))
         ax.set_xticklabels(names, fontsize=9, color=fg)
-        ax.set_yticks([0.25 * max_val, 0.5 * max_val, 0.75 * max_val, max_val])
-        ax.set_yticklabels([f"{v:.1f}" for v in [0.25 * max_val, 0.5 * max_val, 0.75 * max_val, max_val]],
-                           fontsize=7, color=fg)
+        ax.set_yticks(ticks)
+        ax.set_yticklabels([fmt(v) for v in ticks], fontsize=7, color=fg)
         ax.set_ylim(0, max_val * 1.1)
         ax.tick_params(colors=fg)
         ax.grid(color=grid, alpha=0.5)

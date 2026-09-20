@@ -1,4 +1,13 @@
-"""Interactive Plotly charts — bar, TAS, Harker, pie (HTML output)."""
+"""Interactive Plotly charts — bar, TAS, Harker, pie (HTML output).
+
+Каждая диаграмма состоит из двух частей:
+
+- ``fig_<type>`` — строит ``go.Figure`` (не записывает файл);
+- ``interactive_<type>`` — обёртка: сохраняет фигуру в standalone HTML.
+
+Такой паритет позволяет одному отчёту объединить несколько диаграмм
+(см. ``plotly_engine.export_plotly_html`` с ``chart_types: list ``).
+"""
 
 from __future__ import annotations
 
@@ -12,8 +21,25 @@ from plotly.subplots import make_subplots
 from src.charts.base import ChartData
 from src.charts.engines.plotly_engine import COLORS, save_html
 
+DEFAULT_TITLES: dict[str, str] = {
+    "bar": "Mineral Composition",
+    "tas": "TAS Diagram",
+    "harker": "Harker Diagrams",
+    "pie": "Mineral Pie Charts",
+    "qapf": "QAPF Diagram",
+    "acnk": "A-CN-K Diagram",
+    "afm": "AFM Diagram",
+    "heatmap": "Mineral Heatmap",
+    "correlation": "Correlation Matrix",
+    "kf": "k1-k4 vs Sample",
+    "boxplot": "Mineral Box Plot",
+    "violin": "Mineral Violin Plot",
+    "parallel": "Parallel Coordinates",
+    "rock_type": "Rock Type Distribution",
+}
 
-def interactive_bar(data: ChartData, path: Path, **kwargs) -> None:
+
+def fig_bar(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive grouped bar chart of mineral weight %."""
     fig = go.Figure()
     for i, (mineral, vals) in enumerate(data.minerals_wt.items()):
@@ -30,10 +56,17 @@ def interactive_bar(data: ChartData, path: Path, **kwargs) -> None:
         xaxis_title="Sample", yaxis_title="Mineral (wt%)",
         legend_title="Minerals",
     )
-    save_html(fig, path, title=kwargs.get("title", "Mineral Composition"))
+    return fig
 
 
-def interactive_tas(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_bar(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_bar(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["bar"]))
+
+
+def fig_tas(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive TAS diagram."""
     sio2 = data.oxides.get("sio2", np.array([]))
     na2o = data.oxides.get("na2o", np.zeros(len(sio2)))
@@ -52,10 +85,17 @@ def interactive_tas(data: ChartData, path: Path, **kwargs) -> None:
         xaxis_title="SiO₂ (wt%)", yaxis_title="Na₂O + K₂O (wt%)",
         xaxis_range=[35, 80], yaxis_range=[0, 16],
     )
-    save_html(fig, path, title=kwargs.get("title", "TAS Diagram"))
+    return fig
 
 
-def interactive_harker(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_tas(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_tas(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["tas"]))
+
+
+def fig_harker(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive Harker subplots."""
     oxides = [
         ("tio2", "TiO₂"), ("al2o3", "Al₂O₃"), ("fe2o3", "Fe₂O₃"),
@@ -72,17 +112,26 @@ def interactive_harker(data: ChartData, path: Path, **kwargs) -> None:
         fig.add_trace(go.Scatter(
             x=sio2, y=y, mode="markers",
             marker=dict(size=7, color=COLORS[i % len(COLORS)]),
-            text=data.sample_names, hovertemplate=f"{label}: %{{y:.2f}}<br>%{{text}}<extra></extra>",
+            text=data.sample_names, textfont=dict(size=9),
+            hovertemplate=(
+                f"{label}: %{{y:.2f}}<br>%{{text}}<extra></extra>"),
             showlegend=False,
         ), row=row, col=col)
         fig.update_xaxes(title_text="SiO₂", row=row, col=col, gridcolor="#313244")
         fig.update_yaxes(title_text=label, row=row, col=col, gridcolor="#313244")
 
     fig.update_layout(height=500, width=1000)
-    save_html(fig, path, title=kwargs.get("title", "Harker Diagrams"))
+    return fig
 
 
-def interactive_pie(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_harker(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_harker(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["harker"]))
+
+
+def fig_pie(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive pie charts for each sample."""
     all_minerals = list(data.minerals_wt.keys())
     n = len(data.sample_names)
@@ -107,10 +156,17 @@ def interactive_pie(data: ChartData, path: Path, **kwargs) -> None:
         ), row=1, col=j + 1)
 
     fig.update_layout(height=400, width=300 * n)
-    save_html(fig, path, title=kwargs.get("title", "Mineral Pie Charts"))
+    return fig
 
 
-def interactive_qapf(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_pie(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_pie(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["pie"]))
+
+
+def fig_qapf(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive QAPF ternary diagram."""
     q = data.minerals_wt.get("q", np.array([]))
     ab = data.minerals_wt.get("ab", np.array([]))
@@ -118,7 +174,7 @@ def interactive_qapf(data: ChartData, path: Path, **kwargs) -> None:
     or_ = data.minerals_wt.get("or_", np.array([]))
 
     if len(q) == 0:
-        return
+        return None
 
     total = q + ab + an + or_
     total[total == 0] = 1.0
@@ -144,10 +200,17 @@ def interactive_qapf(data: ChartData, path: Path, **kwargs) -> None:
         ),
         height=600, width=700,
     )
-    save_html(fig, path, title=kwargs.get("title", "QAPF Diagram"))
+    return fig
 
 
-def interactive_acnk(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_qapf(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_qapf(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["qapf"]))
+
+
+def fig_acnk(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive A-CN-K ternary diagram."""
     al2o3 = data.oxides.get("al2o3", np.array([]))
     cao = data.oxides.get("cao", np.array([]))
@@ -155,7 +218,7 @@ def interactive_acnk(data: ChartData, path: Path, **kwargs) -> None:
     k2o = data.oxides.get("k2o", np.array([]))
 
     if len(al2o3) == 0:
-        return
+        return None
 
     # Molecular proportions
     a = al2o3 / 101.96
@@ -180,20 +243,26 @@ def interactive_acnk(data: ChartData, path: Path, **kwargs) -> None:
         ),
         height=600, width=700,
     )
-    save_html(fig, path, title=kwargs.get("title", "A-CN-K Diagram"))
+    return fig
 
 
-def interactive_afm(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_acnk(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_acnk(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["acnk"]))
+
+
+def fig_afm(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive AFM ternary diagram."""
     feo = data.oxides.get("feo", np.array([]))
     fe2o3 = data.oxides.get("fe2o3", np.zeros(len(feo)))
     mgo = data.oxides.get("mgo", np.array([]))
-    al2o3 = data.oxides.get("al2o3", np.array([]))
     na2o = data.oxides.get("na2o", np.zeros(len(feo)))
     k2o = data.oxides.get("k2o", np.zeros(len(feo)))
 
     if len(feo) == 0:
-        return
+        return None
 
     f = feo + 0.8998 * fe2o3
     m = mgo
@@ -217,14 +286,21 @@ def interactive_afm(data: ChartData, path: Path, **kwargs) -> None:
         ),
         height=600, width=700,
     )
-    save_html(fig, path, title=kwargs.get("title", "AFM Diagram"))
+    return fig
 
 
-def interactive_heatmap(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_afm(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_afm(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["afm"]))
+
+
+def fig_heatmap(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive mineral heatmap."""
     minerals = data.minerals_wt
     if not minerals:
-        return
+        return None
 
     names = list(minerals.keys())
     n = len(data.sample_names)
@@ -238,10 +314,17 @@ def interactive_heatmap(data: ChartData, path: Path, **kwargs) -> None:
         colorscale="YlOrRd", text=np.round(matrix, 1), texttemplate="%{text}",
     ))
     fig.update_layout(height=max(400, len(names) * 25), width=max(600, n * 80))
-    save_html(fig, path, title=kwargs.get("title", "Mineral Heatmap"))
+    return fig
 
 
-def interactive_correlation(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_heatmap(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_heatmap(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["heatmap"]))
+
+
+def fig_correlation(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive correlation heatmap."""
     from src.charts.built_in.correlation import CORR_FIELDS
 
@@ -268,16 +351,23 @@ def interactive_correlation(data: ChartData, path: Path, **kwargs) -> None:
         text=np.round(matrix, 2), texttemplate="%{text}",
     ))
     fig.update_layout(height=600, width=700)
-    save_html(fig, path, title=kwargs.get("title", "Correlation Matrix"))
+    return fig
 
 
-def interactive_kf(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_correlation(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_correlation(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["correlation"]))
+
+
+def fig_kf(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive k1-k4 vs F line chart."""
     k_values = data.metadata.get("k_values", None)
     f_values = data.F_values
 
     if k_values is None or not f_values:
-        return
+        return None
 
     fig = go.Figure()
     for i, key in enumerate(["k1", "k2", "k3", "k4"]):
@@ -293,14 +383,21 @@ def interactive_kf(data: ChartData, path: Path, **kwargs) -> None:
         xaxis_title="Sample Index", yaxis_title="Coefficient Value",
         legend_title="Coefficients",
     )
-    save_html(fig, path, title=kwargs.get("title", "k1-k4 vs Sample"))
+    return fig
 
 
-def interactive_boxplot(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_kf(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_kf(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["kf"]))
+
+
+def fig_boxplot(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive box plot of mineral distribution."""
     minerals = data.minerals_wt
     if not minerals:
-        return
+        return None
 
     fig = go.Figure()
     for i, (name, vals) in enumerate(minerals.items()):
@@ -310,14 +407,21 @@ def interactive_boxplot(data: ChartData, path: Path, **kwargs) -> None:
         ))
 
     fig.update_layout(yaxis_title="wt%", showlegend=False)
-    save_html(fig, path, title=kwargs.get("title", "Mineral Box Plot"))
+    return fig
 
 
-def interactive_violin(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_boxplot(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_boxplot(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["boxplot"]))
+
+
+def fig_violin(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive violin plot of mineral distribution."""
     minerals = data.minerals_wt
     if not minerals:
-        return
+        return None
 
     fig = go.Figure()
     for i, (name, vals) in enumerate(minerals.items()):
@@ -327,14 +431,21 @@ def interactive_violin(data: ChartData, path: Path, **kwargs) -> None:
         ))
 
     fig.update_layout(yaxis_title="wt%", showlegend=False)
-    save_html(fig, path, title=kwargs.get("title", "Mineral Violin Plot"))
+    return fig
 
 
-def interactive_parallel(data: ChartData, path: Path, **kwargs) -> None:
+def interactive_violin(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_violin(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["violin"]))
+
+
+def fig_parallel(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive parallel coordinates of minerals."""
     minerals = data.minerals_wt
     if not minerals:
-        return
+        return None
 
     names = list(minerals.keys())
     n_samples = len(data.sample_names)
@@ -348,15 +459,21 @@ def interactive_parallel(data: ChartData, path: Path, **kwargs) -> None:
         line=dict(color=list(range(n_samples)), colorscale="Viridis"),
         dimensions=dims,
     ))
+    return fig
 
-    save_html(fig, path, title=kwargs.get("title", "Parallel Coordinates"))
+
+def interactive_parallel(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_parallel(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["parallel"]))
 
 
-def interactive_rock_type(data: ChartData, path: Path, **kwargs) -> None:
+def fig_rock_type(data: ChartData, **kwargs) -> go.Figure | None:
     """Interactive rock type distribution pie."""
     rock_types = data.rock_types
     if not rock_types:
-        return
+        return None
 
     type_names = {1: "Type I", 2: "Type II", 3: "Type III", 4: "Type IV", 5: "Type V"}
     counts = {}
@@ -369,12 +486,18 @@ def interactive_rock_type(data: ChartData, path: Path, **kwargs) -> None:
         hole=0.3, marker=dict(colors=COLORS[:len(counts)]),
         textinfo="label+percent",
     ))
+    return fig
 
-    save_html(fig, path, title=kwargs.get("title", "Rock Type Distribution"))
+
+def interactive_rock_type(data: ChartData, path: Path, **kwargs) -> None:
+    fig = fig_rock_type(data, **kwargs)
+    if fig is None:
+        return
+    save_html(fig, path, title=kwargs.get("title", DEFAULT_TITLES["rock_type"]))
 
 
-# Registry
-PLOTLY_CHARTS = {
+# Реестр обёрток «записать standalone HTML» (используется GUI/CLI).
+PLOTLY_CHARTS: dict[str, Any] = {
     "bar": interactive_bar,
     "tas": interactive_tas,
     "harker": interactive_harker,
@@ -389,4 +512,22 @@ PLOTLY_CHARTS = {
     "violin": interactive_violin,
     "parallel": interactive_parallel,
     "rock_type": interactive_rock_type,
+}
+
+# Реестр билдеров фигур (для объединённого отчёта).
+PLOTLY_FIG_BUILDERS: dict[str, Any] = {
+    "bar": fig_bar,
+    "tas": fig_tas,
+    "harker": fig_harker,
+    "pie": fig_pie,
+    "qapf": fig_qapf,
+    "acnk": fig_acnk,
+    "afm": fig_afm,
+    "heatmap": fig_heatmap,
+    "correlation": fig_correlation,
+    "kf": fig_kf,
+    "boxplot": fig_boxplot,
+    "violin": fig_violin,
+    "parallel": fig_parallel,
+    "rock_type": fig_rock_type,
 }
