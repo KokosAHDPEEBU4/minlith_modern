@@ -191,7 +191,7 @@ tests/test_validation.py           4 passed
 
 Вся информация выше относится к `TheoryAlgorithm`. Параллельно ведётся
 точный порт оригинального файла `Ispravlenny_MINLITH1_2010.xlsm`
-(пакет `src/core/excel_port/`) — см. план `todo2.md` и документацию
+(пакет `src/core/excel_port/`) — см. план `../docs/planning/todo2.md` и документацию
 `docs/EXCEL_VERSION_*.md` (00..07, все готовы).
 
 Статус:

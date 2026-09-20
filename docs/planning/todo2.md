@@ -10,7 +10,7 @@
 
 Проект MINLITH Modern (`minlith_modern/`) — Python-реализация нормативного
 минералогического расчёта. Изначально был написан `TheoryAlgorithm` «по теории»
-(файлы 00-07 в корне `Lene/`). При сверке с оригиналом выяснилось, что теория
+(файлы 00-07, см. `docs/algorithm/`). При сверке с оригиналом выяснилось, что теория
 НЕ воспроизводит оригинальный MINLITH (расхождения принципиальные: хлорит,
 каолинит, иллит распределяются иначе).
 
@@ -160,7 +160,7 @@ ROUND(...,0/2/3))?**
 - Аудит: какие функции Excel реально встречаются (ROUND, IF, AND, OR, MIN/MAX,
   INT, ABS, ...); какие стили ссылок (A1/R1C1/имена/межлистовые); есть ли
   циклические ссылки.
-- **Выход:** `docs/EXCEL_VERSION_00_overview.md` — карта листов, словарь
+- **Выход:** `docs/../../minlith_modern/docs/EXCEL_VERSION_00_overview.md` — карта листов, словарь
   переменных, аудит функций/ссылок.
 
 **Факты об оригинале (для аудита):**
@@ -245,7 +245,7 @@ MD, затем реализовать в интерпретаторе.
 #### Шаг 2.3. Сверка VM с Excel
 
 - БК-1 и T-O2: совпадение по **всем** переменным (допуск 0.01 ф.е.).
-- Дополнить MD (`EXCEL_VERSION_07_vba_flow.md`).
+- Дополнить MD (`../../minlith_modern/docs/EXCEL_VERSION_07_vba_flow.md`).
 
 **Критерий готовности Фазы 2:** `excel_port` полностью воспроизводит Excel на
 БК-1 и T-O2 по всем переменным.
@@ -258,14 +258,14 @@ MD, затем реализовать в интерпретаторе.
 
 | Файл | Содержание |
 |------|-----------|
-| `EXCEL_VERSION_00_overview.md` | карта, словарь переменных, аудит функций/ссылок |
-| `EXCEL_VERSION_01_stage0.md` | ф.е., коррекции, F/A, k1-k4, классификация |
-| `EXCEL_VERSION_02_types_1_2.md` | лист Type 12: типы 1-2, все ветки |
-| `EXCEL_VERSION_03_types_3_5.md` | лист Type 3: типы 3-5, монтмориллонит |
-| `EXCEL_VERSION_04_stageVI.md` | финальное распределение Ca/Mg/Fe/Mn |
-| `EXCEL_VERSION_05_output.md` | вес.%, нормировка, defect, minerals |
-| `EXCEL_VERSION_06_rounding.md` | все места ROUND и их влияние |
-| `EXCEL_VERSION_07_vba_flow.md` | порядок исполнения VBA, таблица переходов |
+| `../../minlith_modern/docs/EXCEL_VERSION_00_overview.md` | карта, словарь переменных, аудит функций/ссылок |
+| `../../minlith_modern/docs/EXCEL_VERSION_01_stage0.md` | ф.е., коррекции, F/A, k1-k4, классификация |
+| `../../minlith_modern/docs/EXCEL_VERSION_02_types_1_2.md` | лист Type 12: типы 1-2, все ветки |
+| `../../minlith_modern/docs/EXCEL_VERSION_03_types_3_5.md` | лист Type 3: типы 3-5, монтмориллонит |
+| `../../minlith_modern/docs/EXCEL_VERSION_04_stageVI.md` | финальное распределение Ca/Mg/Fe/Mn |
+| `../../minlith_modern/docs/EXCEL_VERSION_05_output.md` | вес.%, нормировка, defect, minerals |
+| `../../minlith_modern/docs/EXCEL_VERSION_06_rounding.md` | все места ROUND и их влияние |
+| `../../minlith_modern/docs/EXCEL_VERSION_07_vba_flow.md` | порядок исполнения VBA, таблица переходов |
 
 ---
 
@@ -312,7 +312,7 @@ src/core/clean_engine/
 ### ФАЗА 1 — формулы
 
 - [x] Шаг 1.1: скрипт извлечения данных из .xlsm (формулы, карта имён, граф VBA) → JSON + аудит функций/ссылок
-- [x] Документ EXCEL_VERSION_00_overview.md (карта листов, словарь переменных, аудит)
+- [x] Документ ../../minlith_modern/docs/EXCEL_VERSION_00_overview.md (карта листов, словарь переменных, аудит)
 - [x] Шаг 1.3: мини-интерпретатор Excel-семантики (AST, ROUND half-away-from-zero, ссылки A1/R1C1/имена)
 - [x] Декодировать формулы стадии 0/подготовки (строки 1-42 Type 12) + MD + интерпретатор
 - [x] Декодировать формулы типа 1 (ветки 1.x, строки 44-90) + MD EXCEL_VERSION_02
@@ -320,7 +320,7 @@ src/core/clean_engine/
 - [x] Декодировать формулы стадии VI (строки 92-140) + MD EXCEL_VERSION_04
 - [x] Декодировать формулы вес.%/нормировка/дефект (143-171) + MD EXCEL_VERSION_05
 - [x] Декодировать подготовку и формулы типов 3-5 листа Нач+Type 3 + MD EXCEL_VERSION_03
-- [x] Документ EXCEL_VERSION_06_rounding.md (все места ROUND)
+- [x] Документ ../../minlith_modern/docs/EXCEL_VERSION_06_rounding.md (все места ROUND)
 - [x] Шаг 1.4: сверка оценки формул с Excel (эталоны reference_multi.json) на всех 5 типах — по каждой переменной
 
 ### ФАЗА 2 — VBA
@@ -328,7 +328,7 @@ src/core/clean_engine/
 - [x] Шаг 2.1: разбор 231 VBA-Sub → таблица переходов + граф вызовов в JSON
 - [x] Шаг 2.2: VM (переменные, копирование, ветвления, xlMultiply, переносы блоков)
 - [x] Шаг 2.3: сверка excel_port (VM) с Excel по всем переменным (5 типов: аркоз, гранит, базальт, кварцит, high-al)
-- [x] Документ EXCEL_VERSION_01_stage0.md + EXCEL_VERSION_07_vba_flow.md
+- [x] Документ ../../minlith_modern/docs/EXCEL_VERSION_01_stage0.md + ../../minlith_modern/docs/EXCEL_VERSION_07_vba_flow.md
 - [x] Документы EXCEL_VERSION_02..06 (типы 1-2, 3-5, стадия VI, вывод, округления)
 
 ### ФАЗА 3 — чистый Python

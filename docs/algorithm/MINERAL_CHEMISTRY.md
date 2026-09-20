@@ -292,7 +292,7 @@ Q = Si4
 ```
 // Добавляется иллит (Ill) — требует K, Al, Si
 // Ветвление по доступности Si, Mg, Fe
-// См. полный trace в EXCEL_REFERENCE_MINLITH.md
+// См. полный trace в ../reference/EXCEL_REFERENCE_MINLITH.md
 ```
 
 **Type 3 (самый сложный, ~300+ условий):**

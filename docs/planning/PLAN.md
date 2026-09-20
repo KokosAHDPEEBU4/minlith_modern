@@ -3,6 +3,7 @@
 
 **Версия:** 1.0
 **Дата:** 2026-07-22
+**Статус:** Выполнен (исторический план — реализация завершена, см. `minlith_modern/`)
 
 ---
 
@@ -35,7 +36,7 @@ minlith_modern/
 | `requirements.txt` | Основные зависимости ( PyQt6, numpy, pandas, openpyxl, SQLAlchemy, matplotlib, plotly, reportlab, python-docx, alembic) | Критический |
 | `requirements-dev.txt` | Зависимости для разработки (pytest, black, mypy, ruff) | Высокий |
 | `build.py` | Скрипт сборки .exe через auto-py-to-exe | Средний |
-| `README.md` | Описание проекта, установка, запуск | Средний |
+| `../../minlith_modern/README.md` | Описание проекта, установка, запуск | Средний |
 | `.gitignore` | Исключения для git | Низкий |
 
 ---

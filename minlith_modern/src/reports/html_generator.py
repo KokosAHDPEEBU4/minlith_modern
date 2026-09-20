@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 from jinja2 import Template
 
 from src.core.models import CalculationResult
-from src.reports.template_builder import ReportTemplate, ReportBlock, BlockType
+from src.reports.chart_renderer import render_chart_base64
+from src.reports.template_builder import BlockType, ReportBlock, ReportTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +54,16 @@ def _block_html(block: ReportBlock, results: list[CalculationResult]) -> str:
 
     if block.block_type == BlockType.TEXT:
         return f"<p>{block.text_content}</p>"
+
+    if block.block_type == BlockType.CHART:
+        img_src = render_chart_base64(
+            block.chart_type, results, block.chart_sample_idx)
+        if img_src:
+            title = f"<h2>{block.title}</h2>" if block.title else ""
+            return (f"{title}\n<div style=\"text-align:center; margin: 8px 0;\">"
+                    f"<img src=\"{img_src}\" style=\"max-width:100%; height:auto;\">"
+                    f"</div>")
+        return f"<p><em>Диаграмма «{block.chart_type}» не построена.</em></p>"
 
     if block.block_type == BlockType.MINERAL_TABLE:
         return _mineral_table_html(results, block)
@@ -162,7 +172,7 @@ class HTMLGenerator:
     def generate(
         self,
         path: Path,
-        template: Optional[ReportTemplate] = None,
+        template: ReportTemplate | None = None,
         title: str = "MINLITH Report",
     ) -> None:
         from datetime import datetime
@@ -173,8 +183,6 @@ class HTMLGenerator:
             ReportBlock(BlockType.PARAMETERS, title="Parameters"),
         ]
 
-        block_htmls = [_block_html(b, self._results) for b in blocks]
-
         tmpl = Template(HTML_TEMPLATE)
         html = tmpl.render(
             title=title,
@@ -182,6 +190,5 @@ class HTMLGenerator:
             block_html=lambda b: _block_html(b, self._results),
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M"),
         )
-
         path.write_text(html, encoding="utf-8")
         logger.info("HTML exported: %s", path)

@@ -6,7 +6,8 @@
 
 ```bash
 # GUI
-python -m src.gui.app
+python src\main.py        (или: python -m src)
+python -m src.gui.main_window
 
 # CLI
 python -m src.cli calculate input.xlsx -o results.xlsx
@@ -15,7 +16,7 @@ python -m src.cli calculate input.xlsx -o results.xlsx
 ### 2. Тестирование
 
 ```bash
-# Все тесты (293)
+# Все тесты (1151)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -144,7 +145,7 @@ src/
 ## Добавление нового типа минерала
 
 1. Добавить поле в `models.py` → `MineralComposition`
-2. Добавить氧化物 → минерал соотношение в `types_logic.py`
+2. Добавить оксид → минерал соотношение в `types_logic.py`
 3. Добавить расчёт в `_stage_*` функции
 4. Добавить поле в `MINERAL_FIELD_MAP` в `excel.py`
 5. Добавить в `ResultCache` exclusion list

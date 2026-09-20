@@ -2,36 +2,41 @@
 
 from __future__ import annotations
 
-import base64
-import io
 import logging
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
+    QAbstractItemView,
     QComboBox,
     QFileDialog,
+    QFormLayout,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QMessageBox,
     QPushButton,
-    QSplitter,
-    QVBoxLayout,
-    QWidget,
-    QFormLayout,
-    QLineEdit,
+    QSizePolicy,
     QSpinBox,
+    QSplitter,
     QTextBrowser,
     QTextEdit,
-    QAbstractItemView,
-    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
 )
 
 from src.core.models import CalculationResult
+from src.reports.chart_renderer import render_chart_base64
 from src.reports.template_builder import (
-    ReportTemplate, ReportBlock, BlockType,
-    template_brief, template_standard, template_full,
+    BlockType,
+    ReportBlock,
+    ReportTemplate,
+    template_brief,
+    template_core_report,
+    template_full,
+    template_geochemical_passport,
+    template_standard,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,95 +74,12 @@ def _block_summary(block: ReportBlock) -> str:
     return f"{type_name}: {title}{extra}"
 
 
-def _build_chart_data(results: list[CalculationResult]):
-    """Build ChartData from CalculationResult list."""
-    import numpy as np
-    from src.charts.base import ChartData
-
-    data = ChartData()
-    data.sample_names = [r.sample_name for r in results]
-
-    mineral_fields = [
-        "ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb",
-        "ap", "cc", "dl", "ank", "rch", "sd", "srp", "mst", "ht", "prl",
-    ]
-    for f in mineral_fields:
-        data.minerals_wt[f] = np.array([getattr(r.minerals_weight, f, 0.0) for r in results])
-
-    oxide_fields = ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao", "na2o", "k2o", "p2o5", "mno"]
-    for f in oxide_fields:
-        data.oxides[f] = np.array([getattr(r.input_composition, f, 0.0) for r in results])
-
-    data.rock_types = [int(r.rock_type) for r in results]
-
-    if results and results[0].defect:
-        for oxide in results[0].defect:
-            data.defect[oxide] = np.array([r.defect.get(oxide, 0.0) for r in results])
-
-    data.F_values = [r.coefficients.F for r in results]
-    data.A_values = [r.coefficients.A for r in results]
-
-    data.metadata["k_values"] = {
-        "k1": [r.coefficients.k1 for r in results],
-        "k2": [r.coefficients.k2 for r in results],
-        "k3": [r.coefficients.k3 for r in results],
-        "k4": [r.coefficients.k4 for r in results],
-    }
-
-    return data
-
-
-def _render_chart_to_base64(chart_type: str, chart_data, sample_idx: int = 0) -> str | None:
-    """Render a chart to base64 PNG string for HTML embedding."""
-    from src.charts.built_in import BUILTIN_CHARTS
-    import matplotlib.pyplot as plt
-
-    _chart_name_map = {c.get_name().lower(): c for c in BUILTIN_CHARTS}
-    # some charts have names that differ from keys
-    _alias = {
-        "bar": "Mineral Bar Chart",
-        "pie": "Mineral Pie Chart",
-        "defect": "Defect Chart",
-        "boxplot": "Mineral Box Plot",
-        "heatmap": "Mineral Heatmap",
-        "correlation": "correlation",
-        "harker": "harker",
-        "qapf": "qapf",
-        "tas": "tas",
-        "radar": "Mineral Radar",
-    }
-
-    plugin = None
-    alias_name = _alias.get(chart_type, chart_type)
-    # try exact match first, then lowercase match
-    plugin = _chart_name_map.get(alias_name.lower())
-    if plugin is None:
-        for c in BUILTIN_CHARTS:
-            if c.get_name().lower() == alias_name.lower():
-                plugin = c
-                break
-
-    if plugin is None:
-        return None
-
-    kwargs = {}
-    if chart_type == "bar":
-        kwargs = dict(stacked=True, normalized=True)
-    elif chart_type in ("pie", "defect", "radar"):
-        kwargs = dict(sample_idx=sample_idx)
-
-    try:
-        fig = plugin.render(chart_data, **kwargs)
-        buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=100, bbox_inches="tight",
-                    facecolor=fig.get_facecolor())
-        plt.close(fig)
-        buf.seek(0)
-        b64 = base64.b64encode(buf.read()).decode("ascii")
-        return f"data:image/png;base64,{b64}"
-    except Exception as e:
-        logger.warning("Chart preview render failed (%s): %s", chart_type, e)
-        return None
+PRESET_COUNT = 5
+PRESET_FACTORIES = [
+    template_brief, template_standard, template_full,
+    template_core_report, template_geochemical_passport,
+]
+PRESET_NAMES = [f().name for f in PRESET_FACTORIES]
 
 
 class ReportsPage(QWidget):
@@ -189,8 +111,8 @@ class ReportsPage(QWidget):
 
         tmpl_row.addWidget(QLabel("Шаблон:"))
         self._tmpl_combo = QComboBox()
-        self._tmpl_combo.addItems(["Краткий", "Стандартный", "Полный"])
-        self._tmpl_combo.setMinimumWidth(140)
+        self._tmpl_combo.addItems(PRESET_NAMES)
+        self._tmpl_combo.setMinimumWidth(180)
         self._tmpl_combo.currentIndexChanged.connect(self._on_preset_changed)
         tmpl_row.addWidget(self._tmpl_combo)
 
@@ -360,9 +282,8 @@ class ReportsPage(QWidget):
     def _on_preset_changed(self, index: int) -> None:
         if self._suppress:
             return
-        presets = [template_brief, template_standard, template_full]
-        if 0 <= index < len(presets):
-            self._template = presets[index]()
+        if 0 <= index < len(PRESET_FACTORIES):
+            self._template = PRESET_FACTORIES[index]()
             self._is_custom = False
             self._btn_rename.setEnabled(False)
             self._btn_delete.setEnabled(False)
@@ -423,7 +344,7 @@ class ReportsPage(QWidget):
 
     def _ensure_custom_combo(self) -> None:
         self._suppress = True
-        if self._is_custom and self._tmpl_combo.count() <= 3:
+        if self._is_custom and self._tmpl_combo.count() <= PRESET_COUNT:
             self._tmpl_combo.addItem(f"★ {self._template.name}")
         if self._is_custom:
             self._tmpl_combo.setCurrentIndex(self._tmpl_combo.count() - 1)
@@ -616,16 +537,15 @@ class ReportsPage(QWidget):
             </body></html>
             """
         else:
-            from src.reports.html_generator import _block_html
             from datetime import datetime
 
-            chart_data = _build_chart_data(self._results)
+            from src.reports.html_generator import _block_html
 
             parts = []
             for block in self._template.blocks:
                 if block.block_type == BlockType.CHART:
-                    img_src = _render_chart_to_base64(
-                        block.chart_type, chart_data, block.chart_sample_idx)
+                    img_src = render_chart_base64(
+                        block.chart_type, self._results, block.chart_sample_idx)
                     if img_src:
                         title = block.title or CHART_LABELS.get(block.chart_type, block.chart_type)
                         parts.append(
