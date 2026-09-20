@@ -230,13 +230,17 @@ def save_results(
     results: list,
     include_input: bool = True,
     include_defect: bool = True,
+    include_formula_units: bool = False,
+    include_parameters: bool = True,
 ) -> None:
     """Save calculation results to an Excel file.
 
     Creates sheets:
       - "Results": mineral weight % per sample
       - "Input": original oxide compositions (optional)
+      - "FormulaUnits": ф.е. оксидов (optional)
       - "Defect": oxide residuals (optional)
+      - "GeoParams": геохимические параметры (optional)
     """
     from src.core.models import CalculationResult
     from src.core.constants import MINERAL_CODES
@@ -290,6 +294,20 @@ def save_results(
                 val = getattr(result.input_composition, field, 0.0)
                 ws_in.cell(r, i, round(val, 4))
 
+    # ── FormulaUnits sheet ──
+    if include_formula_units:
+        ws_fu = wb.create_sheet("FormulaUnits")
+        ws_fu.cell(1, 1, "Field")
+        for i, result in enumerate(results, start=2):
+            ws_fu.cell(1, i, result.sample_name)
+        fu = results[0].formula_units if results else None
+        fu_fields = [k for k in fu.__dict__] if fu else []
+        for r, field in enumerate(fu_fields, start=2):
+            ws_fu.cell(r, 1, field)
+            for i, result in enumerate(results, start=2):
+                val = getattr(result.formula_units, field, 0.0)
+                ws_fu.cell(r, i, round(val, 4))
+
     # ── Defect sheet ──
     if include_defect:
         ws_d = wb.create_sheet("Defect")
@@ -305,20 +323,21 @@ def save_results(
                     ws_d.cell(r, i, round(val, 2))
 
     # ── GeoParameters sheet ──
-    ws_geo = wb.create_sheet("GeoParams")
-    ws_geo.cell(1, 1, "Parameter")
-    for i, result in enumerate(results, start=2):
-        ws_geo.cell(1, i, result.sample_name)
-
-    geo_fields = [
-        ("CIA", "CIA"), ("ICV", "ICV"), ("PIA", "PIA"),
-        ("ASI", "ASI"), ("AI", "AI"),
-    ]
-    for r, (label, attr) in enumerate(geo_fields, start=2):
-        ws_geo.cell(r, 1, label)
+    if include_parameters:
+        ws_geo = wb.create_sheet("GeoParams")
+        ws_geo.cell(1, 1, "Parameter")
         for i, result in enumerate(results, start=2):
-            val = getattr(result.geo_params, attr, 0.0) if result.geo_params else 0.0
-            ws_geo.cell(r, i, round(val, 4))
+            ws_geo.cell(1, i, result.sample_name)
+
+        geo_fields = [
+            ("CIA", "CIA"), ("ICV", "ICV"), ("PIA", "PIA"),
+            ("ASI", "ASI"), ("AI", "AI"),
+        ]
+        for r, (label, attr) in enumerate(geo_fields, start=2):
+            ws_geo.cell(r, 1, label)
+            for i, result in enumerate(results, start=2):
+                val = getattr(result.geo_params, attr, 0.0) if result.geo_params else 0.0
+                ws_geo.cell(r, i, round(val, 4))
 
     # Auto-fit column widths (must be before wb.save)
     for ws in wb.worksheets:

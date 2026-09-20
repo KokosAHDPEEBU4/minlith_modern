@@ -161,7 +161,13 @@ class InputPage(QWidget):
         from src.io.excel import save_results
         if self._last_result:
             try:
-                save_results(path, [self._last_result])
+                cfg = self._calculator.config
+                save_results(
+                    path, [self._last_result],
+                    include_defect=cfg.include_defect,
+                    include_formula_units=cfg.include_formula_units,
+                    include_parameters=cfg.include_parameters,
+                )
             except Exception as e:
                 QMessageBox.critical(self, "Ошибка экспорта", str(e))
 

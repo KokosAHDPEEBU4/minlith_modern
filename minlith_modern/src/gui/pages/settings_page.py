@@ -8,14 +8,19 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QDoubleSpinBox,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QPushButton,
     QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -23,6 +28,12 @@ from PyQt6.QtWidgets import (
 from src.utils.config import ConfigManager
 
 logger = logging.getLogger(__name__)
+
+
+def _oxide_labels() -> list[str]:
+    """Имена оксидов для редактора молярных масс (KEY из OXIDE_ORDER)."""
+    from src.core.constants import OXIDE_ORDER
+    return list(OXIDE_ORDER)
 
 
 class SettingsPage(QWidget):
@@ -89,6 +100,32 @@ class SettingsPage(QWidget):
         )
         calc_form.addRow("Режим алгоритма:", self._algorithm_mode)
 
+        # ── Флаги экспорта ──
+        self._include_formula_units = QCheckBox("В экспорте: формулы (FormulaUnits)")
+        self._include_formula_units.setChecked(config.get("include_formula_units", False))
+        calc_form.addRow(self._include_formula_units)
+
+        self._include_defect = QCheckBox("В экспорте: невязки (Defect)")
+        self._include_defect.setChecked(config.get("include_defect", True))
+        calc_form.addRow(self._include_defect)
+
+        self._include_parameters = QCheckBox("В экспорте: геохимические параметры (GeoParams)")
+        self._include_parameters.setChecked(config.get("include_parameters", True))
+        calc_form.addRow(self._include_parameters)
+
+        self._batch_size = QComboBox()
+        self._batch_size.addItems(["auto", "1", "2", "4", "8"])
+        cur_batch = config.get("batch_size", "auto")
+        self._batch_size.setCurrentText(str(cur_batch))
+        self._batch_size.setToolTip(
+            "Размер пакета параллельного расчёта (auto = до 4 потоков)"
+        )
+        calc_form.addRow("Размер пакета:", self._batch_size)
+
+        self._edit_masses = QPushButton("Изменить молярные массы...")
+        self._edit_masses.clicked.connect(self._on_edit_molar_masses)
+        calc_form.addRow(self._edit_masses)
+
         self._zoom_step = QDoubleSpinBox()
         self._zoom_step.setRange(1.05, 5.0)
         self._zoom_step.setSingleStep(0.05)
@@ -135,6 +172,68 @@ class SettingsPage(QWidget):
 
         layout.addStretch()
 
+    def _on_edit_molar_masses(self) -> None:
+        """Открыть редактор переопределений молярных масс (custom_molar_masses)."""
+        from src.core.constants import MOLAR_MASSES_IUPAC, MOLAR_MASSES_MINLITH
+
+        src = self._molar_mass.currentText()
+        base = MOLAR_MASSES_MINLITH if src == "minlith" else MOLAR_MASSES_IUPAC
+        saved = dict(self._config.get("custom_molar_masses", {}))
+
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Пользовательские молярные массы")
+        dialog.setMinimumSize(360, 420)
+        lay = QVBoxLayout(dialog)
+
+        hint = QLabel(
+            "Пустое значение = использовать базовую таблицу.\n"
+            "Переопределения действуют поверх «Источника молярных масс»."
+        )
+        hint.setStyleSheet("color: #888; font-size: 11px;")
+        lay.addWidget(hint)
+
+        table = QTableWidget(len(base), 2, dialog)
+        table.setHorizontalHeaderLabels(["Оксид", "Молярная масса"])
+        table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeMode.ResizeToContents
+        )
+        table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeMode.Stretch
+        )
+        for i, (oxide, default) in enumerate(base.items()):
+            table.setItem(i, 0, QTableWidgetItem(oxide))
+            val = saved.get(oxide, default)
+            table.setItem(i, 1, QTableWidgetItem("" if oxide not in saved
+                                                 else f"{val:g}"))
+        lay.addWidget(table)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok
+            | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(dialog.accept)
+        buttons.rejected.connect(dialog.reject)
+        lay.addWidget(buttons)
+
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        result: dict[str, float] = {}
+        for i in range(table.rowCount()):
+            oxide = table.item(i, 0).text().strip()
+            raw = table.item(i, 1).text().strip()
+            if not raw:
+                continue
+            try:
+                v = float(raw)
+            except ValueError:
+                continue
+            if v > 0 and v != base.get(oxide):
+                result[oxide] = v
+        self._config["custom_molar_masses"] = result
+
+        logger.info("Обновлены пользовательские молярные массы: %s", result)
+
     def _on_save(self) -> None:
         self._config["molar_mass_source"] = self._molar_mass.currentText()
         try:
@@ -148,6 +247,11 @@ class SettingsPage(QWidget):
         self._config["decimal_places"] = self._decimal_places.value()
         self._config["timeout_seconds"] = self._timeout.value()
         self._config["algorithm_mode"] = self._algorithm_mode.currentText()
+        self._config["include_formula_units"] = self._include_formula_units.isChecked()
+        self._config["include_defect"] = self._include_defect.isChecked()
+        self._config["include_parameters"] = self._include_parameters.isChecked()
+        batch = self._batch_size.currentText()
+        self._config["batch_size"] = "auto" if batch == "auto" else int(batch)
         self._config["chart.zoom_step"] = round(self._zoom_step.value(), 2)
         self._config["theme"] = self._theme.currentText()
         self._config["chart_theme"] = self._chart_theme.currentText()
@@ -186,6 +290,10 @@ class SettingsPage(QWidget):
         self._decimal_places.setValue(self._config.get("decimal_places", 2))
         self._timeout.setValue(self._config.get("timeout_seconds", 120))
         self._algorithm_mode.setCurrentText(self._config.get("algorithm_mode", "clean"))
+        self._include_formula_units.setChecked(self._config.get("include_formula_units", False))
+        self._include_defect.setChecked(self._config.get("include_defect", True))
+        self._include_parameters.setChecked(self._config.get("include_parameters", True))
+        self._batch_size.setCurrentText(str(self._config.get("batch_size", "auto")))
         self._zoom_step.setValue(float(self._config.get("chart.zoom_step", 1.2)))
         self._theme.setCurrentText(self._config.get("theme", "dark"))
         self._chart_theme.setCurrentText(self._config.get("chart_theme", "dark"))

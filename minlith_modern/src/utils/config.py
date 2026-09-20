@@ -18,7 +18,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "decimal_places": 2,
     "include_formula_units": False,
     "include_defect": True,
+    "include_parameters": True,
     "timeout_seconds": 120,
+    "batch_size": "auto",  # "auto" | 1..8
     "algorithm_mode": "clean",  # "stub" | "clean" | "custom"
     "chart.zoom_step": 1.2,  # шаг зума диаграмм, диапазон (1.0, 5.0]
     "theme": "dark",
@@ -150,6 +152,26 @@ class ConfigManager:
         timeout = self._data.get("timeout_seconds", 120)
         if not isinstance(timeout, int) or timeout < 1:
             errors.append(f"timeout_seconds must be positive, got {timeout}")
+
+        for flag in ("warn_negative", "auto_correct_sum",
+                     "include_formula_units", "include_defect",
+                     "include_parameters"):
+            val = self._data.get(flag, False)
+            if not isinstance(val, bool):
+                errors.append(f"{flag} must be bool, got {val!r}")
+
+        batch = self._data.get("batch_size", "auto")
+        valid_batches = ("auto", 1, 2, 4, 8)
+        if not (batch in valid_batches or (isinstance(batch, int) and batch >= 1)):
+            errors.append(f"batch_size must be 'auto' or positive int, got {batch!r}")
+
+        mm = self._data.get("custom_molar_masses", {})
+        if not isinstance(mm, dict):
+            errors.append("custom_molar_masses must be a mapping")
+        else:
+            for k, v in mm.items():
+                if not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0:
+                    errors.append(f"custom_molar_masses[{k!r}] must be positive number, got {v!r}")
 
         mode = self._data.get("algorithm_mode", "clean")
         if mode not in ("stub", "clean", "custom"):

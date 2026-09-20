@@ -188,7 +188,7 @@ class CalculationConfig:
     include_parameters: bool = True
     timeout_seconds: int = 120
     batch_size: int | str = "auto"
-    algorithm_mode: str = "stub"  # "stub" | "clean" | "custom"
+    algorithm_mode: str = "stub"  # "stub" | "clean" | "custom" (безопасный дефолт; приложение явно ставит "clean")
 
 
 @dataclass(frozen=True)

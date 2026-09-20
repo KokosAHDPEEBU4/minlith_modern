@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 
-from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
@@ -62,7 +61,7 @@ class MainWindow(QMainWindow):
         self._method_bar.setStyleSheet("QToolBar { spacing: 4px; padding: 4px; }")
         self._method_bar.setMovable(False)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._method_bar)
-        
+
         self._btn_clean = QToolButton()
         self._btn_clean.setText("Clean")
         self._btn_clean.setCheckable(True)
@@ -80,7 +79,7 @@ class MainWindow(QMainWindow):
         self._btn_custom.setCheckable(True)
         self._btn_custom.clicked.connect(lambda: self._set_method("custom"))
         self._method_bar.addWidget(self._btn_custom)
-        
+
         self._update_method_buttons()
 
         central = QWidget()
@@ -150,6 +149,7 @@ class MainWindow(QMainWindow):
         self._charts_page = ChartsPage()
         self._output_page = OutputPage()
         self._reports_page = ReportsPage()
+        self._charts_page.dataChanged.connect(self._output_page.set_data)
         self._apply_zoom_step()
 
         self._settings_page = SettingsPage(self._config)
@@ -220,7 +220,12 @@ class MainWindow(QMainWindow):
                 from src.io.excel import save_results_json
                 save_results_json(path, results)
             else:
-                save_results(path, results)
+                save_results(
+                    path, results,
+                    include_defect=self._config.get("include_defect", True),
+                    include_formula_units=self._config.get("include_formula_units", False),
+                    include_parameters=self._config.get("include_parameters", True),
+                )
             self.statusBar().showMessage(f"Экспортировано: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка экспорта", str(e))
@@ -239,9 +244,7 @@ class MainWindow(QMainWindow):
 
     def _on_calculation_done(self, result) -> None:
         self._results_page.add_result(result)
-        chart_data = self._charts_page.build_data_from_results(self._results_page._results)
-        self._charts_page.set_data(chart_data)
-        self._output_page.set_data(chart_data)
+        self._charts_page.set_results(self._results_page._results)
         self._reports_page.set_results(self._results_page._results)
         self._switch_page(3)  # Results
         self.statusBar().showMessage(
@@ -258,18 +261,36 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             for result in dialog.results:
                 self._results_page.add_result(result)
+            # Update UI first, then persist in background so the GUI never blocks.
+            self._switch_page(3)
+            self._charts_page.set_results(dialog.results)
+            self._reports_page.set_results(dialog.results)
+            self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
+            self._persist_results(dialog.results)
+
+    def _persist_results(self, results: list) -> None:
+        """Save results to DB without blocking the UI thread."""
+
+        def _run(repo_results: list) -> None:
+            from src.database.repository import SampleRepository
+            repo = SampleRepository()
+            for result in repo_results:
                 try:
-                    from src.database.repository import SampleRepository
-                    repo = SampleRepository()
                     repo.save_result(result)
                 except Exception as e:
                     logger.warning("Failed to save result to DB: %s", e)
-            self._switch_page(3)
-            chart_data = self._charts_page.build_data_from_results(dialog.results)
-            self._charts_page.set_data(chart_data)
-            self._output_page.set_data(chart_data)
-            self._reports_page.set_results(dialog.results)
-            self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
+
+        from PyQt6.QtCore import QThread
+        from PyQt6.QtWidgets import QApplication
+
+        class _SaveThread(QThread):  # noqa: N801
+            def run(self) -> None:  # type: ignore[override]
+                _run(results)
+
+        thread = _SaveThread(self)
+        thread.finished.connect(thread.deleteLater)
+        thread.start()
+        self._save_thread = thread
 
     def closeEvent(self, event) -> None:  # noqa: N802  # PyQt override
         geom = self.saveGeometry().toHex().data().decode()
@@ -291,7 +312,7 @@ class MainWindow(QMainWindow):
             include_parameters=self._config.get("include_parameters", True),
             timeout_seconds=self._config.get("timeout_seconds", 120),
             batch_size=self._config.get("batch_size", "auto"),
-            algorithm_mode=self._config.get("algorithm_mode", "stub"),
+            algorithm_mode=self._config.get("algorithm_mode", "clean"),
         )
 
     def _create_calculator(self) -> Calculator:
@@ -313,22 +334,6 @@ class MainWindow(QMainWindow):
         """Rebuild calculator and apply all settings immediately."""
         # 0. Apply chart interaction settings (zoom step)
         self._apply_zoom_step()
-        self._calculator = self._create_calculator()
-        self._input_page._calculator = self._calculator
-
-    def _set_method(self, mode: str) -> None:
-        self._config["algorithm_mode"] = mode
-        self._config.save()
-        self._on_settings_changed()
-        self._update_method_buttons()
-        if hasattr(self._settings_page, "_algorithm_mode"):
-            self._settings_page._algorithm_mode.setCurrentText(mode)
-
-    def _update_method_buttons(self) -> None:
-        mode = self._config.get("algorithm_mode", "clean")
-        self._btn_clean.setChecked(mode == "clean")
-        self._btn_stub.setChecked(mode == "stub")
-        self._btn_custom.setChecked(mode == "custom")
 
         # 1. Rebuild calculator with new config
         self._calculator = self._create_calculator()
@@ -355,8 +360,28 @@ class MainWindow(QMainWindow):
                 app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
                 logger.info("Theme reloaded: %s", theme)
 
-        # 4. Clear stale results/charts since config changed
+        # 5. Clear stale results/charts since config changed
         if self._results_page._results:
             self._results_page.clear()
             self._charts_page.set_data(None)
+            self._output_page.set_data(None)
             logger.info("Results cleared due to settings change")
+
+        # 6. Sync method toolbar buttons with config
+        self._update_method_buttons()
+
+    def _set_method(self, mode: str) -> None:
+        """Переключить метод расчёта из тулбара."""
+        self._config["algorithm_mode"] = mode
+        self._config.save()
+        self._on_settings_changed()
+        self._update_method_buttons()
+        if hasattr(self._settings_page, "_algorithm_mode"):
+            self._settings_page._algorithm_mode.setCurrentText(mode)
+
+    def _update_method_buttons(self) -> None:
+        """Синхронизировать состояние кнопок тулбара с конфигом."""
+        mode = self._config.get("algorithm_mode", "clean")
+        self._btn_clean.setChecked(mode == "clean")
+        self._btn_stub.setChecked(mode == "stub")
+        self._btn_custom.setChecked(mode == "custom")

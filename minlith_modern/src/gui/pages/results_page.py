@@ -132,6 +132,13 @@ class ResultsPage(QWidget):
             return
         from src.io.excel import save_results
         try:
-            save_results(path, self._results)
+            from src.utils.config import ConfigManager
+            cfg = ConfigManager()
+            save_results(
+                path, self._results,
+                include_defect=cfg.get("include_defect", True),
+                include_formula_units=cfg.get("include_formula_units", False),
+                include_parameters=cfg.get("include_parameters", True),
+            )
         except Exception as e:
             QMessageBox.critical(self, "Ошибка экспорта", str(e))

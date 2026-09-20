@@ -342,6 +342,11 @@ class ReportsPage(QWidget):
         btn_html.clicked.connect(lambda: self._export("html"))
         export_row.addWidget(btn_html)
 
+        btn_latex = QPushButton("Экспорт LaTeX")
+        btn_latex.setToolTip("Таблица минерального состава в формате LaTeX (для публикаций)")
+        btn_latex.clicked.connect(self._export_latex)
+        export_row.addWidget(btn_latex)
+
         root.addLayout(export_row)
 
         self._refresh()
@@ -684,3 +689,22 @@ class ReportsPage(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", str(e))
             logger.error("Export error: %s", e)
+
+    def _export_latex(self) -> None:
+        if not self._results:
+            QMessageBox.information(self, "Экспорт",
+                                    "Нет результатов. Сначала выполните расчёт.")
+            return
+
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Экспорт LaTeX", "minlith_report.tex", "LaTeX (*.tex)")
+        if not path:
+            return
+
+        try:
+            from src.reports.latex_exporter import LaTeXExporter
+            LaTeXExporter(self._results).export(Path(path))
+            QMessageBox.information(self, "Экспорт", f"Готово:\n{path}")
+        except Exception as e:
+            QMessageBox.critical(self, "Ошибка", str(e))
+            logger.error("LaTeX export error: %s", e)
