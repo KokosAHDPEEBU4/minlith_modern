@@ -7,6 +7,7 @@ from pathlib import Path
 
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +22,7 @@ def get_engine():
     if _engine is None:
         _DB_DIR.mkdir(parents=True, exist_ok=True)
         url = f"sqlite:///{_DB_PATH}"
-        _engine = create_engine(url, echo=False, connect_args={"check_same_thread": False})
+        _engine = create_engine(url, echo=False, poolclass=NullPool, connect_args={"check_same_thread": False})
         # Enable WAL mode for better concurrency
         @event.listens_for(_engine, "connect")
         def _set_sqlite_pragma(dbapi_conn, _connection_record):
