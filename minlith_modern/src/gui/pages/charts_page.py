@@ -182,6 +182,11 @@ class ChartsPage(QWidget):
         for i in range(self._tabs.count()):
             self._tabs.widget(i).set_data(data)
 
+    def set_zoom_step(self, step: float) -> None:
+        """Применить шаг зума ``chart.zoom_step`` ко всем вкладкам."""
+        for i in range(self._tabs.count()):
+            self._tabs.widget(i).set_zoom_step(step)
+
     def set_results(self, results: list) -> None:
         """Принять результаты, сбросить выбор на все образцы и построить."""
         self._results = list(results)

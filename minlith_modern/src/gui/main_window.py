@@ -347,7 +347,7 @@ class MainWindow(QMainWindow):
         """
         step = self._config.get("chart.zoom_step", 1.2)
         for page in (self._charts_page, self._output_page):
-            page._view.set_zoom_step(step)
+            page.set_zoom_step(step)
 
     def _on_settings_changed(self) -> None:
         """Rebuild calculator and apply all settings immediately."""

@@ -32,3 +32,7 @@ class OutputPage(QWidget):
     def set_data(self, data: ChartData | None) -> None:
         self._data = data
         self._view.set_data(data)
+
+    def set_zoom_step(self, step: float) -> None:
+        """Применить шаг зума ``chart.zoom_step`` к сетке диаграмм."""
+        self._view.set_zoom_step(step)

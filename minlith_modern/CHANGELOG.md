@@ -21,6 +21,10 @@
   - `_t45_513`: в `m_279` передаётся исходный `fe3_1` (m_513 пишет только `fe3_2`), а не `fe4_2`; тест `test_type45_m346_fe3_1_matches_excel`.
   - Остался 1 вход (type5→type3): Excel проносит `al3_3=al4_1` через ячейку `I51` из стадии type45 в `aType_3` (сквозное состояние именованных ячеек) — осознанно не портирован.
 
+### Fixed
+- **Падение приложения при старте:** `MainWindow._apply_zoom_step` обращался к `page._view`, но у `ChartsPage` после перехода на вкладки такого атрибута нет (`AttributeError: 'ChartsPage' object has no attribute '_view'`). Добавлены методы `set_zoom_step()` в `ChartsPage` (применяет шаг ко всем вкладкам) и `OutputPage` (делегирует в `_view`); `main_window` вызывает `page.set_zoom_step(step)`.
+- Тесты: `tests/test_gui_smoke.py` — offscreen-смоук: страницы диаграмм и `MainWindow` конструируются, `_apply_zoom_step` не падает (защита от регрессий GUI-навигации).
+
 ### Changed
 - `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`, `AlgorithmOutput` — поле `path: dict | None`, `CalculationResult` — поле `branch_path: dict | None` (все с дефолтами, обратно совместимо).
 
