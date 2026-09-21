@@ -58,6 +58,19 @@ class CalculationDialog(QDialog):
             self._samples_list.item(0).setSelected(True)
         layout.addWidget(self._samples_list)
 
+        sample_btn_row = QHBoxLayout()
+        self._btn_select_all = QPushButton("Выбрать все образцы")
+        self._btn_select_all.setToolTip(
+            "Отметить все образцы для расчёта")
+        self._btn_select_all.clicked.connect(self._select_all_samples)
+        sample_btn_row.addWidget(self._btn_select_all)
+
+        self._btn_select_none = QPushButton("Снять выделение")
+        self._btn_select_none.clicked.connect(self._clear_sample_selection)
+        sample_btn_row.addWidget(self._btn_select_none)
+        sample_btn_row.addStretch()
+        layout.addLayout(sample_btn_row)
+
         # ── Engine selection (choose WITH WHAT to calculate) ──
         engine_row = QHBoxLayout()
         engine_row.addWidget(QLabel("Движок расчёта:"))
@@ -117,6 +130,14 @@ class CalculationDialog(QDialog):
     def _on_engine_changed(self, index: int) -> None:
         code = self._engine_combo.itemData(index)
         self._engine_hint.setText(ENGINE_DESCRIPTIONS.get(code, ""))
+
+    def _select_all_samples(self) -> None:
+        """Отметить все образцы (удобно для «рассчитать все»)."""
+        for i in range(self._samples_list.count()):
+            self._samples_list.item(i).setSelected(True)
+
+    def _clear_sample_selection(self) -> None:
+        self._samples_list.clearSelection()
 
     def _selected_samples(self, all_samples: list[Sample]) -> list[Sample]:
         selected = [

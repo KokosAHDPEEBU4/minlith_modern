@@ -23,9 +23,12 @@
 
 ### Fixed
 - **Падение приложения при старте:** `MainWindow._apply_zoom_step` обращался к `page._view`, но у `ChartsPage` после перехода на вкладки такого атрибута нет (`AttributeError: 'ChartsPage' object has no attribute '_view'`). Добавлены методы `set_zoom_step()` в `ChartsPage` (применяет шаг ко всем вкладкам) и `OutputPage` (делегирует в `_view`); `main_window` вызывает `page.set_zoom_step(step)`.
-- Тесты: `tests/test_gui_smoke.py` — offscreen-смоук: страницы диаграмм и `MainWindow` конструируются, `_apply_zoom_step` не падает (защита от регрессий GUI-навигации).
+- **Вылет при добавлении вкладки диаграмм:** кнопка «+» была подключена к `_add_tab` напрямую, а `clicked` передаёт `checked=False` → `_add_tab(name=False)` падал с `TypeError` в `QTabWidget.addTab`. Кнопка переделана: теперь это вкладка-«＋» последней вкладкой.
+- Тесты: `tests/test_gui_smoke.py` — offscreen-смоук: страницы диаграмм и `MainWindow` конструируются, `_apply_zoom_step` не падает, «＋» добавляет вкладку и остаётся последней, диалог расчёта умеет выбирать все образцы.
 
 ### Changed
+- **Вкладки диаграмм:** кнопка создания новой вкладки теперь оформлена как в браузере — отдельная вкладка «＋» сразу после последней открытой (вместо угловой кнопки справа); «＋» не закрывается и при перетаскивании остаётся последней. Логика вкладок: `ChartsPage._add_plus_tab/_on_tab_bar_clicked/_on_tab_moved`, `set_data`/`set_zoom_step` пропускают вкладку-заглушку.
+- **Диалог «Расчёт…»:** добавлены кнопки «Выбрать все образцы» и «Снять выделение» (`src/gui/dialogs/calculation_dialog.py`).
 - `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`, `AlgorithmOutput` — поле `path: dict | None`, `CalculationResult` — поле `branch_path: dict | None` (все с дефолтами, обратно совместимо).
 
 ## [0.7.0] — 2026-09-21

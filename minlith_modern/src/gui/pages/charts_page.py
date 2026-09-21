@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QTabBar,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -148,31 +149,63 @@ class ChartsPage(QWidget):
         self._tabs.setTabsClosable(True)
         self._tabs.setMovable(True)
         self._tabs.tabCloseRequested.connect(self._close_tab)
-        btn_add = QPushButton("+")
-        btn_add.setFixedSize(28, 28)
-        btn_add.setToolTip("Добавить вкладку с набором диаграмм")
-        btn_add.clicked.connect(self._add_tab)
-        self._tabs.setCornerWidget(btn_add, Qt.Corner.TopRightCorner)
+        self._tabs.tabBarClicked.connect(self._on_tab_bar_clicked)
+        self._tabs.tabBar().tabMoved.connect(self._on_tab_moved)
+        self._plus_widget: QWidget | None = None
+        self._moving_plus = False
+        self._add_plus_tab()   # «＋» — всегда последняя, как в браузере
         self._add_tab()
         layout.addWidget(self._tabs, stretch=1)
 
     def _current_view(self) -> MultiChartView:
         return self._tabs.currentWidget()
 
+    def _add_plus_tab(self) -> None:
+        """Добавить в конец вкладку-кнопку «＋» (без кнопки закрытия)."""
+        holder = QWidget()
+        index = self._tabs.addTab(holder, "＋")
+        self._plus_widget = holder
+        self._tabs.tabBar().setTabButton(
+            index, QTabBar.ButtonPosition.RightSide, None)
+
+    def _real_tab_count(self) -> int:
+        return sum(1 for i in range(self._tabs.count())
+                   if self._tabs.widget(i) is not self._plus_widget)
+
+    def _on_tab_bar_clicked(self, index: int) -> None:
+        if self._tabs.widget(index) is self._plus_widget:
+            self._add_tab()
+
+    def _on_tab_moved(self, from_index: int, to_index: int) -> None:
+        """Держать «＋» последней вкладкой при перетаскивании."""
+        if self._moving_plus or self._plus_widget is None:
+            return
+        plus = self._tabs.indexOf(self._plus_widget)
+        if 0 <= plus < self._tabs.count() - 1:
+            self._moving_plus = True
+            try:
+                self._tabs.tabBar().moveTab(plus, self._tabs.count() - 1)
+            finally:
+                self._moving_plus = False
+
     def _add_tab(self, name: str | None = None) -> MultiChartView:
         view = MultiChartView()
         if name is None:
-            name = f"Вкладка {self._tabs.count() + 1}"
-        self._tabs.addTab(view, name)
+            name = f"Вкладка {self._real_tab_count() + 1}"
+        plus = self._tabs.indexOf(self._plus_widget) if self._plus_widget else -1
+        if plus >= 0:
+            self._tabs.insertTab(plus, view, name)
+        else:
+            self._tabs.addTab(view, name)
         self._tabs.setCurrentWidget(view)
         if self._data is not None:
             view.set_data(self._data)
         return view
 
     def _close_tab(self, index: int) -> None:
-        if self._tabs.count() <= 1:
-            return
         widget = self._tabs.widget(index)
+        if widget is self._plus_widget or self._real_tab_count() <= 1:
+            return
         if hasattr(widget, "_release_tiles"):
             widget._release_tiles()
         self._tabs.removeTab(index)
@@ -180,12 +213,16 @@ class ChartsPage(QWidget):
     def set_data(self, data: ChartData | None) -> None:
         self._data = data
         for i in range(self._tabs.count()):
-            self._tabs.widget(i).set_data(data)
+            widget = self._tabs.widget(i)
+            if hasattr(widget, "set_data"):
+                widget.set_data(data)
 
     def set_zoom_step(self, step: float) -> None:
         """Применить шаг зума ``chart.zoom_step`` ко всем вкладкам."""
         for i in range(self._tabs.count()):
-            self._tabs.widget(i).set_zoom_step(step)
+            widget = self._tabs.widget(i)
+            if hasattr(widget, "set_zoom_step"):
+                widget.set_zoom_step(step)
 
     def set_results(self, results: list) -> None:
         """Принять результаты, сбросить выбор на все образцы и построить."""
