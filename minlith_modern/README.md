@@ -181,7 +181,6 @@ minlith_modern/
 │   │   ├── excel_parity/       # Движок «как в Excel» (полный паритет, без ROUND)
 │   │   ├── excel_port/         # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
 │   │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
-│   │   ├── algorithm_stub.py   # Deprecated заглушка VBA
 │   │   ├── algorithm.py        # Протокол алгоритма
 │   │   ├── models.py           # Датаклассы
 │   │   ├── coefficients.py     # k1-k4 коэффициенты

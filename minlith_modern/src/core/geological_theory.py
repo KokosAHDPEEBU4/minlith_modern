@@ -1,8 +1,8 @@
 """Расчётный движок строго по теории (файлы 00-07).
 
-Заменяет RealAlgorithm (VBA-порт) на GeologicalTheoryAlgorithm, написанный по
-теории из файлов 00-07: стадии 1→2→3 с классификацией типа породы по
-индикатору R и делением K₂O между ортоклазом и иллитом (k_or).
+GeologicalTheoryAlgorithm написан по теории из файлов 00-07: стадии 1→2→3
+с классификацией типа породы по индикатору R и делением K₂O между
+ортоклазом и иллитом (k_or).
 
 Примечание по F: теория считает F и P₂O₅ независимыми элементами, поэтому
 F «восстанавливается» из коррекции Stage 0 (которая вычитала 0.67×P₂O₅)
@@ -10,8 +10,6 @@ F «восстанавливается» из коррекции Stage 0 (кот
 """
 
 from __future__ import annotations
-
-from typing import Optional
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput
 from src.core.stage1 import stage1

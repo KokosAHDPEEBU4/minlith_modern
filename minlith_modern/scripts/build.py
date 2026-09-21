@@ -11,16 +11,16 @@ def build_exe():
     """Собрать .exe из MINLITH Modern."""
     root = Path(__file__).parent
     src = root / "src"
+    icon = root / "assets" / "icon.ico"
 
     cmd = [
         sys.executable, "-m", "PyInstaller",
         "--onefile",
         "--windowed",
         "--name", "MINLITH",
-        "--icon", str(root / "assets" / "icon.ico") if (root / "assets" / "icon.ico").exists() else "",
+        "--icon", str(icon) if icon.exists() else "",
         "--add-data", f"{root / 'src' / 'gui' / 'styles'};src/gui/styles",
         "--add-data", f"{root / 'src' / 'locale'};src/locale",
-        "--hidden-import", "src.core.algorithm_stub",
         "--hidden-import", "src.charts.built_in",
         "--hidden-import", "src.reports",
         "--noconfirm",

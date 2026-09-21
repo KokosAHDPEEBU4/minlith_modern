@@ -274,3 +274,6 @@ tests/test_validation.py           4 passed
   `_calculation_engine`; CLI `--engine/-e`.
 - Обратная совместимость: старый ключ `algorithm_mode` и значения
   `clean`/`stub`/`custom` автоматически мигрируют.
+- Legacy-заглушки `algorithm_stub.py` (невалидный Python: сырой текст без `#`)
+  и `algorithm_real.py` перенесены в `_trash/minlith_modern/src/core/`; убраны
+  из `src/core/__init__.py` и из `hidden-import` в `scripts/build.py`.

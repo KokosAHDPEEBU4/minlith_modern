@@ -36,6 +36,9 @@
 - Тесты: `tests/test_chart_export.py` (19 шт.) — экспорт всех 14 Plotly-диаграмм в HTML, мультивыбор, пустой список, частично неизвестные типы, полнота `PLOTLY_LABELS`
 - Тесты: `tests/test_calculation_engine.py` (4 шт.) — имена/алиасы движков, разрешение `excel_parity`/`geological_theory`, обратная совместимость `clean`, миграция старого ключа `algorithm_mode`
 
+### Removed
+- Legacy-заглушки `src/core/algorithm_stub.py` (невалидный Python: сырой текст без `#`) и `src/core/algorithm_real.py` — перенесены в `_trash/minlith_modern/src/core/`; убраны из `src/core/__init__.py` и из `hidden-import` в `scripts/build.py`
+
 ## [0.6.8] — 2026-07-24
 
 ### Added

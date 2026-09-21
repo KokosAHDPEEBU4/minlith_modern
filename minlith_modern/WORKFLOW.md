@@ -42,8 +42,6 @@ python -m mypy src/ --ignore-missing-imports
 src/
 ├── core/                  # Расчётный движок
 │   ├── algorithm.py       # Protocol + AlgorithmInput
-│   ├── algorithm_real.py  # Deprecated: VbaPortStub / RealAlgorithm
-│   ├── algorithm_stub.py  # Deprecated заглушка
 │   ├── excel_parity/      # Движок «как в Excel» (паритет, без ROUND)
 │   ├── excel_port/        # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
 │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)

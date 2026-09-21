@@ -4,18 +4,16 @@ This is the interface that must be implemented when the VBA macro is found.
 The calculator calls algorithm.compute() with all preprocessed inputs,
 and gets back mineral formula units.
 
-To integrate VBA macro:
-  1. Read the macro's branching logic line by line
+To integrate a new engine:
+  1. Read the reference branching logic line by line
   2. Implement compute() to reproduce it
-  3. Swap StubAlgorithm for your implementation in calculator.py
+  3. Register the engine in Calculator._algorithm_for_engine (calculator.py)
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional, Protocol, runtime_checkable
-
-import numpy as np
+from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
 
 @dataclass(frozen=True)
@@ -99,7 +97,7 @@ class AlgorithmOutput:
     Prl: float = 0.0   # Pyrolusite
 
     # Остаточные пулы оксидов (defect по теории). Заполняется GeologicalTheoryAlgorithm.
-    residuals: Optional[dict[str, float]] = None
+    residuals: dict[str, float] | None = None
 
 
 @runtime_checkable
@@ -107,8 +105,8 @@ class MineralAlgorithm(Protocol):
     """Protocol for normative mineral calculation algorithms.
 
     Implementations include:
-      - StubAlgorithm: placeholder with known stoichiometry
-      - VbaAlgorithm: when VBA macro is found and ported
+      - ExcelParityAlgorithm: «как в Excel» — точный паритет (без ROUND)
+      - GeologicalTheoryAlgorithm: расчёт по геологической теории (файлы 00-07)
     """
 
     def compute(self, inp: AlgorithmInput) -> AlgorithmOutput:
