@@ -16,7 +16,7 @@ python -m src.cli calculate input.xlsx -o results.xlsx
 ### 2. Тестирование
 
 ```bash
-# Все тесты (1212)
+# Все тесты (1216)
 python -m pytest tests/ -v
 
 # С покрытием

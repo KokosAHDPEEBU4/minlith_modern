@@ -221,3 +221,6 @@ class CalculationResult:
     debug_trace: object | None = None
     geo_params: object | None = None    # GeoParameters (CIA, ICV, PIA, ASI, AI)
     anomalies: list | None = None       # list[AnomalyHypothesis]
+    # Маршрут веток движка (для графа разветвлений/диагностики). Заполняется
+    # движками, которые его отдают (excel_parity); у остальных None.
+    branch_path: dict | None = None

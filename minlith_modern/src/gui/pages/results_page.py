@@ -37,6 +37,12 @@ class ResultsPage(QWidget):
         header.addWidget(QLabel("Результаты"))
         header.addStretch()
 
+        self._btn_branch_path = QPushButton("Маршрут веток")
+        self._btn_branch_path.setToolTip(
+            "Показать траекторию принятых решений для выбранного образца")
+        self._btn_branch_path.clicked.connect(self._on_show_branch_path)
+        header.addWidget(self._btn_branch_path)
+
         self._btn_export_all = QPushButton("Экспорт всех в .xlsx")
         self._btn_export_all.clicked.connect(self._on_export_all)
         header.addWidget(self._btn_export_all)
@@ -117,6 +123,21 @@ class ResultsPage(QWidget):
             if idx < len(self._results):
                 r = self._results[idx]
                 self._detail.set_minerals(r.minerals_weight, r.minerals_formula)
+
+    def _on_show_branch_path(self) -> None:
+        rows = self._summary_table.selectionModel().selectedRows()
+        if not rows:
+            QMessageBox.information(
+                self, "Маршрут веток",
+                "Выберите образец в таблице результатов.")
+            return
+        idx = rows[0].row()
+        if idx >= len(self._results):
+            return
+        r = self._results[idx]
+        from src.gui.dialogs.branch_path_dialog import BranchPathDialog
+        dlg = BranchPathDialog(r.branch_path, r.sample_name, self)
+        dlg.exec()
 
     def _on_export_all(self) -> None:
         if not self._results:

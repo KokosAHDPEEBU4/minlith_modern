@@ -135,6 +135,50 @@ def test_path_to_dict_roundtrip():
     assert len(d["decisions"]) == 2
 
 
+def test_branch_report_helpers():
+    from src.core.branch_report import (
+        branch_path_headers,
+        describe_branch_path,
+        format_branch_path_text,
+    )
+
+    assert describe_branch_path(None) == []
+    assert describe_branch_path({}) == []
+    assert "путь не передан" in format_branch_path_text(None)
+
+    path = {"labels": ["band_H5", "A"], "decisions": [
+        {"stage": "stage0", "name": "band_H5", "condition": "0<F<0.21", "source": "G17"},
+        {"stage": "stage_vi", "name": "A", "condition": "ca_n>=mg_n+fe_n", "source": "s_97t"},
+    ]}
+    rows = describe_branch_path(path)
+    assert [r["stage_title"] for r in rows] == ["Стадия 0", "Этап VI"]
+    assert rows[0]["source"] == "G17"
+    text = format_branch_path_text(path, "s1")
+    assert "band_H5" in text and "[G17]" in text and "s1" in text
+    assert len(branch_path_headers()) == 4
+
+
+def test_calculation_result_carries_branch_path():
+    from src.core.calculator import Calculator
+    from src.core.models import CalculationConfig, OxideComposition, Sample
+
+    comp = OxideComposition(sio2=70.0, al2o3=12.0, fe2o3=1.0, feo=0.5,
+                            mgo=0.3, cao=0.5, na2o=3.0, k2o=6.0)
+    sample = Sample(name="arkose", composition=comp)
+
+    r_parity = Calculator(
+        config=CalculationConfig(calculation_engine="excel_parity")
+    ).calculate_single(sample)
+    assert isinstance(r_parity.branch_path, dict)
+    assert r_parity.branch_path["labels"][0].startswith("band_")
+    assert any(lbl.startswith("rock_type_") for lbl in r_parity.branch_path["labels"])
+
+    r_theory = Calculator(
+        config=CalculationConfig(calculation_engine="geological_theory")
+    ).calculate_single(sample)
+    assert r_theory.branch_path is None
+
+
 def test_calculator_debug_exposes_branch_path():
     """Calculator(debug=True) + excel_parity: path в AlgorithmOutput и в trace."""
     from src.core.calculator import Calculator

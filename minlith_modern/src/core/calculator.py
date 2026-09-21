@@ -437,6 +437,7 @@ class Calculator:
             warnings=warnings,
             debug_trace=tracer,
             geo_params=geo_params,
+            branch_path=getattr(alg_output, "path", None),
         )
 
         # Detect anomalies
@@ -456,6 +457,7 @@ class Calculator:
             debug_trace=tracer,
             geo_params=geo_params,
             anomalies=anomalies,
+            branch_path=getattr(alg_output, "path", None),
         )
 
     def _to_weight_percent(self, minerals: MineralComposition) -> MineralComposition:

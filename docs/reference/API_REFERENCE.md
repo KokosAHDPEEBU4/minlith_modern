@@ -360,6 +360,21 @@ path.to_dict()                # {"labels": [...], "decisions": [{stage, name, co
 (`Calculator.calculate_single(debug=True)` дополнительно пишет его в
 `DebugTraceCollector` через `record_branch_path`). У других движков `path = None`.
 
+В `CalculationResult` маршрут доступен как `CalculationResult.branch_path: dict | None`.
+Для показа/экспорта — чистый модуль `src/core/branch_report.py`:
+
+```python
+from src.core.branch_report import describe_branch_path, format_branch_path_text
+
+describe_branch_path(result.branch_path)
+# [{"stage": "stage0", "stage_title": "Стадия 0", "name": "band_H5",
+#   "condition": "0 < F < 0.21", "source": "G17"}, ...]
+print(format_branch_path_text(result.branch_path, result.sample_name))
+```
+
+В GUI: страница «Результаты» → кнопка «Маршрут веток» (диалог
+`src/gui/dialogs/branch_path_dialog.py`).
+
 ---
 
 ### 2.3. Coefficients

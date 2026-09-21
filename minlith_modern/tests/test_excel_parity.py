@@ -114,3 +114,46 @@ def test_default_oxides_merge():
     cr = parity_run({"SiO2": 92.0})
     assert cr.st0.fe["S"] > 0          # демо-сера из defaults
     assert cr.st0.s == DEFAULT_OXIDES["S"] * 10000.0 / 32.066
+
+
+# Тип 3, редкая ветка p_196 (si3_3<0 → p_253/p_81): ранее был NotImplementedError.
+_P196_TYPE3_INPUT = {
+    "SiO2": 15.0849, "TiO2": 5.05, "Al2O3": 4.4239, "Fe2O3": 1.2161,
+    "FeO": 12.765, "MgO": 2.1706, "CaO": 10.0395, "Na2O": 1.8124,
+    "K2O": 0.6485, "P2O5": 7.6136, "MnO": 2.4228, "C": 0.0, "SO3": 8.2219,
+    "F": 0.0, "Cl": 6.339, "S": 6.3683, "CO2": 0.4194, "SO": 9.0133,
+}
+
+
+# Тип 4/5, путь m_418t: Excel вызывает p_201 напрямую, и формула C422
+# пересчитывается дважды (копипаст в al4_1, затем в al3_2) — двойной вычет.
+_M418T_INPUT = {
+    "SiO2": 58.409, "TiO2": 6.509, "Al2O3": 7.481, "Fe2O3": 8.596,
+    "FeO": 6.124, "MgO": 2.473, "CaO": 8.537, "MnO": 6.995, "C": 0.132,
+    "F": 9.441, "Cl": 11.869, "S": 6.009, "SO": 1.294,
+}
+
+
+def test_type45_m418t_matches_excel():
+    """m_418t (p_201 напрямую + двойной C422) совпадает с эталоном."""
+    cr = parity_run(_M418T_INPUT)
+    assert "t45-m418t" in cr.tsol.trace
+    er = excel_run(_M418T_INPUT, rounding=False)
+    for k, a in cr.names.items():
+        b = er.get(k)
+        if isinstance(a, str) or not isinstance(b, (int, float)):
+            continue
+        assert abs(a - b) <= 1e-9, f"{k} = {a!r}, excel = {b!r}"
+
+
+def test_type3_p196_branch_implemented():
+    """p_196 (ветка else p_181/p_189) больше не падает и совпадает с эталоном."""
+    cr = parity_run(_P196_TYPE3_INPUT)
+    assert cr.st0.rock_type == 3
+    assert "p196->p81" in cr.tsol.trace
+    er = excel_run(_P196_TYPE3_INPUT, rounding=False)
+    for k, a in cr.names.items():
+        b = er.get(k)
+        if isinstance(a, str) or not isinstance(b, (int, float)):
+            continue
+        assert abs(a - b) <= 1e-9, f"{k} = {a!r}, excel = {b!r}"

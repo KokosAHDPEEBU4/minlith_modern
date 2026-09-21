@@ -10,9 +10,14 @@
 - `DebugTraceCollector.record_branch_path()` — запись маршрута веток в трассировку; `Calculator.calculate_single(debug=True)` подхватывает `AlgorithmOutput.path`.
 - Тесты: `tests/test_branch_path.py` (20 шт.) — согласованность зеркальных `coefficient_band`/`classify_conditions` с `coefficients`/`classify` на сетке, структура `ExcelRun.path`, round-trip `to_dict`, запись в трассировку, сквозной путь через `Calculator(debug=True)`.
 - `scripts/verify_excel_parity.py`: добавлен подсчёт сходимости **`excel_exact`** (= `excel_port(rounding=True)`) с живым Excel — строка 287 и невязки восстанавливаются прогоном книги; новые колонки `exact_suspect_count`/`exact_bad_count` в `summary.csv` и новые отчёты `row287_exact.csv`/`defect_exact.csv`.
+- **Маршрут веток в результатах и GUI:** `CalculationResult.branch_path` (от `excel_parity`), чистый модуль `src/core/branch_report.py` (`describe_branch_path`, `format_branch_path_text`), диалог `src/gui/dialogs/branch_path_dialog.py` и кнопка «Маршрут веток» на странице результатов (`src/gui/pages/results_page.py`) — показывает траекторию решений по выбранному образцу (стадия, ветка, условие, источник) с копированием текста.
+- **Закрыты gap-ветки типа 3/4/5** (`src/core/excel_parity/types.py`), совпадение с `excel_port(rounding=False)` ~1e-9:
+  - `p_196` (ветка `else` от `p_181`/`p_189`, `d180<=0 и d188>=0`): `si3_3<0 → p_253`, иначе `p_81`; тест `test_type3_p196_branch_implemented`.
+  - `type45 m_418t`: Excel вызывает `p_201` напрямую (минуя `p_159`), плюс квирк — `C422` копируется дважды (в `al4_1`, затем в `al3_2`) и пересчитывается, т.е. `na`/`ca` вычитаются дважды. Добавлен флаг `skip_fe_lookup` и двойной вычет; тест `test_type45_m418t_matches_excel`.
+  - Оставшиеся два gap'а (`s_274t` при `k2=0`, защитный `stage_vi`) на 200 000 случайных входов недостижимы.
 
 ### Changed
-- `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`. `AlgorithmOutput` получил необязательное поле `path: dict | None`.
+- `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`, `AlgorithmOutput` — поле `path: dict | None`, `CalculationResult` — поле `branch_path: dict | None` (все с дефолтами, обратно совместимо).
 
 ## [0.7.0] — 2026-09-21
 

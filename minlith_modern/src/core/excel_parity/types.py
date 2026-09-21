@@ -361,11 +361,17 @@ def _t3_after_ill(sol: TypeSolution, ca_in: float, si3_2: float, al3_2: float,
 def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
                 mg: float, k: float, k1: float, k2: float, k3: float,
                 k4: float, fe3_1: float, ill3: float, or_in: float,
-                ca_in: float) -> None:
-    """Fe-путь типа 3: p_159 → (3331 | 3332a/b | 3333a/b) + tail."""
+                ca_in: float, si3_3_in: float | None = None,
+                al3_3_in: float | None = None,
+                skip_fe_lookup: bool = False) -> None:
+    """Fe-путь типа 3: p_159 → (3331 | 3332a/b | 3333a/b) + tail.
+
+    ``skip_fe_lookup=True`` — вызывающий (type45 m_418t) в Excel вызывает
+    ``p_201`` напрямую, минуя p_159/p_163/p_176/p_181/p_189 (ветка d159-false).
+    """
     c158 = 4.5 * fe3_1 - al3_2 + k             # C158
     c159 = 4.5 * k1 - k2                       # C159
-    if c158 >= 0 and c159 > 0:                 # d159 → p_163
+    if not skip_fe_lookup and c158 >= 0 and c159 > 0:    # d159 → p_163
         c162 = (k / 2.0
                 - (fe3_1 - k2 * (k + 4.5 * fe3_1 - al3_2) / (4.5 * k2 - k3)))
         if c162 > 0:                           # d162 → p_163t (3331)
@@ -420,8 +426,20 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
             _t3_after_ill(sol, ca_in, si3_2, al3_2, k, mg_1, fe3_2, al3_3,
                           si3_3, k1, k2, k3, k4)
             return
-        raise NotImplementedError(
-            "Тип 3: Fe-путь p_196 напрямую (d180<=0 и d188>=0).")
+        # p_196 (else p_181/p_189): используются ВХОДЯЩИЕ si3_3/al3_3
+        # (на листе это ячейки C195/C198 и ранее записанные имена).
+        if si3_3_in is None or al3_3_in is None:
+            # Из type45 m_418t Excel вызывает p_201 напрямую (не p_196) —
+            # этот композитный путь кода ещё не портирован.
+            raise NotImplementedError(
+                "Тип 3: p_196 из type45 (m_418t) — не портирован.")
+        if si3_3_in < 0.0:                     # d195 → p_253
+            _t3_after_p253(sol, si3_2, al3_2, k, ca_in, mg_1, fe3_2,
+                           k1, k2, k3, k4)
+            return
+        _t3_balance(sol, si3_3_in, al3_3_in)   # d198 → p_81
+        sol.trace.append("p196->p81")
+        return
     # p_201
     c200 = 4.5 * fe3_1 - al3_2 + k             # C200
     if c200 < 0:                               # p_201t (3333a: ill = fe3_1)
@@ -540,7 +558,8 @@ def type3(st0: Stage0) -> TypeSolution:
         sol.trace.append("p_142")
         if fe3_2 < 0:                          # d149 → p_159
             _t3_fe_path(sol, si3_2, al3_2, mg, k, k1, k2, k3, k4,
-                        fe3_1, ill, or_in=0.0, ca_in=ca_in)
+                        fe3_1, ill, or_in=0.0, ca_in=ca_in,
+                        si3_3_in=si3_3, al3_3_in=al3_3)
             return sol
         if si3_3 < 0:                          # p_152 → p_253
             _t3_after_p253(sol, si3_2, al3_2, k, ca_in, mg_1, fe3_2,
@@ -564,7 +583,8 @@ def type3(st0: Stage0) -> TypeSolution:
         if c100 < 0:                           # D109 → p_159 (Fe-путь)
             sol.trace.append("D109-fe")
             _t3_fe_path(sol, si3_2, al3_2, mg, k, k1, k2, k3, k4,
-                        fe3_1, c97, or_in=0.0, ca_in=ca_in)
+                        fe3_1, c97, or_in=0.0, ca_in=ca_in,
+                        si3_3_in=c101, al3_3_in=0.0)
             return sol
         _t3_after_p253(sol, si3_2, al3_2, k, ca_in, 0.0, c100,   # D112 → p_253
                        k1, k2, k3, k4)
@@ -592,7 +612,8 @@ def type3(st0: Stage0) -> TypeSolution:
     al3_3 = 0.0                                # p_119t/p_126 al3_3 не пастят
     if fe3_2 < 0:                              # p_132 → p_159 (Fe-путь)
         _t3_fe_path(sol, si3_2, al3_2, mg, k, k1, k2, k3, k4,
-                    fe3_1, ill, or_in=0.0, ca_in=ca_in)
+                    fe3_1, ill, or_in=0.0, ca_in=ca_in,
+                    si3_3_in=si3_3, al3_3_in=al3_3)
         return sol
     if si3_3 < 0:                              # p_136 → p_253
         _t3_after_p253(sol, si3_2, al3_2, k, ca_in, mg_1, fe3_2,
@@ -1009,9 +1030,14 @@ def type45(st0: Stage0) -> TypeSolution:
             sol.an = ca                         # C419
             sol.ca_n = 0.0                      # C420
             si3_2_ = si4_2 - 2.0 * ca           # C421
-            al3_2_ = al4_1 - na - ca            # C422
+            # Квирк оригинала: C422 копируется ДВАЖДЫ — сначала в al4_1,
+            # потом в al3_2. После записи в al4_1 формула C422 пересчитывается
+            # (=al4_1-C415-C419), поэтому вычитание na/ca двойное.
+            al4_1 = al4_1 - na - ca             # C422 → al4_1
+            al3_2_ = al4_1 - na - ca            # C422 (пересчёт) → al3_2
             _t3_fe_path(sol, si3_2_, al3_2_, mg, k, k1, k2, k3, k4,
-                        fe3_1, ill, or_in=0.0, ca_in=ca_in)
+                        fe3_1, ill, or_in=0.0, ca_in=ca_in,
+                        skip_fe_lookup=True)
             sol.trace.append("t45-m418t")
             return sol
         an = 0.2 * na                           # C425 (m_424)
