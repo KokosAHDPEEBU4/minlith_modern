@@ -15,6 +15,11 @@
   - `p_196` (ветка `else` от `p_181`/`p_189`, `d180<=0 и d188>=0`): `si3_3<0 → p_253`, иначе `p_81`; тест `test_type3_p196_branch_implemented`.
   - `type45 m_418t`: Excel вызывает `p_201` напрямую (минуя `p_159`), плюс квирк — `C422` копируется дважды (в `al4_1`, затем в `al3_2`) и пересчитывается, т.е. `na`/`ca` вычитаются дважды. Добавлен флаг `skip_fe_lookup` и двойной вычет; тест `test_type45_m418t_matches_excel`.
   - Оставшиеся два gap'а (`s_274t` при `k2=0`, защитный `stage_vi`) на 200 000 случайных входов недостижимы.
+- **Устранены расхождения `excel_parity` с `excel_port(rounding=False)` на экстремальных входах** (фаззинг: 106 → 1 из 4000; было сосредоточено в типах 4/5):
+  - `excel_parity` type45 (`mg0`): `mg0` — отдельная именованная ячейка `J272`, НЕ базовый MgO. Для типа 4 её пишет `aType_4` (`mg0=mg`), для типа 5 — не трогает (`mg0=0`), а коридор `m_528` задаёт её через `m_531`. Исправлен проброс `mg0` в `_t45_513`/`_t45_m279` (ветки `m_322t`/`m_281`); тест `test_type5_m322t_mg0_matches_excel`.
+  - type1 `t_74t`: `si_n` остаётся `= C70 = si_r` (записан в `t_68t`), а не обнуляется; тест `test_type1_t74_si_n_matches_excel`.
+  - `_t45_513`: в `m_279` передаётся исходный `fe3_1` (m_513 пишет только `fe3_2`), а не `fe4_2`; тест `test_type45_m346_fe3_1_matches_excel`.
+  - Остался 1 вход (type5→type3): Excel проносит `al3_3=al4_1` через ячейку `I51` из стадии type45 в `aType_3` (сквозное состояние именованных ячеек) — осознанно не портирован.
 
 ### Changed
 - `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`, `AlgorithmOutput` — поле `path: dict | None`, `CalculationResult` — поле `branch_path: dict | None` (все с дефолтами, обратно совместимо).

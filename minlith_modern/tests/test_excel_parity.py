@@ -134,6 +134,28 @@ _M418T_INPUT = {
 }
 
 
+# Тип 5, ветка m_322t: C322/C324 читают отдельную ячейку mg0 (J272), которая
+# для типа 5 остаётся 0 (её пишет только aType_4 / коридор m_528).
+_M322T_MG0_INPUT = {
+    "SiO2": 27.068, "Al2O3": 20.828, "Fe2O3": 0.58, "FeO": 0.825,
+    "MgO": 1.537, "CaO": 12.736, "Na2O": 1.238, "K2O": 6.274, "MnO": 3.967,
+    "SO3": 8.585, "F": 1.443, "Cl": 3.085, "CO2": 5.816,
+}
+
+
+def test_type5_m322t_mg0_matches_excel():
+    """mg0 (J272) для типа 5 = 0: ветка m_322t совпадает с эталоном."""
+    cr = parity_run(_M322T_MG0_INPUT)
+    assert cr.st0.rock_type == 5
+    assert "m_322t->p81" in cr.tsol.trace
+    er = excel_run(_M322T_MG0_INPUT, rounding=False)
+    for k, a in cr.names.items():
+        b = er.get(k)
+        if isinstance(a, str) or not isinstance(b, (int, float)):
+            continue
+        assert abs(a - b) <= 1e-9, f"{k} = {a!r}, excel = {b!r}"
+
+
 def test_type45_m418t_matches_excel():
     """m_418t (p_201 напрямую + двойной C422) совпадает с эталоном."""
     cr = parity_run(_M418T_INPUT)
@@ -144,6 +166,39 @@ def test_type45_m418t_matches_excel():
         if isinstance(a, str) or not isinstance(b, (int, float)):
             continue
         assert abs(a - b) <= 1e-9, f"{k} = {a!r}, excel = {b!r}"
+
+
+# Тип 1, t_74t: si_n остаётся = C70 = si_r (t_68t), НЕ обнуляется.
+_TYPE1_T74_INPUT = {
+    "SiO2": 49.86, "Al2O3": 13.185, "FeO": 9.09, "MgO": 3.01, "CaO": 4.4,
+    "Na2O": 5.139, "K2O": 4.794, "C": 2.424, "F": 3.415, "CO2": 5.559,
+    "SO": 3.742,
+}
+
+
+def test_type1_t74_si_n_matches_excel():
+    cr = parity_run(_TYPE1_T74_INPUT)
+    assert cr.st0.rock_type == 1
+    er = excel_run(_TYPE1_T74_INPUT, rounding=False)
+    assert cr.names["si_n"] == pytest.approx(er["si_n"], abs=1e-9)
+    assert cr.names["mst"] == pytest.approx(er["mst"], abs=1e-9)
+    assert cr.names["srp"] == pytest.approx(er["srp"], abs=1e-9)
+
+
+# Тип 4, m_513 → m_279 → m_346t: fe_n берётся из исходного fe3_1 (не fe4_2).
+_TYPE45_FE31_INPUT = {
+    "SiO2": 19.023, "TiO2": 8.196, "Al2O3": 26.997, "Fe2O3": 3.192,
+    "FeO": 11.17, "MgO": 17.837, "CaO": 14.992, "Na2O": 3.685,
+    "K2O": 0.255, "P2O5": 1.355, "Cl": 2.59, "SO": 3.552,
+}
+
+
+def test_type45_m346_fe3_1_matches_excel():
+    cr = parity_run(_TYPE45_FE31_INPUT)
+    assert cr.st0.rock_type == 4
+    er = excel_run(_TYPE45_FE31_INPUT, rounding=False)
+    assert cr.names["fe_n"] == pytest.approx(er["fe_n"], abs=1e-9)
+    assert cr.names["ht"] == pytest.approx(er["ht"], abs=1e-9)
 
 
 def test_type3_p196_branch_implemented():

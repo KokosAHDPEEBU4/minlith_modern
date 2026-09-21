@@ -104,9 +104,11 @@ def type1(st0: Stage0) -> TypeSolution:
             si_r = e46 - 2.0 * ca
             sol.ca_n = st0.ca_n_in - ca      # C71 = D8 - ca
             if al_r - si_r >= 0:             # t_73/74
+                # t_74t ставит только kn/gb; si_n остаётся = C70 = si_r
+                # (записан ранее в t_68t), НЕ обнуляется.
                 sol.kn = si_r / 2.0
                 sol.gb = al_r - sol.kn
-                sol.si_n = 0.0
+                sol.si_n = si_r
             else:                            # t_78/79
                 sol.kn = al_r
                 sol.si_n = si_r - 2.0 * sol.kn
@@ -856,8 +858,12 @@ def _t45_504(sol: TypeSolution, si4_1: float, al4_1: float, mg4_1: float,
 def _t45_513(sol: TypeSolution, si4_1: float, al4_1: float, mg4_1: float,
              fe4_2: float, na: float, k1: float, k2: float, k3: float,
              k4: float, ca: float, ca_in: float, al: float, si: float,
-             k: float, mg: float) -> TypeSolution:
-    """m_513: mm=na, затем m_520 → p_227 или m_279."""
+             k: float, mg0v: float, fe3_1: float) -> TypeSolution:
+    """m_513: mm=na, затем m_520 → p_227 или m_279.
+
+    ``fe4_2`` идёт в ``_t5`` (C515/C... используют fe3_2), а в ``m_279``
+    передаётся исходный ``fe3_1`` (m_513 пишет только fe3_2, fe3_1 не трогает).
+    """
     sol.mm = na                                 # C513
     si3 = si4_1 - 24.0 * na                     # C514
     mg1 = mg4_1 - 2.0 * na                      # C515
@@ -871,9 +877,10 @@ def _t45_513(sol: TypeSolution, si4_1: float, al4_1: float, mg4_1: float,
         _t5(sol, ca_in, mg1, fe4_2, al3, si3, k1, k2, k3, k4, 0.0)
         sol.trace.append("t45-m513->t5")
         return sol
-    # → m_279 (al4_1 уже = al3 после m_513); C283/C297 читают mg0 (J272)=mg
-    return _t45_m279(sol, si4_1, al3, mg, na, k1, k2, k3, k4,
-                     ca, ca_in, fe4_2, al, si, k, mg)
+    # → m_279 (al4_1 уже = al3 после m_513); C283/C297/C324 читают mg0 (J272).
+    # fe_n в m_346t/m_334t берётся из fe3_1 (исходного), не из fe4_2.
+    return _t45_m279(sol, si4_1, al3, mg0v, na, k1, k2, k3, k4,
+                     ca, ca_in, fe3_1, al, si, k, mg0v)
 
 
 def _t45_m531w(sol: TypeSolution, si: float, al: float, mg: float, na: float,
@@ -951,7 +958,10 @@ def type45(st0: Stage0) -> TypeSolution:
     ca_in = st0.ca_n_in
     k1, k2, k3, k4 = st0.k1, st0.k2, st0.k3, st0.k4
     fe3_1 = st0.fe3_1
-    mg0 = mg
+    # mg0 — отдельная именованная ячейка (J272), НЕ базовый MgO. Её пишет
+    # только aType_4 (mg0=mg); для типа 5 aType_5 её не трогает → остаётся 0
+    # (коридор m_528 задаёт mg0 через m_531, и там значение проброшено явно).
+    mg0 = mg if st0.rock_type != 5 else 0.0
     sol = TypeSolution()
 
     if st0.rock_type == 5:                     # aType_5: d525 → m_274 | m_528
@@ -1100,9 +1110,9 @@ def type45(st0: Stage0) -> TypeSolution:
                         sol.trace.append("t45-m_465")
                         return sol
                     return _t45_513(sol, si4_1, al4_1, mg4_1, fe4_2, na,
-                                    k1, k2, k3, k4, ca, ca_in, al, si, k, mg)
+                                    k1, k2, k3, k4, ca, ca_in, al, si, k, mg0, fe3_1)
                 return _t45_513(sol, si4_1, al4_1, mg4_1, fe4_2, na,
-                                k1, k2, k3, k4, ca, ca_in, al, si, k, mg)
+                                k1, k2, k3, k4, ca, ca_in, al, si, k, mg0, fe3_1)
             # m_473
             chl2 = (2.0 * mg4_1 + na - 2.0 * al4_2) / (2.0 * k1 - k3)  # C474
             sol.chl = chl2
@@ -1144,8 +1154,8 @@ def type45(st0: Stage0) -> TypeSolution:
                 sol.trace.append("t45-m486->m504")
                 return sol
             return _t45_513(sol, si4_1, al4_1, mg4_1, fe4_2, na,
-                            k1, k2, k3, k4, ca, ca_in, al, si, k, mg)
+                            k1, k2, k3, k4, ca, ca_in, al, si, k, mg0, fe3_1)
         return _t45_513(sol, si4_1, al4_1, mg4_1, fe4_2, na,
-                        k1, k2, k3, k4, ca, ca_in, al, si, k, mg)
+                        k1, k2, k3, k4, ca, ca_in, al, si, k, mg0, fe3_1)
     return _t45_513(sol, si4_1, al4_1, mg4_1, fe4_2, na,
-                    k1, k2, k3, k4, ca, ca_in, al, si, k, mg)
+                    k1, k2, k3, k4, ca, ca_in, al, si, k, mg0, fe3_1)
