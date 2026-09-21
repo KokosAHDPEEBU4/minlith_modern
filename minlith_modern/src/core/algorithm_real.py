@@ -1,7 +1,7 @@
 """Заглушка VBA-порта — попытка портировать VBA макрос из Excel.
 
 .. deprecated::
-    Используйте :class:`src.core.theory_algorithm.TheoryAlgorithm` вместо
+    Используйте :class:`src.core.geological_theory.GeologicalTheoryAlgorithm` вместо
     этого класса. VbaPortStub сохраняется как заглушка для будущего порта
     VBA-макроса и для сравнения результатов.
 """
@@ -28,13 +28,13 @@ logger = logging.getLogger(__name__)
 class VbaPortStub:
     """Заглушка VBA-порта. Использование устарело.
 
-    TODO: Заменить на TheoryAlgorithm.
+    TODO: Заменить на GeologicalTheoryAlgorithm.
     """
 
     def compute(self, inp: AlgorithmInput) -> AlgorithmOutput:
         """Run VBA-port calculation (stub)."""
         warnings.warn(
-            "VbaPortStub is deprecated. Use TheoryAlgorithm instead.",
+            "VbaPortStub is deprecated. Use GeologicalTheoryAlgorithm instead.",
             DeprecationWarning,
             stacklevel=2,
         )

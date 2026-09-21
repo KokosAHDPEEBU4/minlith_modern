@@ -115,7 +115,7 @@ python calibrate.py --input MINLITH1.xlsx --output calibration_config.json --max
 | `--template`, `-t` | Шаблон отчёта (brief, standard, full, core, geochemical) |
 | `--dpi N` | Разрешение диаграммы |
 | `--interactive` | Экспорт в интерактивный HTML (Plotly) |
-| `--algorithm`, `-a` | Режим алгоритма: `clean` (полный паритет с Excel, по умолчанию), `stub` (резерв), `custom` |
+| `--engine`, `-e` | Движок расчёта: `excel_parity` (как в Excel, по умолчанию), `geological_theory` (по геологической теории), `python_rework` (Python-переработка) |
 
 ### Python API
 
@@ -136,14 +136,16 @@ print(result.minerals_weight.ab) # 7.82
 print(result.defect)             # oxide residuals
 print(result.anomalies)          # list[AnomalyHypothesis]
 
-# Режим алгоритма:
-#   clean  — clean_engine: полный паритет с Excel-версией (без округлений)
-#   stub   — резервный расчёт по теории (TheoryAlgorithm)
-#   custom — пользовательская реализация (пока не подключена)
-calc_clean = Calculator(config=CalculationConfig(algorithm_mode="clean"))
+# Движок расчёта:
+#   excel_parity      — «как в Excel»: полный паритет с Excel-версией (без округлений)
+#   geological_theory — «самостоятельная попытка»: расчёт по геологической теории
+#   python_rework     — «переработанный под Python»: пользовательская реализация
+#                       (пока не подключена)
+calc_excel = Calculator(config=CalculationConfig(calculation_engine="excel_parity"))
 ```
 
-> В GUI режим алгоритма выбирается на странице «Настройки» → «Режим алгоритма».
+> В GUI движок выбирается на странице «Настройки» → «Движок расчёта», а также на
+> тулбаре «Движки расчёта» («Как в Excel» / «Геол. теория» / «Python-переработка»).
 
 ## Сборка
 
@@ -176,9 +178,10 @@ minlith_modern/
 ├── src/
 │   ├── core/           # Расчётный движок
 │   │   ├── calculator.py       # Оркестратор
-│   │   ├── clean_engine/       # Чистый Python (полный паритет с Excel, без ROUND)
+│   │   ├── excel_parity/       # Движок «как в Excel» (полный паритет, без ROUND)
 │   │   ├── excel_port/         # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
-│   │   ├── algorithm_stub.py   # Заглушка VBA
+│   │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
+│   │   ├── algorithm_stub.py   # Deprecated заглушка VBA
 │   │   ├── algorithm.py        # Протокол алгоритма
 │   │   ├── models.py           # Датаклассы
 │   │   ├── coefficients.py     # k1-k4 коэффициенты

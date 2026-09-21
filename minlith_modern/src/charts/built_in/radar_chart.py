@@ -7,7 +7,13 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, get_bg_color, get_fg_color, get_grid_color, get_accent, create_figure
+from src.charts.engines.matplotlib_engine import (
+    create_figure,
+    get_accent,
+    get_bg_color,
+    get_fg_color,
+    get_grid_color,
+)
 
 
 class RadarChart(ChartPlugin):
@@ -36,7 +42,11 @@ class RadarChart(ChartPlugin):
             return create_figure(title="No mineral data")
 
         sample_idx = kwargs.get("sample_idx", 0)
-        sample_name = data.sample_names[sample_idx] if sample_idx < len(data.sample_names) else "Sample"
+        sample_name = (
+            data.sample_names[sample_idx]
+            if sample_idx < len(data.sample_names)
+            else "Sample"
+        )
 
         names = list(minerals.keys())
         n = len(names)
@@ -44,7 +54,11 @@ class RadarChart(ChartPlugin):
             fig = create_figure(title=f"{sample_name} — need ≥3 minerals for radar")
             return fig
 
-        values = [float(minerals[m][sample_idx]) if sample_idx < len(minerals[m]) else 0.0 for m in names]
+        values = [
+            float(minerals[m][sample_idx])
+            if sample_idx < len(minerals[m]) else 0.0
+            for m in names
+        ]
         max_val = max(values) if values else 1.0
         if max_val == 0:
             max_val = 1.0

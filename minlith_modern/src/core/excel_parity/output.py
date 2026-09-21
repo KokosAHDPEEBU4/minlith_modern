@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from src.core.clean_engine.stage0 import Stage0
-from src.core.clean_engine.stage_vi import StageVI
-from src.core.clean_engine.types import TypeSolution
+from src.core.excel_parity.stage0 import Stage0
+from src.core.excel_parity.stage_vi import StageVI
+from src.core.excel_parity.types import TypeSolution
 
 # Молярные массы минералов (ячейки B31..B41, D31..D41 — «Нач+Type 12»).
 _MW = {

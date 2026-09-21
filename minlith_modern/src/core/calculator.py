@@ -8,9 +8,18 @@ from typing import Optional
 import numpy as np
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput, MineralAlgorithm
-from src.core.theory_algorithm import TheoryAlgorithm
 from src.core.anomaly_detector import AnomalyDetector
+from src.core.coefficients import calculate_coefficients
+from src.core.constants import (
+    FORMULA_WEIGHTS,
+    MOLAR_MASSES_IUPAC,
+    MOLAR_MASSES_MINLITH,
+    OXIDE_ORDER,
+)
+from src.core.debug_tracer import DebugTraceCollector
+from src.core.geological_theory import GeologicalTheoryAlgorithm
 from src.core.models import (
+    LEGACY_ENGINE_ALIASES,
     AdaptiveCoefficients,
     CalculationConfig,
     CalculationResult,
@@ -20,14 +29,6 @@ from src.core.models import (
     RockType,
     Sample,
 )
-from src.core.constants import (
-    FORMULA_WEIGHTS,
-    MOLAR_MASSES_IUPAC,
-    MOLAR_MASSES_MINLITH,
-    OXIDE_ORDER,
-)
-from src.core.coefficients import calculate_coefficients
-from src.core.debug_tracer import DebugTraceCollector
 from src.core.validation import validate_sample
 
 logger = logging.getLogger(__name__)
@@ -76,25 +77,31 @@ class Calculator:
         if algorithm is not None:
             self.algorithm = algorithm
         else:
-            self.algorithm = self._algorithm_for_mode(self.config.algorithm_mode)
+            self.algorithm = self._algorithm_for_engine(self.config.calculation_engine)
 
     @staticmethod
-    def _algorithm_for_mode(mode: str) -> MineralAlgorithm:
-        """Выбрать алгоритм по ``algorithm_mode`` из конфигурации.
+    def _algorithm_for_engine(engine: str) -> MineralAlgorithm:
+        """Выбрать алгоритм по ``calculation_engine`` из конфигурации.
 
-        - "clean" — clean_engine: полный паритет с excel_port (без округлений);
-        - "custom" — пользовательская реализация (пока fallback на теорию);
-        - любое другое ("stub") — TheoryAlgorithm (резерв).
+        - ``excel_parity`` — «как в Excel»: точный паритет с Excel-версией
+          (без пошаговых округлений ROUND);
+        - ``geological_theory`` — «самостоятельная попытка»: расчёт по
+          геологической теории MINLITH (файлы 00-07);
+        - ``python_rework`` — «переработанный под Python»: пользовательская
+          Python-реализация (пока fallback на геологическую теорию).
         """
-        if mode == "clean":
-            from src.core.clean_engine.algorithm import CleanEngineAlgorithm
-            logger.info("Algorithm mode: clean_engine")
-            return CleanEngineAlgorithm()
-        if mode == "custom":
-            logger.info("Algorithm mode: custom (placeholder, fallback to theory)")
-            return TheoryAlgorithm()
-        logger.info("Algorithm mode: stub (TheoryAlgorithm fallback)")
-        return TheoryAlgorithm()
+        engine = LEGACY_ENGINE_ALIASES.get(engine, engine)
+        if engine == "excel_parity":
+            from src.core.excel_parity.algorithm import ExcelParityAlgorithm
+            logger.info("Calculation engine: excel_parity")
+            return ExcelParityAlgorithm()
+        if engine == "python_rework":
+            logger.info(
+                "Calculation engine: python_rework "
+                "(placeholder, fallback to geological_theory)")
+            return GeologicalTheoryAlgorithm()
+        logger.info("Calculation engine: geological_theory (fallback)")
+        return GeologicalTheoryAlgorithm()
 
     def _get_molar_masses(self) -> dict[str, float]:
         """Get molar masses based on config source."""
@@ -581,7 +588,7 @@ class Calculator:
             "auto_correct_sum": self.config.auto_correct_sum,
             "decimal_places": self.config.decimal_places,
             "timeout_seconds": self.config.timeout_seconds,
-            "algorithm_mode": self.config.algorithm_mode,
+            "calculation_engine": self.config.calculation_engine,
         }
 
         results: list[CalculationResult | None] = [None] * len(samples)

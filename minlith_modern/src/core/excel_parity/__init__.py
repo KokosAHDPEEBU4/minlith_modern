@@ -1,11 +1,11 @@
-"""clean_engine — чистый (без округлений) Python-порт алгоритма MINLITH.
+"""excel_parity — чистый (без округлений) Python-порт алгоритма MINLITH.
 
 Фаза 3. В отличие от ``excel_port`` движок не воспроизводит пошаговые
 округления книги Excel (ROUND …), а считает те же формулы непрерывной
 арифметикой float64. Каждая стадия — явная читаемая функция.
 
 Сравнение с ``excel_port(run_sample(rounding=False))`` показывает, где
-исходная книга накапливает ошибку округления (см. Phase 4 / compare.py).
+исходная книга накапливает ошибку округления (см. Phase 4 / compare_excel.py).
 
 Состав:
   * stage0    — формульные единицы, F/A, коэффициенты k1..k4, классификация;
@@ -14,12 +14,12 @@
   * output    — вес.%, нормировка, дефект, строка 287;
   * runner    — оркестратор: оксиды -> результат;
   * algorithm — адаптер к интерфейсу MineralAlgorithm (Calculator);
-  * compare_clean — отчёт сверки с excel_port(rounding=False) в reports/.
+  * compare_excel — отчёт сверки с excel_port(rounding=False) в reports/.
 """
 
-from .algorithm import CleanEngineAlgorithm
-from .runner import CleanRun, run_sample
+from .algorithm import ExcelParityAlgorithm
+from .runner import ExcelRun, run_sample
 from .stage0 import DEFAULT_OXIDES, Stage0
 
-__all__ = ["run_sample", "CleanRun", "Stage0", "DEFAULT_OXIDES",
-           "CleanEngineAlgorithm"]
+__all__ = ["run_sample", "ExcelRun", "Stage0", "DEFAULT_OXIDES",
+           "ExcelParityAlgorithm"]

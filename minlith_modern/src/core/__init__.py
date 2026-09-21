@@ -5,7 +5,7 @@ __all__ = [
     "algorithm",
     "algorithm_real",
     "algorithm_stub",
-    "theory_algorithm",
+    "geological_theory",
     "types_logic",
     "coefficients",
     "constants",

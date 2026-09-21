@@ -28,5 +28,5 @@ python -m src.cli calculate input.xlsx -o results.xlsx   # CLI
 ## Статус
 
 - Полный паритет расчётного движка с Excel-оригиналом: **16000/16000** (2026-09-16).
-- Тесты: **1167 passed, 5 skipped** (`minlith_modern/` → `python -m pytest -q`).
+- Тесты: **1174 passed, 5 skipped** (`minlith_modern/` → `python -m pytest -q`).
 - Правило работы с репо — в [`AGENTS.md`](AGENTS.md).

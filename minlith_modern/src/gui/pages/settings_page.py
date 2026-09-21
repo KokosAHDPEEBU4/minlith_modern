@@ -346,17 +346,20 @@ class SettingsPage(QWidget):
 
     def _build_calculation_section(self) -> QScrollArea:
         def _build_params(lay: QVBoxLayout, card: QFrame) -> None:
-            mode = QComboBox()
-            mode.addItems(["clean", "stub", "custom"])
-            mode.setCurrentText(self._config.get("algorithm_mode", "clean"))
-            mode.setToolTip(
-                "clean — clean_engine: полный паритет с Excel-версией (без округлений)\n"
-                "stub — резервный расчёт по теории\n"
-                "custom — пользовательская реализация алгоритма"
-            )
-            self._algorithm_mode = mode
-            self._add_row(card, lay, "Режим алгоритма", mode,
-                          subtitle="clean — паритет с Excel (без округлений)",
+            engine = QComboBox()
+            engine.addItems(["excel_parity", "geological_theory", "python_rework"])
+            engine.setCurrentText(
+                self._config.get("calculation_engine", "excel_parity"))
+            engine.setToolTip(
+                "excel_parity — «как в Excel»: точный паритет с Excel-версией "
+                "(без округлений)\n"
+                "geological_theory — «самостоятельная попытка»: расчёт по "
+                "геологической теории\n"
+                "python_rework — «переработанный под Python»: пользовательская "
+                "реализация алгоритма")
+            self._calculation_engine = engine
+            self._add_row(card, lay, "Движок расчёта", engine,
+                          subtitle="excel_parity — паритет с Excel (без округлений)",
                           tooltip="Какой движок участвует в расчётах")
 
             self._molar_mass = QComboBox()
@@ -603,7 +606,7 @@ class SettingsPage(QWidget):
         self._config["auto_correct_sum"] = self._auto_correct.isChecked()
         self._config["decimal_places"] = self._decimal_places.value()
         self._config["timeout_seconds"] = self._timeout.value()
-        self._config["algorithm_mode"] = self._algorithm_mode.currentText()
+        self._config["calculation_engine"] = self._calculation_engine.currentText()
         self._config["include_formula_units"] = self._include_formula_units.isChecked()
         self._config["include_defect"] = self._include_defect.isChecked()
         self._config["include_parameters"] = self._include_parameters.isChecked()
@@ -648,7 +651,8 @@ class SettingsPage(QWidget):
         self._auto_correct.setChecked(self._config.get("auto_correct_sum", False))
         self._decimal_places.setValue(self._config.get("decimal_places", 2))
         self._timeout.setValue(self._config.get("timeout_seconds", 120))
-        self._algorithm_mode.setCurrentText(self._config.get("algorithm_mode", "clean"))
+        self._calculation_engine.setCurrentText(
+            self._config.get("calculation_engine", "excel_parity"))
         self._include_formula_units.setChecked(self._config.get("include_formula_units", False))
         self._include_defect.setChecked(self._config.get("include_defect", True))
         self._include_parameters.setChecked(self._config.get("include_parameters", True))

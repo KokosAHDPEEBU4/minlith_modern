@@ -111,7 +111,7 @@ class SampleSelectorDialog(QDialog):
 class ChartsPage(QWidget):
     """Страница просмотра и экспорта диаграмм (несколько графиков сразу)."""
 
-    dataChanged = pyqtSignal(object)  # ChartData
+    dataChanged = pyqtSignal(object)  # noqa: N815 - PyQt сигнал (convention)
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -152,7 +152,7 @@ class ChartsPage(QWidget):
         btn_add.setFixedSize(28, 28)
         btn_add.setToolTip("Добавить вкладку с набором диаграмм")
         btn_add.clicked.connect(self._add_tab)
-        self._tabs.setCornerWidget(btn_add, Qt.CornerFlag.TopRightCorner)
+        self._tabs.setCornerWidget(btn_add, Qt.Corner.TopRightCorner)
         self._add_tab()
         layout.addWidget(self._tabs, stretch=1)
 

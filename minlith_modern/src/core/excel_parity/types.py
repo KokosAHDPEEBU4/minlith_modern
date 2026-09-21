@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from src.core.clean_engine.stage0 import Stage0
+from src.core.excel_parity.stage0 import Stage0
 
 
 @dataclass

@@ -4,14 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from src.core.clean_engine.output import Output, output
-from src.core.clean_engine.stage0 import DEFAULT_OXIDES, Stage0, compute_stage0
-from src.core.clean_engine.stage_vi import StageVI, solve_stage_vi
-from src.core.clean_engine.types import TypeSolution, solve_type
+from src.core.excel_parity.output import Output, output
+from src.core.excel_parity.stage0 import DEFAULT_OXIDES, Stage0, compute_stage0
+from src.core.excel_parity.stage_vi import StageVI, solve_stage_vi
+from src.core.excel_parity.types import TypeSolution, solve_type
 
 
 @dataclass
-class CleanRun:
+class ExcelRun:
     """Результат полного прогона чистого движка."""
 
     st0: Stage0 = field(default_factory=Stage0)
@@ -49,18 +49,18 @@ class CleanRun:
         return n
 
 
-def run_from_stage0(st0: Stage0) -> CleanRun:
+def run_from_stage0(st0: Stage0) -> ExcelRun:
     """Прогнать уже посчитанную стадию 0 через типы/VI-этап/вывод."""
     tsol = solve_type(st0)
     vi = solve_stage_vi(st0, tsol)
     out = output(st0, tsol, vi)
-    return CleanRun(st0=st0, tsol=tsol, vi=vi, out=out)
+    return ExcelRun(st0=st0, tsol=tsol, vi=vi, out=out)
 
 
 def run_sample(oxide_values: dict[str, float],
                data_dir: object | None = None,
                entry: str = "aDefin",
-               rounding: bool | None = None) -> CleanRun:
+               rounding: bool | None = None) -> ExcelRun:
     """Прогнать образец через чистый движок (без округлений).
 
     Аргументы data_dir/entry/rounding приняты для совместимости сигнатуры

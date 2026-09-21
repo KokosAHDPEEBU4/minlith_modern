@@ -8,6 +8,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from src.core.models import CALCULATION_ENGINES, LEGACY_ENGINE_ALIASES
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -21,7 +23,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "include_parameters": True,
     "timeout_seconds": 120,
     "batch_size": "auto",  # "auto" | 1..8
-    "algorithm_mode": "clean",  # "stub" | "clean" | "custom"
+    "calculation_engine": "excel_parity",  # "excel_parity" | "geological_theory" | "python_rework"
     "chart.zoom_step": 1.2,  # шаг зума диаграмм, диапазон (1.0, 5.0]
     "theme": "dark",
     "chart_theme": "dark",  # "dark" | "light" — background for charts
@@ -61,8 +63,18 @@ class ConfigManager:
                 with open(self._path, encoding="utf-8") as f:
                     saved = json.load(f)
                 self._data.update(saved)
+                self._migrate_legacy(saved)
             except (json.JSONDecodeError, OSError) as e:
                 logger.warning("Failed to load config from %s: %s", self._path, e)
+
+    def _migrate_legacy(self, saved: dict[str, Any]) -> None:
+        """Перенести старые ключи/значения настроек в актуальные."""
+        if "algorithm_mode" in saved and "calculation_engine" not in saved:
+            self._data["calculation_engine"] = saved["algorithm_mode"]
+        self._data.pop("algorithm_mode", None)
+        engine = self._data.get("calculation_engine")
+        if isinstance(engine, str) and engine in LEGACY_ENGINE_ALIASES:
+            self._data["calculation_engine"] = LEGACY_ENGINE_ALIASES[engine]
 
     def save(self, debounce: bool = False) -> None:
         """Persist current settings to disk.
@@ -173,9 +185,9 @@ class ConfigManager:
                 if not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0:
                     errors.append(f"custom_molar_masses[{k!r}] must be positive number, got {v!r}")
 
-        mode = self._data.get("algorithm_mode", "clean")
-        if mode not in ("stub", "clean", "custom"):
-            errors.append(f"Unknown algorithm_mode: {mode!r}")
+        engine = self._data.get("calculation_engine", "excel_parity")
+        if engine not in CALCULATION_ENGINES and engine not in LEGACY_ENGINE_ALIASES:
+            errors.append(f"Unknown calculation_engine: {engine!r}")
 
         zs = self._data.get("chart.zoom_step", 1.2)
         if not isinstance(zs, (int, float)) or isinstance(zs, bool) or not (1.0 < zs <= 5.0):

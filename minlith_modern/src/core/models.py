@@ -173,6 +173,17 @@ class Sample:
     composition: OxideComposition
 
 
+# Допустимые значения ``calculation_engine`` (как считает модель).
+CALCULATION_ENGINES = ("excel_parity", "geological_theory", "python_rework")
+
+# Старые имена движков → новые (обратная совместимость конфигов/кода).
+LEGACY_ENGINE_ALIASES = {
+    "clean": "excel_parity",
+    "stub": "geological_theory",
+    "custom": "python_rework",
+}
+
+
 @dataclass(frozen=True)
 class CalculationConfig:
     """Configuration for calculation."""
@@ -188,7 +199,9 @@ class CalculationConfig:
     include_parameters: bool = True
     timeout_seconds: int = 120
     batch_size: int | str = "auto"
-    algorithm_mode: str = "stub"  # "stub" | "clean" | "custom" (безопасный дефолт; приложение явно ставит "clean")
+    # "excel_parity" | "geological_theory" | "python_rework"
+    # (безопасный дефолт; приложение явно ставит "excel_parity")
+    calculation_engine: str = "geological_theory"
 
 
 @dataclass(frozen=True)

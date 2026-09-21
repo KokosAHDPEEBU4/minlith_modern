@@ -1,6 +1,6 @@
 """Отчёт сравнения чистого движка с полным графом excel_port.
 
-Фаза 4: для каждого образца сверяем `clean_engine` с `excel_port(rounding=False)`
+Фаза 4: для каждого образца сверяем `excel_parity` с `excel_port(rounding=False)`
 по трём независимым срезам выхода:
   * vars      — значения именованных переменных (ф.е.);
   * row287    — итоговая строка B..AI листа «Нач+Type 12» (нормированные %);
@@ -15,7 +15,7 @@ import csv
 import json
 from pathlib import Path
 
-from src.core.clean_engine.runner import run_sample as clean_run
+from src.core.excel_parity.runner import run_sample as excel_run
 from src.core.excel_port.runner import load_structure, load_workbook
 from src.core.excel_port.vm import VbaVM
 
@@ -79,7 +79,7 @@ def _el(o):
 
 
 def compare_sample(ox: dict[str, float]) -> dict:
-    cr = clean_run(ox)
+    cr = excel_run(ox)
     excel_vars = excel_common(ox)
 
     rows_vars = []
@@ -118,15 +118,15 @@ def write_report(name: str, ox: dict[str, float]) -> dict:
 
     with (d / "vars.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["variable", "excel_full", "clean", "delta_abs"])
+        w.writerow(["variable", "excel_full", "excel_parity", "delta_abs"])
         w.writerows(rep["vars"])
     with (d / "row287.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["cell", "excel_full", "clean", "delta_abs"])
+        w.writerow(["cell", "excel_full", "excel_parity", "delta_abs"])
         w.writerows(rep["row287"])
     with (d / "defect.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["oxide", "excel_full", "clean", "delta_abs"])
+        w.writerow(["oxide", "excel_full", "excel_parity", "delta_abs"])
         w.writerows(rep["defect"])
     return rep
 

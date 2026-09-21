@@ -14,7 +14,7 @@ import math
 
 import pytest
 
-from src.core.clean_engine.runner import run_sample
+from src.core.excel_parity.runner import run_sample
 
 _GRID = {
     "SiO2": [50.0, 70.0, 90.0],

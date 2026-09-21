@@ -19,14 +19,14 @@ from PyQt6.QtWidgets import (
 )
 
 from src.core.calculator import Calculator
-from src.core.models import Sample
+from src.core.models import LEGACY_ENGINE_ALIASES, Sample
 from src.workers.calculation_worker import CalculationWorker
 
 
-METHOD_DESCRIPTIONS = {
-    "clean": "Clean — стандартный нормативный расчёт",
-    "stub": "Stub — быстрая проверка (создаёт заготовку)",
-    "custom": "Custom — пользовательский режим",
+ENGINE_DESCRIPTIONS = {
+    "excel_parity": "Как в Excel — точный паритет с Excel-версией (без округлений)",
+    "geological_theory": "Геологическая теория — самостоятельный подбор по теории",
+    "python_rework": "Python-переработка — пользовательская реализация на Python",
 }
 
 
@@ -60,21 +60,27 @@ class CalculationDialog(QDialog):
             self._samples_list.item(0).setSelected(True)
         layout.addWidget(self._samples_list)
 
-        # ── Method selection (choose WITH WHAT to calculate) ──
-        method_row = QHBoxLayout()
-        method_row.addWidget(QLabel("Метод расчёта:"))
-        self._method_combo = QComboBox()
-        self._method_combo.addItems(list(METHOD_DESCRIPTIONS))
-        self._method_combo.setCurrentText(calculator.config.algorithm_mode if hasattr(calculator.config, "algorithm_mode") else "clean")
-        method_row.addWidget(self._method_combo)
-        layout.addLayout(method_row)
+        # ── Engine selection (choose WITH WHAT to calculate) ──
+        engine_row = QHBoxLayout()
+        engine_row.addWidget(QLabel("Движок расчёта:"))
+        self._engine_combo = QComboBox()
+        for code, desc in ENGINE_DESCRIPTIONS.items():
+            self._engine_combo.addItem(desc, code)
+        current = calculator.config.calculation_engine if hasattr(
+            calculator.config, "calculation_engine") else "excel_parity"
+        current = LEGACY_ENGINE_ALIASES.get(current, current)
+        idx = self._engine_combo.findData(current)
+        if idx >= 0:
+            self._engine_combo.setCurrentIndex(idx)
+        engine_row.addWidget(self._engine_combo)
+        layout.addLayout(engine_row)
 
-        self._method_hint = QLabel("")
-        self._method_hint.setStyleSheet("color: #888; font-size: 11px;")
-        layout.addWidget(self._method_hint)
+        self._engine_hint = QLabel("")
+        self._engine_hint.setStyleSheet("color: #888; font-size: 11px;")
+        layout.addWidget(self._engine_hint)
 
-        self._method_combo.currentTextChanged.connect(self._on_method_changed)
-        self._on_method_changed(self._method_combo.currentText())
+        self._engine_combo.currentIndexChanged.connect(self._on_engine_changed)
+        self._on_engine_changed(self._engine_combo.currentIndex())
 
         # ── Progress area ──
         self._progress = QProgressBar()
@@ -110,8 +116,9 @@ class CalculationDialog(QDialog):
         self._worker = None
         self.results = []
 
-    def _on_method_changed(self, text: str) -> None:
-        self._method_hint.setText(METHOD_DESCRIPTIONS.get(text, ""))
+    def _on_engine_changed(self, index: int) -> None:
+        code = self._engine_combo.itemData(index)
+        self._engine_hint.setText(ENGINE_DESCRIPTIONS.get(code, ""))
 
     def _selected_samples(self, all_samples: list[Sample]) -> list[Sample]:
         selected = [
@@ -124,8 +131,8 @@ class CalculationDialog(QDialog):
         rows = {self._samples_list.row(item) for item in selected}
         return [s for i, s in enumerate(all_samples) if i in rows]
 
-    def _configure_calculator(self, calculator: Calculator, mode: str) -> Calculator:
-        """Return a Calculator configured for the selected method."""
+    def _configure_calculator(self, calculator: Calculator, engine: str) -> Calculator:
+        """Return a Calculator configured for the selected calculation engine."""
         from src.core.models import CalculationConfig
 
         cfg = calculator.config
@@ -141,7 +148,7 @@ class CalculationDialog(QDialog):
             include_parameters=cfg.include_parameters,
             timeout_seconds=cfg.timeout_seconds,
             batch_size=cfg.batch_size,
-            algorithm_mode=mode,
+            calculation_engine=engine,
         )
         return Calculator(config=new_config)
 
@@ -151,13 +158,13 @@ class CalculationDialog(QDialog):
             # nothing selected → treat all as selected implicitly? No — fall back to all checked
             samples = self._samples
 
-        mode = self._method_combo.currentText()
-        calculator = self._configure_calculator(self._calculator, mode)
+        engine = self._engine_combo.currentData() or "excel_parity"
+        calculator = self._configure_calculator(self._calculator, engine)
 
         self._progress.setRange(0, len(samples))
         self._progress.setVisible(True)
         self._samples_list.setEnabled(False)
-        self._method_combo.setEnabled(False)
+        self._engine_combo.setEnabled(False)
         self._btn_start.setEnabled(False)
 
         self._start_time = time.time()

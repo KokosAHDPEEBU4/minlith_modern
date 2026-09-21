@@ -1,4 +1,4 @@
-"""Интеграционные тесты: clean_engine в интерфейсе MineralAlgorithm.
+"""Интеграционные тесты: excel_parity в интерфейсе MineralAlgorithm.
 
 1. Адаптер — структурно совместим с :class:`MineralAlgorithm`;
 2. round-trip: AlgorithmInput (ф.е. движка) -> адаптер -> одинаковые ф.е.
@@ -13,15 +13,15 @@ import pytest
 
 from src.core.algorithm import AlgorithmInput, MineralAlgorithm
 from src.core.calculator import Calculator
-from src.core.clean_engine.algorithm import CleanEngineAlgorithm
-from src.core.clean_engine.runner import run_sample as clean_run
+from src.core.excel_parity.algorithm import ExcelParityAlgorithm
+from src.core.excel_parity.runner import run_sample as excel_run
 from src.core.models import OxideComposition, Sample
 
 DATA = Path(__file__).resolve().parent.parent / "src" / "core" / "excel_port" / "data"
 NAMES = ["BK-1", "T-O2",
          "arkose_t1", "granite_t2", "basalt_t3", "quartzite_t4", "highal_t5"]
 
-# attr в AlgorithmOutput -> поле в типе/VI-этапе clean_engine
+# attr в AlgorithmOutput -> поле в типе/VI-этапе excel_parity
 _TYPED = [("Ab", "ab"), ("An", "an"), ("Or", "or_"), ("Ill", "ill"),
           ("Chl", "chl"), ("Kn", "kn"), ("Mm", "mm"), ("Gb", "gb")]
 _VIED = [("Q", "q"), ("Dl", "dl"), ("Ank", "ank"), ("Cc", "cc"),
@@ -41,7 +41,7 @@ def oxides():
 
 def _input_from_run(name, oxides):
     """Собирает AlgorithmInput из результата чистого движка (ф.е. + k + тип)."""
-    cr = clean_run(oxides[name])
+    cr = excel_run(oxides[name])
     st0 = cr.st0
     raw_f = oxides[name].get("F", 0.0) * 10000.0 / 19.0
     return AlgorithmInput(
@@ -57,28 +57,28 @@ def _input_from_run(name, oxides):
 
 
 def test_adapter_is_mineral_algorithm_protocol():
-    assert isinstance(CleanEngineAlgorithm(), MineralAlgorithm)
+    assert isinstance(ExcelParityAlgorithm(), MineralAlgorithm)
 
 
-def test_calculator_resolves_mode_clean():
-    """Calculator(config.algorithm_mode="clean") подключает clean_engine."""
+def test_calculator_resolves_engine_excel_parity():
+    """Calculator(config.calculation_engine="excel_parity") подключает excel_parity."""
     from src.core.models import CalculationConfig
-    calc = Calculator(config=CalculationConfig(algorithm_mode="clean"))
-    assert isinstance(calc.algorithm, CleanEngineAlgorithm)
+    calc = Calculator(config=CalculationConfig(calculation_engine="excel_parity"))
+    assert isinstance(calc.algorithm, ExcelParityAlgorithm)
 
 
-def test_calculator_keeps_stub_default():
-    """Без явного алгоритма Calculator остаётся на TheoryAlgorithm (резерв)."""
-    from src.core.theory_algorithm import TheoryAlgorithm
+def test_calculator_keeps_geological_theory_default():
+    """Без явного алгоритма Calculator остаётся на GeologicalTheoryAlgorithm."""
+    from src.core.geological_theory import GeologicalTheoryAlgorithm
     calc = Calculator()
-    assert isinstance(calc.algorithm, TheoryAlgorithm)
+    assert isinstance(calc.algorithm, GeologicalTheoryAlgorithm)
 
 
 @pytest.mark.parametrize("name", NAMES)
 def test_adapter_round_trip(name, oxides):
     """Адаптер идемпотентен: ф.е. из движка -> AlgorithmOutput == движок."""
-    cr = clean_run(oxides[name])
-    out = CleanEngineAlgorithm().compute(_input_from_run(name, oxides))
+    cr = excel_run(oxides[name])
+    out = ExcelParityAlgorithm().compute(_input_from_run(name, oxides))
     assert out.residuals is not None
     for attr, field in _TYPED + _VIED:
         expect = (getattr(cr.tsol, field) if (attr, field) in _TYPED
@@ -93,9 +93,9 @@ def test_adapter_round_trip(name, oxides):
 
 
 @pytest.mark.parametrize("name", NAMES)
-def test_calculator_with_clean_engine(name, oxides):
-    """Calculator + CleanEngineAlgorithm: полный pipeline даёт состав."""
-    calc = Calculator(algorithm=CleanEngineAlgorithm())
+def test_calculator_with_excel_parity(name, oxides):
+    """Calculator + ExcelParityAlgorithm: полный pipeline даёт состав."""
+    calc = Calculator(algorithm=ExcelParityAlgorithm())
     clean_input = {k: (v or 0.0) for k, v in oxides[name].items()}
     sample = Sample(name=name, composition=OxideComposition.from_dict(clean_input))
     result = calc.calculate_single(sample)
@@ -115,7 +115,7 @@ def test_adapter_survives_minimal_formula_units():
                          na2o=0, k2o=0, p2o5=0, mno=0, c=0, so3=0,
                          f=0, cl=0, s=0, co2=0, so=0,
                          k1=0, k2=0, k3=0, k4=0, F=0, A=0, rock_type=1)
-    algo = CleanEngineAlgorithm()
+    algo = ExcelParityAlgorithm()
     out = algo.compute(inp)
     assert math.isfinite(out.Q)
     assert out.Q == pytest.approx(q, abs=0.0, rel=1e-12)

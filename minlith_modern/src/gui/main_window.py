@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (
 )
 
 from src.core.calculator import Calculator
-from src.core.models import CalculationConfig, Sample
+from src.core.models import LEGACY_ENGINE_ALIASES, CalculationConfig, Sample
 from src.gui.dialogs.calculation_dialog import CalculationDialog
 from src.gui.pages.charts_page import ChartsPage
 from src.gui.pages.files_page import FilesPage
@@ -56,31 +56,40 @@ class MainWindow(QMainWindow):
         from src.charts.engines.matplotlib_engine import set_chart_theme
         set_chart_theme(self._config.get("chart_theme", "dark"))
 
-        # ── Тулбар методов ──
-        self._method_bar = QToolBar("Методы")
-        self._method_bar.setStyleSheet("QToolBar { spacing: 4px; padding: 4px; }")
-        self._method_bar.setMovable(False)
-        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._method_bar)
+        # ── Тулбар движков расчёта ──
+        self._engine_bar = QToolBar("Движки расчёта")
+        self._engine_bar.setStyleSheet("QToolBar { spacing: 4px; padding: 4px; }")
+        self._engine_bar.setMovable(False)
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._engine_bar)
 
-        self._btn_clean = QToolButton()
-        self._btn_clean.setText("Clean")
-        self._btn_clean.setCheckable(True)
-        self._btn_clean.clicked.connect(lambda: self._set_method("clean"))
-        self._method_bar.addWidget(self._btn_clean)
+        self._btn_excel_parity = QToolButton()
+        self._btn_excel_parity.setText("Как в Excel")
+        self._btn_excel_parity.setCheckable(True)
+        self._btn_excel_parity.setToolTip(
+            "excel_parity — точный паритет с Excel-версией (без округлений)")
+        self._btn_excel_parity.clicked.connect(
+            lambda: self._set_engine("excel_parity"))
+        self._engine_bar.addWidget(self._btn_excel_parity)
 
-        self._btn_stub = QToolButton()
-        self._btn_stub.setText("Stub")
-        self._btn_stub.setCheckable(True)
-        self._btn_stub.clicked.connect(lambda: self._set_method("stub"))
-        self._method_bar.addWidget(self._btn_stub)
+        self._btn_geological_theory = QToolButton()
+        self._btn_geological_theory.setText("Геол. теория")
+        self._btn_geological_theory.setCheckable(True)
+        self._btn_geological_theory.setToolTip(
+            "geological_theory — самостоятельная попытка по геологической теории")
+        self._btn_geological_theory.clicked.connect(
+            lambda: self._set_engine("geological_theory"))
+        self._engine_bar.addWidget(self._btn_geological_theory)
 
-        self._btn_custom = QToolButton()
-        self._btn_custom.setText("Custom")
-        self._btn_custom.setCheckable(True)
-        self._btn_custom.clicked.connect(lambda: self._set_method("custom"))
-        self._method_bar.addWidget(self._btn_custom)
+        self._btn_python_rework = QToolButton()
+        self._btn_python_rework.setText("Python-переработка")
+        self._btn_python_rework.setCheckable(True)
+        self._btn_python_rework.setToolTip(
+            "python_rework — реализация, переработанная под Python (плейсхолдер)")
+        self._btn_python_rework.clicked.connect(
+            lambda: self._set_engine("python_rework"))
+        self._engine_bar.addWidget(self._btn_python_rework)
 
-        self._update_method_buttons()
+        self._update_engine_buttons()
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -312,13 +321,13 @@ class MainWindow(QMainWindow):
             include_parameters=self._config.get("include_parameters", True),
             timeout_seconds=self._config.get("timeout_seconds", 120),
             batch_size=self._config.get("batch_size", "auto"),
-            algorithm_mode=self._config.get("algorithm_mode", "clean"),
+            calculation_engine=self._config.get("calculation_engine", "excel_parity"),
         )
 
     def _create_calculator(self) -> Calculator:
-        """Create Calculator with current config and algorithm mode."""
+        """Create Calculator with current config and calculation engine."""
         config = self._build_config()
-        logger.info("Algorithm mode: %s", config.algorithm_mode)
+        logger.info("Calculation engine: %s", config.calculation_engine)
         return Calculator(config=config)
 
     def _apply_zoom_step(self) -> None:
@@ -367,21 +376,22 @@ class MainWindow(QMainWindow):
             self._output_page.set_data(None)
             logger.info("Results cleared due to settings change")
 
-        # 6. Sync method toolbar buttons with config
-        self._update_method_buttons()
+        # 6. Sync engine toolbar buttons with config
+        self._update_engine_buttons()
 
-    def _set_method(self, mode: str) -> None:
-        """Переключить метод расчёта из тулбара."""
-        self._config["algorithm_mode"] = mode
+    def _set_engine(self, engine: str) -> None:
+        """Переключить движок расчёта из тулбара."""
+        self._config["calculation_engine"] = engine
         self._config.save()
         self._on_settings_changed()
-        self._update_method_buttons()
-        if hasattr(self._settings_page, "_algorithm_mode"):
-            self._settings_page._algorithm_mode.setCurrentText(mode)
+        self._update_engine_buttons()
+        if hasattr(self._settings_page, "_calculation_engine"):
+            self._settings_page._calculation_engine.setCurrentText(engine)
 
-    def _update_method_buttons(self) -> None:
+    def _update_engine_buttons(self) -> None:
         """Синхронизировать состояние кнопок тулбара с конфигом."""
-        mode = self._config.get("algorithm_mode", "clean")
-        self._btn_clean.setChecked(mode == "clean")
-        self._btn_stub.setChecked(mode == "stub")
-        self._btn_custom.setChecked(mode == "custom")
+        engine = self._config.get("calculation_engine", "excel_parity")
+        engine = LEGACY_ENGINE_ALIASES.get(engine, engine)
+        self._btn_excel_parity.setChecked(engine == "excel_parity")
+        self._btn_geological_theory.setChecked(engine == "geological_theory")
+        self._btn_python_rework.setChecked(engine == "python_rework")

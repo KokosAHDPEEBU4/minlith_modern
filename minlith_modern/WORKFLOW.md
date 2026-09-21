@@ -16,7 +16,7 @@ python -m src.cli calculate input.xlsx -o results.xlsx
 ### 2. Тестирование
 
 ```bash
-# Все тесты (1167)
+# Все тесты (1174)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -42,8 +42,11 @@ python -m mypy src/ --ignore-missing-imports
 src/
 ├── core/                  # Расчётный движок
 │   ├── algorithm.py       # Protocol + AlgorithmInput
-│   ├── algorithm_real.py  # RealAlgorithm (вся логика)
+│   ├── algorithm_real.py  # Deprecated: VbaPortStub / RealAlgorithm
 │   ├── algorithm_stub.py  # Deprecated заглушка
+│   ├── excel_parity/      # Движок «как в Excel» (паритет, без ROUND)
+│   ├── excel_port/        # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
+│   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
 │   ├── calculator.py      # Оркестратор + calculate_batch()
 │   ├── calibrator.py      # Авто-калибровка через scipy
 │   ├── coefficients.py    # k1-k4 по 5 диапазонам F
@@ -90,10 +93,18 @@ src/
 
 ## Ключевые паттерны
 
-### RealAlgorithm
+### Движки расчёта (`calculation_engine`)
+Три значения в конфиге (`algorithm_mode` → `calculation_engine`):
+
+| Значение | Класс | Как считает |
+| --- | --- | --- |
+| `excel_parity` | `ExcelParityAlgorithm` | «как в Excel»: точный паритет с Excel-версией (без ROUND) |
+| `geological_theory` | `GeologicalTheoryAlgorithm` | «самостоятельная попытка»: по геологической теории (файлы 00-07) |
+| `python_rework` | — (плейсхолдер) | «переработанный под Python»: пользовательская реализация, пока fallback на теорию |
+
 - Вход: `AlgorithmInput` (composition, co2, so, f_total, cl, s)
 - Выход: `AlgorithmOutput` (FormulaUnits, MineralComposition, defects)
-- Логика: `types_logic.py` — Types 1-5 + Stage VI
+- Старые значения `clean`/`stub`/`custom` автоматически мигрируют на новые.
 
 ### Coefficients
 - `calculate_coefficients(f, a)` — k1..k4 + F + A

@@ -29,3 +29,29 @@ def test_export_plotly_html_unknown_chart(result_list, tmp_path) -> None:
     ok = export_plotly_html("nonexistent_chart", result_list, path)
     assert ok is False
     assert not path.exists()
+
+
+def test_export_plotly_html_multiple_combined(result_list, tmp_path) -> None:
+    path = tmp_path / "combined.html"
+    ok = export_plotly_html(["bar", "tas", "harker"], result_list, path)
+    assert ok is True
+    assert path.exists()
+    data = path.read_text(encoding="utf-8")
+    assert len(data) > 1000
+    assert "<html" in data.lower()
+    assert "Дата и время генерации" in data
+    assert "<div class=\"chart\">" in data
+
+
+def test_export_plotly_html_empty_list(result_list, tmp_path) -> None:
+    path = tmp_path / "empty.html"
+    ok = export_plotly_html([], result_list, path)
+    assert ok is False
+    assert not path.exists()
+
+
+def test_export_plotly_html_partial_unknown(result_list, tmp_path) -> None:
+    path = tmp_path / "partial.html"
+    ok = export_plotly_html(["bar", "nope"], result_list, path)
+    assert ok is False
+    assert not path.exists()

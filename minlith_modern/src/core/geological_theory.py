@@ -1,6 +1,6 @@
 """Расчётный движок строго по теории (файлы 00-07).
 
-Заменяет RealAlgorithm (VBA-порт) на TheoryAlgorithm, написанный по
+Заменяет RealAlgorithm (VBA-порт) на GeologicalTheoryAlgorithm, написанный по
 теории из файлов 00-07: стадии 1→2→3 с классификацией типа породы по
 индикатору R и делением K₂O между ортоклазом и иллитом (k_or).
 
@@ -45,7 +45,7 @@ def _build_pools(inp: AlgorithmInput) -> dict[str, float]:
     return pools
 
 
-class TheoryAlgorithm:
+class GeologicalTheoryAlgorithm:
     """Расчётный движок строго по теории (файлы 00-07).
 
     Этапы:

@@ -1,4 +1,4 @@
-"""Адаптер clean_engine к интерфейсу MineralAlgorithm.
+"""Адаптер excel_parity к интерфейсу MineralAlgorithm.
 
 Принимает :class:`AlgorithmInput` с формульными единицами оксидов и возвращает
 :class:`AlgorithmOutput`: ф.е. минералов типов 1-5 и этапа VI + остатки.
@@ -7,14 +7,14 @@
 F, A и тип породы НЕ берутся из AlgorithmInput, а вычисляются движком из ф.е.
 по полосам исходной книги: поля входа формируются легаси-Calculator'ом
 (другие массы, округления F/A, состарившиеся формулы полос) и не согласованы
-с clean_engine. Движок, как и книга MINLITH, сам выводит их из ф.е.
+с excel_parity. Движок, как и книга MINLITH, сам выводит их из ф.е.
 """
 
 from __future__ import annotations
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput
-from src.core.clean_engine.runner import CleanRun, run_from_stage0
-from src.core.clean_engine.stage0 import Stage0, classify, coefficients, f_and_a
+from src.core.excel_parity.runner import ExcelRun, run_from_stage0
+from src.core.excel_parity.stage0 import Stage0, classify, coefficients, f_and_a
 
 
 def stage0_from_input(inp: AlgorithmInput) -> Stage0:
@@ -52,15 +52,15 @@ def stage0_from_input(inp: AlgorithmInput) -> Stage0:
     )
 
 
-class CleanEngineAlgorithm:
-    """Адаптер :class:`~src.core.algorithm.MineralAlgorithm` → clean_engine.
+class ExcelParityAlgorithm:
+    """Адаптер :class:`~src.core.algorithm.MineralAlgorithm` → excel_parity.
 
     Используется Calculator'ом как полноценный алгоритм расчёта минерального
-    состава (replaceable для :class:`TheoryAlgorithm`).
+    состава (replaceable для :class:`GeologicalTheoryAlgorithm`).
     """
 
     def __init__(self) -> None:
-        self.last: CleanRun | None = None
+        self.last: ExcelRun | None = None
 
     def compute(self, inp: AlgorithmInput) -> AlgorithmOutput:
         run = run_from_stage0(stage0_from_input(inp))

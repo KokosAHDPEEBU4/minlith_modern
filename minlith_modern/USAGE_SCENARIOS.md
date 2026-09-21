@@ -250,7 +250,7 @@ class Calculator:
     def __init__(
         self,
         config: CalculationConfig | None = None,    # ВХОД: настройки
-        algorithm: MineralAlgorithm | None = None,   # ВХОД: алгоритм (stub/VBA)
+        algorithm: MineralAlgorithm | None = None,   # ВХОД: движок (excel_parity/geological_theory/python_rework)
     )
 
     def calculate_single(self, sample: Sample) -> CalculationResult
@@ -307,7 +307,7 @@ class Calculator:
   ├── 10. Расчёт минералов: algorithm.compute(inp)
   │     ВХОД: AlgorithmInput (18 ф.е. + коэф. + тип)
   │     ВЫХОД: AlgorithmOutput (18 минералов в ф.е.)
-  │     └── Currently: StubAlgorithm ( approximate )
+  │     └── Currently: GeologicalTheoryAlgorithm (по теории)
   │
   ├── 11. Конвертация ф.е. → м.д.%
   │     _to_weight_percent(minerals_fu) → minerals_wt

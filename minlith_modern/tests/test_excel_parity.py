@@ -1,4 +1,4 @@
-"""Тесты чистого движка clean_engine (Phase 3).
+"""Тесты чистого движка excel_parity (Phase 3).
 
 Сверяют явные float-вычисления движка с полным графом excel_port в режиме
 без округлений (rounding=False): имена переменных, финальную строку 287
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from src.core.clean_engine.runner import run_sample as clean_run
+from src.core.excel_parity.runner import run_sample as parity_run
 from src.core.excel_port.runner import load_structure, load_workbook
 from src.core.excel_port.runner import run_sample as excel_run
 from src.core.excel_port.vm import VbaVM
@@ -43,7 +43,7 @@ NAMES = ["BK-1", "T-O2",
 @pytest.mark.parametrize("name", NAMES)
 def test_names_match_excel(name, oxides):
     """Каждая именованная переменная движка == excel_port (rounding=False)."""
-    cr = clean_run(oxides[name])
+    cr = parity_run(oxides[name])
     er = excel_run(oxides[name], rounding=False)
     common = set(cr.names) & set(er) - SKIP
     assert common, "движок не имеет общих имён для сверки"
@@ -84,7 +84,7 @@ def excel_cells(ox, coords):
 
 @pytest.mark.parametrize("name", NAMES)
 def test_row287_matches_excel(name, oxides):
-    cr = clean_run(oxides[name])
+    cr = parity_run(oxides[name])
     ref = excel_cells(oxides[name], _COLS287)
     assert len(cr.out.row287) == 34
     for i, (a, b) in enumerate(zip(cr.out.row287, ref)):
@@ -93,7 +93,7 @@ def test_row287_matches_excel(name, oxides):
 
 @pytest.mark.parametrize("name", NAMES)
 def test_defect_matches_excel(name, oxides):
-    cr = clean_run(oxides[name])
+    cr = parity_run(oxides[name])
     ref = excel_cells(oxides[name], list(DEFECT_MAP))
     for cell, oxide in DEFECT_MAP.items():
         a = cr.out.defect[oxide]
@@ -104,13 +104,13 @@ def test_defect_matches_excel(name, oxides):
 @pytest.mark.parametrize("name", NAMES)
 def test_rock_type_classification(name, oxides):
     """Подтверждение: тип породы согласован с исполнением оригинала."""
-    cr = clean_run(oxides[name])
+    cr = parity_run(oxides[name])
     assert cr.st0.rock_type in (1, 2, 3, 4, 5)
 
 
 def test_default_oxides_merge():
     """Отсутствующие оксиды берутся из DEFAULT_OXIDES (принцип оригинала)."""
-    from src.core.clean_engine.stage0 import DEFAULT_OXIDES
-    cr = clean_run({"SiO2": 92.0})
+    from src.core.excel_parity.stage0 import DEFAULT_OXIDES
+    cr = parity_run({"SiO2": 92.0})
     assert cr.st0.fe["S"] > 0          # демо-сера из defaults
     assert cr.st0.s == DEFAULT_OXIDES["S"] * 10000.0 / 32.066

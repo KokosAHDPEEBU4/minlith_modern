@@ -9,7 +9,11 @@ import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import (
-    create_figure, COLORS, get_bg_color, get_fg_color, get_grid_color, get_accent,
+    COLORS,
+    get_accent,
+    get_bg_color,
+    get_fg_color,
+    get_grid_color,
 )
 
 OXIDES_TO_PLOT = [
@@ -58,7 +62,6 @@ class HarkerPlugin(ChartPlugin):
         axes = axes.flatten()
 
         sio2 = data.oxides.get("sio2", np.array([]))
-        labels = data.sample_names
 
         for i, (field, label) in enumerate(OXIDES_TO_PLOT):
             ax = axes[i]

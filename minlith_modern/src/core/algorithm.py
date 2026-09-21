@@ -98,7 +98,7 @@ class AlgorithmOutput:
     Ht: float = 0.0    # Hematite
     Prl: float = 0.0   # Pyrolusite
 
-    # Остаточные пулы оксидов (defect по теории). Заполняется TheoryAlgorithm.
+    # Остаточные пулы оксидов (defect по теории). Заполняется GeologicalTheoryAlgorithm.
     residuals: Optional[dict[str, float]] = None
 
 

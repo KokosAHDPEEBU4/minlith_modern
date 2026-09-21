@@ -1,4 +1,4 @@
-"""Tests for TheoryAlgorithm — движок строго по теории (файлы 00-07).
+"""Tests for GeologicalTheoryAlgorithm — движок строго по теории (файлы 00-07).
 
 Основано на разобранном числовом примере из файла 06 (состав T-O2):
 SiO2=52.5, Al2O3=23.41, Fe2O3=1.71, FeO=8.06, MgO=2.35, CaO=0.28,
@@ -10,11 +10,11 @@ from __future__ import annotations
 import pytest
 
 from src.core.calculator import Calculator
+from src.core.geological_theory import GeologicalTheoryAlgorithm
 from src.core.models import OxideComposition, Sample
 from src.core.stage1 import stage1
 from src.core.stage2 import classify_rock_type, k_or_for_type, stage2
 from src.core.stage3 import stage3
-from src.core.theory_algorithm import TheoryAlgorithm
 
 
 def _t_o2_sample() -> Sample:
@@ -137,15 +137,15 @@ class TestStage3:
         assert minerals["rt"] == pytest.approx(3.0)
 
 
-class TestTheoryAlgorithm:
+class TestGeologicalTheoryAlgorithm:
     def test_returns_algorithm_output(self):
-        calc = Calculator(algorithm=TheoryAlgorithm())
+        calc = Calculator(algorithm=GeologicalTheoryAlgorithm())
         result = calc.calculate_single(_t_o2_sample())
         assert result.minerals_weight is not None
 
     def test_worked_example_06_balance(self):
         """Пример из файла 06: баланс сходится, кварц/FeO/MgO не отрицательны."""
-        calc = Calculator(algorithm=TheoryAlgorithm())
+        calc = Calculator(algorithm=GeologicalTheoryAlgorithm())
         result = calc.calculate_single(_t_o2_sample())
 
         # Кварц не отрицательный
@@ -157,13 +157,13 @@ class TestTheoryAlgorithm:
 
     def test_quartz_dominant_rock(self):
         """Чистый кварц → почти весь состав в кварце."""
-        calc = Calculator(algorithm=TheoryAlgorithm())
+        calc = Calculator(algorithm=GeologicalTheoryAlgorithm())
         s = Sample(name="quartz", composition=OxideComposition(sio2=100.0))
         r = calc.calculate_single(s)
         assert r.minerals_weight.q > 90.0
 
     def test_albite_dominant(self):
-        calc = Calculator(algorithm=TheoryAlgorithm())
+        calc = Calculator(algorithm=GeologicalTheoryAlgorithm())
         s = Sample(name="albite", composition=OxideComposition(
             sio2=68.7, al2o3=19.5, na2o=11.8))
         r = calc.calculate_single(s)
@@ -171,13 +171,13 @@ class TestTheoryAlgorithm:
 
     def test_illite_kaolinite_balance(self):
         """T-O2: после полевых шпатов K уходит в иллит, Al — в каолинит."""
-        calc = Calculator(algorithm=TheoryAlgorithm())
+        calc = Calculator(algorithm=GeologicalTheoryAlgorithm())
         result = calc.calculate_single(_t_o2_sample())
         assert result.minerals_weight.ill > 0
         assert result.minerals_weight.kn > 0
 
     def test_sum_normalized(self):
-        calc = Calculator(algorithm=TheoryAlgorithm())
+        calc = Calculator(algorithm=GeologicalTheoryAlgorithm())
         result = calc.calculate_single(_t_o2_sample())
         total = sum(v for k, v in result.minerals_weight.__dict__.items()
                     if not k.startswith("_"))
