@@ -459,10 +459,11 @@ def main_cli() -> int:
                         help="Таймаут расчёта на образец (сек)")
     parser.add_argument(
         "--engine", "-e",
-        choices=["excel_parity", "geological_theory", "python_rework"],
+        choices=["excel_parity", "excel_exact", "geological_theory", "python_rework"],
         default="excel_parity",
-        help="Движок расчёта: excel_parity (как в Excel, по умолчанию), "
-             "geological_theory (по геологической теории) или "
+        help="Движок расчёта: excel_parity (как в Excel с корректными "
+             "округлениями, по умолчанию), excel_exact (полная 1:1 копия Excel "
+             "с ROUND), geological_theory (по геологической теории) или "
              "python_rework (Python-переработка)")
     parser.add_argument("--config", type=str, default=None,
                         help="Путь к файлу конфигурации JSON")

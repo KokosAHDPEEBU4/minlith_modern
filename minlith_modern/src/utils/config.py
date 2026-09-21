@@ -23,7 +23,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "include_parameters": True,
     "timeout_seconds": 120,
     "batch_size": "auto",  # "auto" | 1..8
-    "calculation_engine": "excel_parity",  # "excel_parity" | "geological_theory" | "python_rework"
+    # "excel_parity" | "excel_exact" | "geological_theory" | "python_rework"
+    "calculation_engine": "excel_parity",
     "chart.zoom_step": 1.2,  # шаг зума диаграмм, диапазон (1.0, 5.0]
     "theme": "dark",
     "chart_theme": "dark",  # "dark" | "light" — background for charts

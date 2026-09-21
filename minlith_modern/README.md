@@ -115,7 +115,7 @@ python calibrate.py --input MINLITH1.xlsx --output calibration_config.json --max
 | `--template`, `-t` | Шаблон отчёта (brief, standard, full, core, geochemical) |
 | `--dpi N` | Разрешение диаграммы |
 | `--interactive` | Экспорт в интерактивный HTML (Plotly) |
-| `--engine`, `-e` | Движок расчёта: `excel_parity` (как в Excel, по умолчанию), `geological_theory` (по геологической теории), `python_rework` (Python-переработка) |
+| `--engine`, `-e` | Движок расчёта: `excel_parity` (как в Excel с корректными округлениями, по умолчанию), `excel_exact` (полная 1:1 копия Excel с ROUND), `geological_theory` (по геологической теории), `python_rework` (Python-переработка) |
 
 ### Python API
 
@@ -137,15 +137,20 @@ print(result.defect)             # oxide residuals
 print(result.anomalies)          # list[AnomalyHypothesis]
 
 # Движок расчёта:
-#   excel_parity      — «как в Excel»: полный паритет с Excel-версией (без округлений)
+#   excel_parity      — «как в Excel» с корректными округлениями: тот же алгоритм
+#                       в float64 без пошаговых ROUND (по умолчанию)
+#   excel_exact       — полная 1:1 копия Excel: формулы + VBA + пошаговые ROUND,
+#                       включая накопление ошибки округления книги MINLITH
 #   geological_theory — «самостоятельная попытка»: расчёт по геологической теории
 #   python_rework     — «переработанный под Python»: пользовательская реализация
 #                       (пока не подключена)
 calc_excel = Calculator(config=CalculationConfig(calculation_engine="excel_parity"))
+calc_exact = Calculator(config=CalculationConfig(calculation_engine="excel_exact"))
 ```
 
 > В GUI движок выбирается на странице «Настройки» → «Движок расчёта», а также на
-> тулбаре «Движки расчёта» («Как в Excel» / «Геол. теория» / «Python-переработка»).
+> тулбаре «Движки расчёта» («Excel (корректные округл.)» / «Excel 1:1 (ROUND)» /
+> «Геол. теория» / «Python-переработка»).
 
 ## Сборка
 
@@ -158,7 +163,7 @@ pyinstaller minlith.spec
 ## Тесты
 
 ```bash
-# Все тесты (293)
+# Все тесты (1192 passed, 5 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -178,7 +183,8 @@ minlith_modern/
 ├── src/
 │   ├── core/           # Расчётный движок
 │   │   ├── calculator.py       # Оркестратор
-│   │   ├── excel_parity/       # Движок «как в Excel» (полный паритет, без ROUND)
+│   │   ├── excel_parity/       # Движок «как в Excel» (корректные округления, без ROUND)
+│   │   ├── excel_exact/        # Движок «Excel 1:1» (адаптер к excel_port, с ROUND)
 │   │   ├── excel_port/         # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
 │   │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
 │   │   ├── algorithm.py        # Протокол алгоритма
@@ -201,7 +207,7 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 293 тестов
+├── tests/              # 1192 теста (5 skipped)
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша

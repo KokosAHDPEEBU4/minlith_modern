@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Отдельный движок `excel_exact` — полная 1:1 копия Excel:** `ExcelExactAlgorithm` (`src/core/excel_exact/algorithm.py`) исполняет формулы+VBA через `excel_port.run_sample(rounding=True)`, воспроизводя пошаговые `ROUND` и накопление ошибки округления книги MINLITH. В отличие от `excel_parity`, который считает те же формулы в float64 без пошаговых округлений. Движку передаются исходные вес.% оксидов (`AlgorithmInput.oxide_wt`), т.к. книга сама пересчитывает вес.% → ф.е. с `ROUND`.
+- GUI: в тулбаре «Движки расчёта» и в списках движков (Настройки, диалог расчёта) теперь два «экселевских» варианта — «Excel (корректные округл.)» (`excel_parity`, по умолчанию) и «Excel 1:1 (ROUND)» (`excel_exact`); CLI `--engine` принимает `excel_exact`.
+- Тесты: `tests/test_excel_exact_adapter.py` (14 шт.) — протокол, разрешение движка Calculator'ом, совпадение ф.е. с `excel_port(rounding=True)` на 7 образцах, end-to-end через Calculator, проброс `oxide_wt`, ошибка без вес.%.
+
+### Changed
+- `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`.
+
 ## [0.7.0] — 2026-09-21
 
 ### Changed

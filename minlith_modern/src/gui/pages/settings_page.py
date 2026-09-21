@@ -347,19 +347,25 @@ class SettingsPage(QWidget):
     def _build_calculation_section(self) -> QScrollArea:
         def _build_params(lay: QVBoxLayout, card: QFrame) -> None:
             engine = QComboBox()
-            engine.addItems(["excel_parity", "geological_theory", "python_rework"])
+            engine.addItems([
+                "excel_parity", "excel_exact",
+                "geological_theory", "python_rework",
+            ])
             engine.setCurrentText(
                 self._config.get("calculation_engine", "excel_parity"))
             engine.setToolTip(
-                "excel_parity — «как в Excel»: точный паритет с Excel-версией "
-                "(без округлений)\n"
+                "excel_parity — «как в Excel»: алгоритм Excel с корректными "
+                "округлениями (без накопления ROUND)\n"
+                "excel_exact — «Excel 1:1»: полная копия книги MINLITH с "
+                "пошаговыми ROUND (с накоплением ошибки округления)\n"
                 "geological_theory — «самостоятельная попытка»: расчёт по "
                 "геологической теории\n"
                 "python_rework — «переработанный под Python»: пользовательская "
                 "реализация алгоритма")
             self._calculation_engine = engine
             self._add_row(card, lay, "Движок расчёта", engine,
-                          subtitle="excel_parity — паритет с Excel (без округлений)",
+                          subtitle="excel_parity / excel_exact — как в Excel; "
+                                   "или самостоятельные движки",
                           tooltip="Какой движок участвует в расчётах")
 
             self._molar_mass = QComboBox()

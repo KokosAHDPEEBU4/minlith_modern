@@ -59,6 +59,11 @@ class AlgorithmInput:
     # Rock type (1-5)
     rock_type: int
 
+    # Исходные весовые проценты оксидов (ключи как в Excel: "SiO2", "TiO2"…).
+    # Нужны движку excel_exact, который, как и книга MINLITH, сам пересчитывает
+    # вес.% -> ф.е. с пошаговым ROUND. Для остальных движков необязательно.
+    oxide_wt: dict[str, float] | None = None
+
 
 @dataclass
 class AlgorithmOutput:

@@ -32,6 +32,14 @@ from src.core.validation import validate_sample
 
 logger = logging.getLogger(__name__)
 
+# Поля OxideComposition -> имена оксидов в Excel-книге (колонка B листа).
+_OXIDE_EXCEL_KEYS = {
+    "sio2": "SiO2", "tio2": "TiO2", "al2o3": "Al2O3", "fe2o3": "Fe2O3",
+    "feo": "FeO", "mgo": "MgO", "cao": "CaO", "na2o": "Na2O", "k2o": "K2O",
+    "p2o5": "P2O5", "mno": "MnO", "c": "C", "so3": "SO3", "f": "F",
+    "cl": "Cl", "s": "S", "co2": "CO2", "so": "SO",
+}
+
 
 class CalculationTimeoutError(Exception):
     """Raised when a calculation exceeds the time limit."""
@@ -82,8 +90,10 @@ class Calculator:
     def _algorithm_for_engine(engine: str) -> MineralAlgorithm:
         """Выбрать алгоритм по ``calculation_engine`` из конфигурации.
 
-        - ``excel_parity`` — «как в Excel»: точный паритет с Excel-версией
-          (без пошаговых округлений ROUND);
+        - ``excel_parity`` — «как в Excel» с корректными округлениями:
+          тот же алгоритм, но в float64 без пошаговых ROUND;
+        - ``excel_exact`` — полная 1:1 копия Excel (пошаговые ROUND,
+          включая накопление ошибки округления книги MINLITH);
         - ``geological_theory`` — «самостоятельная попытка»: расчёт по
           геологической теории MINLITH (файлы 00-07);
         - ``python_rework`` — «переработанный под Python»: пользовательская
@@ -94,6 +104,10 @@ class Calculator:
             from src.core.excel_parity.algorithm import ExcelParityAlgorithm
             logger.info("Calculation engine: excel_parity")
             return ExcelParityAlgorithm()
+        if engine == "excel_exact":
+            from src.core.excel_exact.algorithm import ExcelExactAlgorithm
+            logger.info("Calculation engine: excel_exact (1:1 Excel, с ROUND)")
+            return ExcelExactAlgorithm()
         if engine == "python_rework":
             logger.info(
                 "Calculation engine: python_rework "
@@ -219,9 +233,19 @@ class Calculator:
         return RockType.TYPE_5
 
     def _build_algorithm_input(
-        self, fe: np.ndarray, coeff: AdaptiveCoefficients, rock_type: RockType
+        self,
+        fe: np.ndarray,
+        coeff: AdaptiveCoefficients,
+        rock_type: RockType,
+        composition: OxideComposition | None = None,
     ) -> AlgorithmInput:
         """Build AlgorithmInput from prepared formula unit array."""
+        oxide_wt = None
+        if composition is not None:
+            oxide_wt = {
+                excel_name: float(getattr(composition, attr))
+                for attr, excel_name in _OXIDE_EXCEL_KEYS.items()
+            }
         return AlgorithmInput(
             sio2=float(fe[OXIDE_ORDER.index("sio2")]),
             tio2=float(fe[OXIDE_ORDER.index("tio2")]),
@@ -247,6 +271,7 @@ class Calculator:
             F=coeff.F,
             A=coeff.A,
             rock_type=int(rock_type),
+            oxide_wt=oxide_wt,
         )
 
     @staticmethod
@@ -302,7 +327,9 @@ class Calculator:
             tracer.record("Тип породы", "rock_type", rock_type.name)
 
         # Build AlgorithmInput
-        alg_input = self._build_algorithm_input(fe, coeff, rock_type)
+        alg_input = self._build_algorithm_input(
+            fe, coeff, rock_type, sample.composition
+        )
 
         # Run algorithm with timeout
         wrapper = _TimeoutWrapper(self.config.timeout_seconds)

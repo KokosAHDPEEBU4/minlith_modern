@@ -21,7 +21,8 @@ from src.core.models import LEGACY_ENGINE_ALIASES, Sample
 from src.workers.calculation_worker import CalculationWorker
 
 ENGINE_DESCRIPTIONS = {
-    "excel_parity": "Как в Excel — точный паритет с Excel-версией (без округлений)",
+    "excel_parity": "Excel (корректные округления) — алгоритм Excel без накопления ROUND",
+    "excel_exact": "Excel 1:1 — полная копия книги MINLITH с пошаговыми ROUND",
     "geological_theory": "Геологическая теория — самостоятельный подбор по теории",
     "python_rework": "Python-переработка — пользовательская реализация на Python",
 }

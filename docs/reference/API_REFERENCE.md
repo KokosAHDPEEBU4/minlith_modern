@@ -318,7 +318,28 @@ class CalculationConfig:
     include_parameters: bool = True
     timeout_seconds: int = 120
     batch_size: int | str = "auto"
+    calculation_engine: str = "geological_theory"  # см. движки ниже
 ```
+
+**Движки расчёта (`calculation_engine`):**
+
+| Значение | Класс | Как считает |
+| --- | --- | --- |
+| `excel_parity` | `ExcelParityAlgorithm` | «как в Excel» с корректными округлениями: те же формулы в float64 без пошаговых `ROUND` (дефолт приложения) |
+| `excel_exact` | `ExcelExactAlgorithm` | «Excel 1:1»: формулы + VBA + пошаговые `ROUND`, включая накопление ошибки округления книги MINLITH |
+| `geological_theory` | `GeologicalTheoryAlgorithm` | самостоятельный расчёт по геологической теории (файлы 00-07) |
+| `python_rework` | — (плейсхолдер) | пользовательская переработка; пока fallback на теорию |
+
+```python
+from src.core.models import CalculationConfig
+from src.core.calculator import Calculator
+
+calc = Calculator(config=CalculationConfig(calculation_engine="excel_exact"))
+```
+
+> `AlgorithmInput` для `excel_exact` дополнительно несёт `oxide_wt: dict[str, float] | None` —
+> исходные вес.% оксидов (ключи Excel: `"SiO2"`, `"TiO2"`, …), т.к. книга сама пересчитывает
+> вес.% → ф.е. с `ROUND`. Без `oxide_wt` движок поднимает `ValueError`.
 
 ---
 

@@ -173,7 +173,9 @@ class Sample:
 
 
 # Допустимые значения ``calculation_engine`` (как считает модель).
-CALCULATION_ENGINES = ("excel_parity", "geological_theory", "python_rework")
+CALCULATION_ENGINES = (
+    "excel_parity", "excel_exact", "geological_theory", "python_rework",
+)
 
 # Старые имена движков → новые (обратная совместимость конфигов/кода).
 LEGACY_ENGINE_ALIASES = {
@@ -198,7 +200,7 @@ class CalculationConfig:
     include_parameters: bool = True
     timeout_seconds: int = 120
     batch_size: int | str = "auto"
-    # "excel_parity" | "geological_theory" | "python_rework"
+    # "excel_parity" | "excel_exact" | "geological_theory" | "python_rework"
     # (безопасный дефолт; приложение явно ставит "excel_parity")
     calculation_engine: str = "geological_theory"
 

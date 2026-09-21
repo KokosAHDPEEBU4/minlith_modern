@@ -16,7 +16,9 @@ from src.utils.config import ConfigManager
 
 
 def test_engine_names_and_aliases() -> None:
-    assert CALCULATION_ENGINES == ("excel_parity", "geological_theory", "python_rework")
+    assert CALCULATION_ENGINES == (
+        "excel_parity", "excel_exact", "geological_theory", "python_rework",
+    )
     assert LEGACY_ENGINE_ALIASES == {
         "clean": "excel_parity",
         "stub": "geological_theory",
@@ -25,11 +27,19 @@ def test_engine_names_and_aliases() -> None:
 
 
 def test_calculator_resolves_new_engine_names() -> None:
+    from src.core.excel_exact.algorithm import ExcelExactAlgorithm
+
     assert isinstance(
         Calculator(
             config=CalculationConfig(calculation_engine="excel_parity")
         ).algorithm,
         ExcelParityAlgorithm,
+    )
+    assert isinstance(
+        Calculator(
+            config=CalculationConfig(calculation_engine="excel_exact")
+        ).algorithm,
+        ExcelExactAlgorithm,
     )
     assert isinstance(
         Calculator(

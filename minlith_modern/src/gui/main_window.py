@@ -63,13 +63,24 @@ class MainWindow(QMainWindow):
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._engine_bar)
 
         self._btn_excel_parity = QToolButton()
-        self._btn_excel_parity.setText("Как в Excel")
+        self._btn_excel_parity.setText("Excel (корректные округл.)")
         self._btn_excel_parity.setCheckable(True)
         self._btn_excel_parity.setToolTip(
-            "excel_parity — точный паритет с Excel-версией (без округлений)")
+            "excel_parity — алгоритм Excel с корректными округлениями "
+            "(float64, без накопления ошибки ROUND)")
         self._btn_excel_parity.clicked.connect(
             lambda: self._set_engine("excel_parity"))
         self._engine_bar.addWidget(self._btn_excel_parity)
+
+        self._btn_excel_exact = QToolButton()
+        self._btn_excel_exact.setText("Excel 1:1 (ROUND)")
+        self._btn_excel_exact.setCheckable(True)
+        self._btn_excel_exact.setToolTip(
+            "excel_exact — полная 1:1 копия Excel: пошаговые ROUND как в книге "
+            "(с накоплением ошибки округления)")
+        self._btn_excel_exact.clicked.connect(
+            lambda: self._set_engine("excel_exact"))
+        self._engine_bar.addWidget(self._btn_excel_exact)
 
         self._btn_geological_theory = QToolButton()
         self._btn_geological_theory.setText("Геол. теория")
@@ -392,5 +403,6 @@ class MainWindow(QMainWindow):
         engine = self._config.get("calculation_engine", "excel_parity")
         engine = LEGACY_ENGINE_ALIASES.get(engine, engine)
         self._btn_excel_parity.setChecked(engine == "excel_parity")
+        self._btn_excel_exact.setChecked(engine == "excel_exact")
         self._btn_geological_theory.setChecked(engine == "geological_theory")
         self._btn_python_rework.setChecked(engine == "python_rework")

@@ -16,7 +16,7 @@ python -m src.cli calculate input.xlsx -o results.xlsx
 ### 2. Тестирование
 
 ```bash
-# Все тесты (1174)
+# Все тесты (1192)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -42,7 +42,8 @@ python -m mypy src/ --ignore-missing-imports
 src/
 ├── core/                  # Расчётный движок
 │   ├── algorithm.py       # Protocol + AlgorithmInput
-│   ├── excel_parity/      # Движок «как в Excel» (паритет, без ROUND)
+│   ├── excel_parity/      # Движок «как в Excel» (корректные округления, без ROUND)
+│   ├── excel_exact/       # Движок «Excel 1:1» (адаптер к excel_port, с ROUND)
 │   ├── excel_port/        # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
 │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
 │   ├── calculator.py      # Оркестратор + calculate_batch()
@@ -92,16 +93,18 @@ src/
 ## Ключевые паттерны
 
 ### Движки расчёта (`calculation_engine`)
-Три значения в конфиге (`algorithm_mode` → `calculation_engine`):
+Четыре значения в конфиге (`algorithm_mode` → `calculation_engine`):
 
 | Значение | Класс | Как считает |
 | --- | --- | --- |
-| `excel_parity` | `ExcelParityAlgorithm` | «как в Excel»: точный паритет с Excel-версией (без ROUND) |
+| `excel_parity` | `ExcelParityAlgorithm` | «как в Excel» с корректными округлениями: те же формулы в float64 без пошаговых ROUND |
+| `excel_exact` | `ExcelExactAlgorithm` | «Excel 1:1»: формулы + VBA + пошаговые ROUND, включая накопление ошибки округления книги |
 | `geological_theory` | `GeologicalTheoryAlgorithm` | «самостоятельная попытка»: по геологической теории (файлы 00-07) |
 | `python_rework` | — (плейсхолдер) | «переработанный под Python»: пользовательская реализация, пока fallback на теорию |
 
-- Вход: `AlgorithmInput` (composition, co2, so, f_total, cl, s)
+- Вход: `AlgorithmInput` (composition, co2, so, f_total, cl, s + `oxide_wt` — исходные вес.% для `excel_exact`)
 - Выход: `AlgorithmOutput` (FormulaUnits, MineralComposition, defects)
+- `excel_exact` принимает исходные вес.% (`AlgorithmInput.oxide_wt`, кладёт `Calculator._build_algorithm_input`), т.к. книга сама пересчитывает вес.% → ф.е. с ROUND; при отсутствии `oxide_wt` движок поднимает `ValueError`.
 - Старые значения `clean`/`stub`/`custom` автоматически мигрируют на новые.
 
 ### Coefficients
