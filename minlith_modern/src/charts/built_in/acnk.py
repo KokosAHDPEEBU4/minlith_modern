@@ -7,7 +7,13 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_triangle, get_bg_color, get_fg_color
+from src.charts.engines.matplotlib_engine import (
+    ACCENT,
+    COLORS,
+    create_triangle,
+    get_bg_color,
+    get_fg_color,
+)
 
 
 def _to_cartesian(a: float, cn: float, k: float) -> tuple[float, float]:
@@ -87,9 +93,12 @@ class ACNKChart(ChartPlugin):
                             xytext=(5, 5), fontsize=8, color=fg, alpha=0.8)
 
         # Vertex labels
-        ax.text(0.5, 1.05, "A (Al₂O₃)", ha="center", va="bottom", fontsize=11, color=fg, fontweight="bold")
-        ax.text(-0.05, -0.05, "CN (CaO+Na₂O)", ha="center", va="top", fontsize=11, color=fg, fontweight="bold")
-        ax.text(1.05, -0.05, "K (K₂O)", ha="center", va="top", fontsize=11, color=fg, fontweight="bold")
+        ax.text(0.5, 1.05, "A (Al₂O₃)", ha="center", va="bottom",
+                fontsize=11, color=fg, fontweight="bold")
+        ax.text(-0.05, -0.05, "CN (CaO+Na₂O)", ha="center", va="top",
+                fontsize=11, color=fg, fontweight="bold")
+        ax.text(1.05, -0.05, "K (K₂O)", ha="center", va="top",
+                fontsize=11, color=fg, fontweight="bold")
 
         ax.set_xlim(-0.1, 1.1)
         ax.set_ylim(-0.1, 1.1)

@@ -65,7 +65,8 @@ class CoefficientHeatmap(ChartPlugin):
         cbar.ax.tick_params(colors=fg)
         cbar.set_label("Value", color=fg)
 
-        ax.set_title("Adaptive Coefficients (k1-k4)", fontsize=12, fontweight="bold", color=fg, pad=12)
+        ax.set_title("Adaptive Coefficients (k1-k4)", fontsize=12,
+                     fontweight="bold", color=fg, pad=12)
         fig.tight_layout()
         return fig
 

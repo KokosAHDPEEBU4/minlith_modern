@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Optional
 
 import numpy as np
 
@@ -217,6 +216,6 @@ class CalculationResult:
     minerals_weight: MineralComposition     # in weight %
     defect: dict[str, float]               # oxide residuals
     warnings: list[str]
-    debug_trace: Optional[object] = None
-    geo_params: Optional[object] = None    # GeoParameters (CIA, ICV, PIA, ASI, AI)
-    anomalies: Optional[list] = None       # list[AnomalyHypothesis]
+    debug_trace: object | None = None
+    geo_params: object | None = None    # GeoParameters (CIA, ICV, PIA, ASI, AI)
+    anomalies: list | None = None       # list[AnomalyHypothesis]

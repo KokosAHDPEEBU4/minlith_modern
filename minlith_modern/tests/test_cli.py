@@ -5,8 +5,6 @@ from __future__ import annotations
 import subprocess
 import sys
 
-import pytest
-
 
 class TestCli:
     def test_version(self):
@@ -15,7 +13,7 @@ class TestCli:
             capture_output=True, text=True, timeout=10, encoding="utf-8",
         )
         assert result.returncode == 0
-        assert "0.6.8" in result.stdout
+        assert "0.7.0" in result.stdout
 
     def test_help(self):
         result = subprocess.run(

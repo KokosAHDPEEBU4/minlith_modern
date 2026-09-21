@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 import openpyxl
 
@@ -242,7 +241,6 @@ def save_results(
       - "Defect": oxide residuals (optional)
       - "GeoParams": геохимические параметры (optional)
     """
-    from src.core.models import CalculationResult
     from src.core.constants import MINERAL_CODES
 
     path = Path(path)
@@ -360,7 +358,7 @@ def save_results(
 def save_results_json(path: str | Path, results: list) -> None:
     """Save calculation results to JSON file."""
     import json
-    from src.core.models import CalculationResult
+
 
     path = Path(path)
     data = []
@@ -391,6 +389,7 @@ def save_results_json(path: str | Path, results: list) -> None:
 def save_results_csv(path: str | Path, results: list, delimiter: str = ";") -> None:
     """Save calculation results to CSV (semicolon-separated by default)."""
     import csv
+
     from src.core.constants import MINERAL_CODES
 
     path = Path(path)
@@ -410,8 +409,10 @@ def save_results_csv(path: str | Path, results: list, delimiter: str = ";") -> N
         for r in results:
             row = [r.sample_name, r.rock_type.name, r.coefficients.F, r.coefficients.A]
             row += [round(getattr(r.input_composition, field, 0.0), 4) for _, field in oxide_fields]
-            row += [round(getattr(r.minerals_weight, MINERAL_FIELD_MAP.get(code, code.lower()), 0.0), 2)
-                    for code in MINERAL_CODES]
+            row += [
+                round(getattr(r.minerals_weight, MINERAL_FIELD_MAP.get(code, code.lower()), 0.0), 2)
+                for code in MINERAL_CODES
+            ]
             writer.writerow(row)
 
     logger.info("Saved results to CSV: %s", path)

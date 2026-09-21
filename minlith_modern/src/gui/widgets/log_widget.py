@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QTextCursor
+from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -15,14 +13,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-_LEVEL_COLORS = {
-    logging.DEBUG: QColor(150, 150, 150),
-    logging.INFO: QColor(200, 200, 200),
-    logging.WARNING: QColor(255, 200, 50),
-    logging.ERROR: QColor(255, 100, 100),
-    logging.CRITICAL: QColor(255, 50, 50),
-}
 
 
 class LogWidget(QWidget):
@@ -56,7 +46,6 @@ class LogWidget(QWidget):
     def append(self, record: logging.LogRecord) -> None:
         if record.levelno < self._filter_level:
             return
-        color = _LEVEL_COLORS.get(record.levelno, QColor(200, 200, 200))
         msg = record.getMessage()
         level_name = logging.getLevelName(record.levelno)
         line = f"[{record.asctime}] [{level_name}] {record.name}: {msg}\n"

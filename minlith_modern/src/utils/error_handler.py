@@ -5,7 +5,8 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,9 @@ def retry(max_attempts: int = 3, delay: float = 1.0, exceptions: tuple = (Except
     return decorator
 
 
-def safe_execute(func: F, *args, default=None, log_error: bool = True, **kwargs) -> Any:
+def safe_execute(
+    func: Callable[..., Any], *args, default=None, log_error: bool = True, **kwargs
+) -> Any:
     """Безопасное выполнение функции, возвращает default при ошибке."""
     try:
         return func(*args, **kwargs)

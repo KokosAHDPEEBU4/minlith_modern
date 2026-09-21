@@ -10,23 +10,21 @@ Properties verified:
 
 import math
 
-import hypothesis
 import numpy as np
 import pytest
-from hypothesis import given, settings, assume, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from src.core.models import (
-    OxideComposition,
-    MineralComposition,
-    Sample,
-    CalculationConfig,
-    RockType,
-)
-from src.core.calculator import Calculator, CalculationTimeoutError
+from src.core.calculator import CalculationTimeoutError, Calculator
 from src.core.coefficients import calculate_coefficients
+from src.core.models import (
+    CalculationConfig,
+    MineralComposition,
+    OxideComposition,
+    RockType,
+    Sample,
+)
 from src.core.validation import validate_sample
-
 
 # ---------------------------------------------------------------------------
 # Strategies
@@ -302,7 +300,10 @@ class TestValidationProperties:
         field_name=st.sampled_from([
             "sio2", "al2o3", "feo", "mgo", "cao", "na2o", "k2o"
         ]),
-        neg_value=st.floats(min_value=-100.0, max_value=-0.01, allow_nan=False, allow_infinity=False),
+        neg_value=st.floats(
+            min_value=-100.0, max_value=-0.01,
+            allow_nan=False, allow_infinity=False,
+        ),
     )
     @settings(suppress_health_check=[HealthCheck.too_slow], max_examples=50)
     def test_negative_value_detected(self, field_name, neg_value):

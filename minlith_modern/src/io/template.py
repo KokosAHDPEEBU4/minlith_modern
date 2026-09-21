@@ -9,7 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from src.core.constants import OXIDE_ORDER
-from src.core.models import OxideComposition, Sample
+from src.core.models import Sample
 
 logger = logging.getLogger(__name__)
 

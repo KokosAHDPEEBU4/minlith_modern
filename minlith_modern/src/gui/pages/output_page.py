@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
@@ -18,7 +17,7 @@ class OutputPage(QWidget):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self._data: Optional[ChartData] = None
+        self._data: ChartData | None = None
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -30,6 +29,6 @@ class OutputPage(QWidget):
         self._view = MultiChartView()
         layout.addWidget(self._view, stretch=1)
 
-    def set_data(self, data: Optional[ChartData]) -> None:
+    def set_data(self, data: ChartData | None) -> None:
         self._data = data
         self._view.set_data(data)

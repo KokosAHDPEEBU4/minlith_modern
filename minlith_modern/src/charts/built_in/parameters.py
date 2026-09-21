@@ -8,8 +8,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import numpy as np
-
 from src.core.models import OxideComposition
 
 
@@ -91,7 +89,8 @@ def compute_parameters(comp: OxideComposition) -> GeoParameters:
 PARAMETER_INFO = {
     "CIA": ("CIA", "Chemical Index of Alteration", "100×Al₂O₃/(Al₂O₃+CaO*+Na₂O+K₂O)", "50-100"),
     "ICV": ("ICV", "Index of Compositional Variability", "Σ(mafic)/Al₂O₃ (mol)", "<1 = mature"),
-    "PIA": ("PIA", "Plagioclase Index of Alteration", "100×(Al₂O₃-K₂O)/(Al₂O₃+CaO*+Na₂O-K₂O)", "50-100"),
+    "PIA": ("PIA", "Plagioclase Index of Alteration",
+            "100×(Al₂O₃-K₂O)/(Al₂O₃+CaO*+Na₂O-K₂O)", "50-100"),
     "ASI": ("ASI", "Aluminum Saturation Index", "Al₂O₃/(CaO+Na₂O+K₂O) (mol)", ">1 = peraluminous"),
     "AI":  ("AI",  "Aluminum Index", "Al₂O₃-(K₂O+Na₂O+CaO) (mol)", ">0 = peraluminous"),
 }

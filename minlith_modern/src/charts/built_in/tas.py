@@ -7,8 +7,13 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_figure, get_fg_color, get_grid_color
-
+from src.charts.engines.matplotlib_engine import (
+    ACCENT,
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
+)
 
 # Simplified TAS field boundaries (SiO2 vs Na2O+K2O)
 # Each field: (name, [(si_min, alk_max), ...])
@@ -62,7 +67,8 @@ class TASChart(ChartPlugin):
             ax.plot(xs, ys, color=fg, linewidth=0.3, alpha=0.25)
 
         # Alkali-subalkali line
-        ax.plot(_ALKALI_LINE_X, _ALKALI_LINE_Y, "--", color="#f38ba8", linewidth=1.0, alpha=0.6, label="Alkali / Subalkali")
+        ax.plot(_ALKALI_LINE_X, _ALKALI_LINE_Y, "--", color="#f38ba8",
+                linewidth=1.0, alpha=0.6, label="Alkali / Subalkali")
 
         # Plot samples
         sio2 = data.oxides.get("sio2", np.array([]))

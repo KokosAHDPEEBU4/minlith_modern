@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
+from src.charts.engines.matplotlib_engine import create_figure, get_fg_color, get_grid_color
 
 
 class DendrogramChart(ChartPlugin):
@@ -26,7 +26,7 @@ class DendrogramChart(ChartPlugin):
         return False
 
     def render(self, data: ChartData, **kwargs) -> Any:
-        from scipy.cluster.hierarchy import linkage, dendrogram
+        from scipy.cluster.hierarchy import dendrogram, linkage
 
         fg = get_fg_color()
         grid = get_grid_color()
@@ -47,7 +47,7 @@ class DendrogramChart(ChartPlugin):
             for i in range(n_samples):
                 matrix[i, j] = minerals[m][i] if i < len(minerals[m]) else 0.0
 
-        Z = linkage(matrix, method="ward")
+        z = linkage(matrix, method="ward")
 
         fig = create_figure(
             figsize=(max(8, n_samples * 0.8), 6),
@@ -55,7 +55,7 @@ class DendrogramChart(ChartPlugin):
         )
         ax = fig.axes[0]
 
-        dendrogram(Z, labels=data.sample_names, ax=ax,
+        dendrogram(z, labels=data.sample_names, ax=ax,
                    leaf_rotation=45, leaf_font_size=9,
                    color_threshold=0, above_threshold_color=fg)
 

@@ -14,7 +14,6 @@ import csv
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from src.core.excel_port.runner import run_sample
 
@@ -59,7 +58,7 @@ def write_csv(results: list[SampleResult], out: Path) -> None:
                 w.writerow([r.name, v, f"{d:.6g}", f"{av:.12g}", f"{bv:.12g}"])
 
 
-def plot_growth(results: list[SampleResult], out: Optional[Path] = None) -> None:
+def plot_growth(results: list[SampleResult], out: Path | None = None) -> None:
     """График накопления ошибки по порядку присваивания переменных."""
     import matplotlib
     matplotlib.use("Agg")
@@ -105,7 +104,8 @@ def main() -> None:
     write_csv(results, out)
     print(f"CSV -> {out}")
     for r in results:
-        print(f"{r.name:14s} отличий={len(r.errors):3d}  max=|d|={r.errors[0][0]:.4g} ({r.errors[0][1]})")
+        print(f"{r.name:14s} отличий={len(r.errors):3d}  "
+              f"max=|d|={r.errors[0][0]:.4g} ({r.errors[0][1]})")
     plot_growth(results, out.with_suffix(".png"))
 
 

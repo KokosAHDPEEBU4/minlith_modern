@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -70,8 +69,8 @@ class Calculator:
 
     def __init__(
         self,
-        config: Optional[CalculationConfig] = None,
-        algorithm: Optional[MineralAlgorithm] = None,
+        config: CalculationConfig | None = None,
+        algorithm: MineralAlgorithm | None = None,
     ):
         self.config = config or CalculationConfig()
         if algorithm is not None:
@@ -113,7 +112,7 @@ class Calculator:
         return masses
 
     def _stage_0(
-        self, samples: list[Sample], tracer: Optional[DebugTraceCollector] = None
+        self, samples: list[Sample], tracer: DebugTraceCollector | None = None
     ) -> tuple[np.ndarray, np.ndarray, list[AdaptiveCoefficients], list[RockType], np.ndarray]:
         """
         Stage 0: Preparation (vectorized with numpy).
@@ -167,25 +166,25 @@ class Calculator:
         mg_fu = fe[:, mgo_idx]
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            F_values = np.where(
+            f_vals = np.where(
                 fe_total + mg_fu > 0,
                 fe_total / (fe_total + mg_fu),
                 0.0,
             )
 
             al_fu = fe[:, al2o3_idx]
-            A_values = np.where(
+            a_vals = np.where(
                 2 * al_fu + fe_total + mg_fu > 0,
                 2 * al_fu / (2 * al_fu + fe_total + mg_fu),
                 0.0,
             )
 
-        F_values = np.round(F_values, 3)
-        A_values = np.round(A_values, 3)
+        f_vals = np.round(f_vals, 3)
+        a_vals = np.round(a_vals, 3)
 
         coefficients = []
         for i in range(n):
-            coeff = calculate_coefficients(float(F_values[i]), float(A_values[i]))
+            coeff = calculate_coefficients(float(f_vals[i]), float(a_vals[i]))
             coefficients.append(coeff)
 
         k2o_idx = OXIDE_ORDER.index("k2o")
@@ -251,7 +250,7 @@ class Calculator:
         )
 
     @staticmethod
-    def _output_to_mineralComposition(out: AlgorithmOutput) -> MineralComposition:
+    def _output_to_mineral_composition(out: AlgorithmOutput) -> MineralComposition:
         """Map algorithm output to MineralComposition dataclass."""
         return MineralComposition(
             ab=out.Ab,
@@ -318,7 +317,7 @@ class Calculator:
             tracer.record("Алгоритм", "Kn", alg_output.Kn)
 
         # Map to MineralComposition
-        minerals = self._output_to_mineralComposition(alg_output)
+        minerals = self._output_to_mineral_composition(alg_output)
 
         # Add accessory minerals (computed outside main algorithm)
         minerals = MineralComposition(
@@ -469,7 +468,10 @@ class Calculator:
     def _normalize(self, minerals: MineralComposition) -> tuple[MineralComposition, float]:
         """Normalize mineral weights to sum to 100%. Returns (normalized, factor)."""
         d = minerals.__dict__
-        total = sum(v for k, v in d.items() if not k.startswith("_") and k not in self._DERIVED_FIELDS)
+        total = sum(
+            v for k, v in d.items()
+            if not k.startswith("_") and k not in self._DERIVED_FIELDS
+        )
         if total == 0:
             return minerals, 1.0
         factor = 100.0 / total
@@ -477,7 +479,7 @@ class Calculator:
 
     def _calculate_defect(
         self, comp: OxideComposition, minerals: MineralComposition,
-        coeff: Optional[AdaptiveCoefficients] = None,
+        coeff: AdaptiveCoefficients | None = None,
     ) -> dict[str, float]:
         """Calculate defect (oxide residuals) using verified consumption matrix.
 

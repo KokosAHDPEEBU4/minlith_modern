@@ -12,9 +12,8 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Optional
 
-from src.core.excel_port.interpreter import FormulaEvaluator, FormulaError
+from src.core.excel_port.interpreter import FormulaError, FormulaEvaluator
 
 CALC_SHEETS = ["Нач+Type 12", "Нач+Type 3"]
 
@@ -61,7 +60,7 @@ class Workbook:
         self.evaluator = FormulaEvaluator(self._resolver, round_fn=round_fn)
 
     @staticmethod
-    def _parse_name_target(target: str) -> Optional[tuple[str, str]]:
+    def _parse_name_target(target: str) -> tuple[str, str] | None:
         """'='Нач+Type 12'!$F$147' -> ('Нач+Type 12', 'F147')."""
         m = re.match(r"'([^']+)'!\$?([A-Za-z]+\$?\d+)", target)
         if not m:
@@ -69,7 +68,7 @@ class Workbook:
         sheet, coord = m.group(1), m.group(2).replace("$", "")
         return sheet, coord
 
-    def get_raw(self, sheet: str, coord: str) -> Optional[dict]:
+    def get_raw(self, sheet: str, coord: str) -> dict | None:
         """Вернуть запись ячейки ({'formula':...} или {'value':...})."""
         return self.cells.get(sheet, {}).get(coord)
 
@@ -98,7 +97,7 @@ class Workbook:
                 continue
             self.set_value(sheet, f"B{row}", wt)
 
-    def formula_of(self, sheet: str, coord: str) -> Optional[str]:
+    def formula_of(self, sheet: str, coord: str) -> str | None:
         entry = self.get_raw(sheet, coord)
         if entry and "formula" in entry:
             return entry["formula"]

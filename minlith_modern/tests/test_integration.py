@@ -6,9 +6,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from src.charts import BUILTIN_CHARTS, ChartData
 from src.core.calculator import Calculator
 from src.core.models import OxideComposition, Sample
-from src.charts import BUILTIN_CHARTS, ChartData
 
 
 def _make_chart_data(n: int = 3) -> ChartData:

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
-
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
 

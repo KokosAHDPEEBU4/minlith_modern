@@ -35,7 +35,7 @@ def read_csv(path: Path, separator: str | None = None) -> list[Sample]:
     first_line = ""
     for enc in ("utf-8-sig", "utf-8", "cp1251", "latin-1"):
         try:
-            with open(path, "r", encoding=enc) as f:
+            with open(path, encoding=enc) as f:
                 first_line = f.readline()
             break
         except (UnicodeDecodeError, UnicodeError):
@@ -47,7 +47,7 @@ def read_csv(path: Path, separator: str | None = None) -> list[Sample]:
     if separator is None:
         separator = ";" if ";" in first_line else ","
 
-    with open(path, "r", encoding=enc) as f:
+    with open(path, encoding=enc) as f:
         reader = csv.DictReader(f, delimiter=separator)
         for row in reader:
             name = row.get("Name", row.get("name", row.get("Образец", row.get("Sample", ""))))
@@ -77,7 +77,6 @@ def write_csv(
     separator: str = ";",
 ) -> None:
     """Write calculation results to CSV."""
-    from src.core.models import CalculationResult
 
     mineral_codes = ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb",
                      "ap", "cc", "dl", "ank", "rch", "sd", "srp", "mst", "ht", "prl"]

@@ -2,17 +2,15 @@
 
 import json
 import tempfile
-import time
 from pathlib import Path
 
 import pytest
 
-from src.core.calculator import Calculator
-from src.core.models import OxideComposition, Sample, CalculationConfig
 from src.core.anomaly_detector import AnomalyDetector
-from src.core.explainer import Explainer
+from src.core.calculator import Calculator
 from src.core.coefficients import calculate_coefficients
-
+from src.core.explainer import Explainer
+from src.core.models import CalculationConfig, OxideComposition, Sample
 
 # ── Fixtures ──
 
@@ -185,8 +183,9 @@ class TestExportXLSX:
             path.unlink(missing_ok=True)
 
     def test_xlsx_has_all_sheets(self, results_list):
-        from src.io.excel import save_results
         import openpyxl
+
+        from src.io.excel import save_results
         with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
             path = Path(f.name)
         try:
@@ -268,8 +267,8 @@ class TestExportDOCX:
     """Scenario 2e: DOCX export."""
 
     def test_docx_export(self, results_list):
-        from src.reports.word_generator import WordGenerator
         from src.reports.template_builder import PREDEFINED_TEMPLATES
+        from src.reports.word_generator import WordGenerator
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as f:
             path = Path(f.name)
         try:
@@ -335,8 +334,8 @@ class TestReportTemplates:
 
     @pytest.mark.parametrize("template_name", ["brief", "standard", "full", "core", "geochemical"])
     def test_template_generates_docx(self, results_list, template_name):
-        from src.reports.word_generator import WordGenerator
         from src.reports.template_builder import PREDEFINED_TEMPLATES
+        from src.reports.word_generator import WordGenerator
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as f:
             path = Path(f.name)
         try:
@@ -356,7 +355,7 @@ class TestReportTemplates:
             assert len(d["blocks"]) > 0
 
     def test_template_save_load(self):
-        from src.reports.template_builder import ReportTemplate, PREDEFINED_TEMPLATES
+        from src.reports.template_builder import PREDEFINED_TEMPLATES, ReportTemplate
         original = PREDEFINED_TEMPLATES["standard"]()
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
             path = Path(f.name)
@@ -377,8 +376,9 @@ class TestAllCharts:
     """Scenario 4: All chart types render."""
 
     def _make_chart_data(self):
-        from src.charts import ChartData
         import numpy as np
+
+        from src.charts import ChartData
         data = ChartData(sample_names=["S1", "S2", "S3"])
         rng = np.random.default_rng(42)
         for field in ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao", "na2o", "k2o", "p2o5", "mno"]:
@@ -647,23 +647,23 @@ class TestValidation:
     """Scenario 10: Input validation."""
 
     def test_valid_composition(self):
-        from src.core.validation import validate_sample
         from src.core.models import CalculationConfig
+        from src.core.validation import validate_sample
         comp = OxideComposition(sio2=52.5, al2o3=23.41, fe2o3=1.71, feo=8.06,
                                 mgo=2.35, cao=0.28, na2o=0.94, k2o=3.45)
         is_valid, warnings = validate_sample(comp, CalculationConfig())
         assert is_valid
 
     def test_low_sum_warning(self):
-        from src.core.validation import validate_sample
         from src.core.models import CalculationConfig
+        from src.core.validation import validate_sample
         comp = OxideComposition(sio2=60.0, al2o3=15.0)
         is_valid, warnings = validate_sample(comp, CalculationConfig())
         assert len(warnings) > 0
 
     def test_zero_composition(self):
-        from src.core.validation import validate_sample
         from src.core.models import CalculationConfig
+        from src.core.validation import validate_sample
         comp = OxideComposition()
         is_valid, warnings = validate_sample(comp, CalculationConfig())
         # Zero composition should produce warnings
@@ -722,8 +722,9 @@ class TestCache:
     """Scenario 12: Cache system."""
 
     def test_cache_put_get(self):
-        from src.utils.cache import ResultCache
         import tempfile
+
+        from src.utils.cache import ResultCache
         with tempfile.TemporaryDirectory() as tmpdir:
             cache = ResultCache(cache_dir=Path(tmpdir))
             # Create a minimal fake result
@@ -741,8 +742,9 @@ class TestCache:
             assert len(cached) == 1
 
     def test_cache_stats(self):
-        from src.utils.cache import ResultCache
         import tempfile
+
+        from src.utils.cache import ResultCache
         with tempfile.TemporaryDirectory() as tmpdir:
             cache = ResultCache(cache_dir=Path(tmpdir))
             stats = cache.stats()
@@ -814,8 +816,9 @@ class TestGeoParameters:
         assert gp.ICV > 0
 
     def test_geo_params_in_xlsx(self, results_list):
-        from src.io.excel import save_results
         import openpyxl
+
+        from src.io.excel import save_results
         with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as f:
             path = Path(f.name)
         try:

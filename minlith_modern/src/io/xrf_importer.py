@@ -61,7 +61,7 @@ def read_xrf_csv(path: Path) -> list[Sample]:
     """Read XRF data from CSV (Bruker/Panalytical format)."""
     samples = []
 
-    with open(path, "r", encoding="utf-8-sig") as f:
+    with open(path, encoding="utf-8-sig") as f:
         # Detect delimiter
         sample_line = f.readline()
         sep = ";" if ";" in sample_line else ","
@@ -114,7 +114,7 @@ def read_xrf_txt(path: Path) -> list[Sample]:
     """Read XRF data from Bruker-style TXT format."""
     samples = []
 
-    with open(path, "r", encoding="utf-8-sig") as f:
+    with open(path, encoding="utf-8-sig") as f:
         lines = f.readlines()
 
     # Find header line (contains oxide names)

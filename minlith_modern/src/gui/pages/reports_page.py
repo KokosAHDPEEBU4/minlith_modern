@@ -459,7 +459,9 @@ class ReportsPage(QWidget):
             BlockType.PAGE_BREAK: "Разрыв страницы — разделяет разделы",
         }
         self._edit_hint.setText(hint.get(bt, ""))
-        self._edit_hint.setStyleSheet("color: #888; font-style: italic; padding: 4px; font-size: 11px;")
+        self._edit_hint.setStyleSheet(
+            "color: #888; font-style: italic; padding: 4px; font-size: 11px;"
+        )
         self._edit_hint.setVisible(True)
 
         self._suppress = False
@@ -530,8 +532,10 @@ class ReportsPage(QWidget):
                 f"<li>{_block_summary(b)}</li>" for b in self._template.blocks
             )
             html = f"""
-            <html><body style="font-family: Segoe UI, Arial, sans-serif; padding: 12px; color: #555;">
-            <div style="color: #999; font-size: 11px;">{self._template.name} — {len(self._template.blocks)} блоков</div>
+            <html><body style="font-family: Segoe UI, Arial, sans-serif;
+            padding: 12px; color: #555;">
+            <div style="color: #999; font-size: 11px;">{self._template.name} —
+            {len(self._template.blocks)} блоков</div>
             <p style="color: #888; font-style: italic;">Нет данных. Выполните расчёт.</p>
             <ol style="font-size: 12px;">{blocks_html}</ol>
             </body></html>
@@ -555,26 +559,34 @@ class ReportsPage(QWidget):
                             f'</div>'
                         )
                     else:
-                        parts.append(f'<p><em>Диаграмма «{block.chart_type}» не построена.</em></p>')
+                        parts.append(
+                            f'<p><em>Диаграмма «{block.chart_type}» не построена.</em></p>'
+                        )
                 else:
                     parts.append(_block_html(block, self._results))
 
             html = f"""
             <html><head><style>
-            body {{ font-family: Segoe UI, Arial, sans-serif; margin: 8px; background: #fafafa; color: #333; font-size: 12px; }}
-            h1 {{ color: #1e1e2e; border-bottom: 2px solid #4a9eff; padding-bottom: 6px; font-size: 15px; }}
+            body {{ font-family: Segoe UI, Arial, sans-serif; margin: 8px;
+                    background: #fafafa; color: #333; font-size: 12px; }}
+            h1 {{ color: #1e1e2e; border-bottom: 2px solid #4a9eff;
+                  padding-bottom: 6px; font-size: 15px; }}
             h2 {{ color: #45475a; margin-top: 14px; font-size: 13px; }}
-            table {{ border-collapse: collapse; width: auto; max-width: 100%; margin: 6px 0; background: white; box-shadow: 0 1px 2px rgba(0,0,0,0.08); font-size: 11px; }}
+            table {{ border-collapse: collapse; width: auto; max-width: 100%;
+                    margin: 6px 0; background: white; box-shadow:
+                    0 1px 2px rgba(0,0,0,0.08); font-size: 11px; }}
             th {{ background: #1e1e2e; color: white; padding: 5px 7px; text-align: left; }}
             td {{ padding: 3px 7px; border-bottom: 1px solid #eee; }}
             tr:nth-child(even) {{ background: #f8f9fa; }}
             .negative {{ color: #e74c3c; }}
             .param {{ font-weight: bold; color: #4a9eff; }}
-            .footer {{ margin-top: 16px; padding-top: 6px; border-top: 1px solid #ddd; font-size: 10px; color: #aaa; }}
+            .footer {{ margin-top: 16px; padding-top: 6px; border-top:
+                      1px solid #ddd; font-size: 10px; color: #aaa; }}
             </style></head><body>
             <h1>MINLITH Report</h1>
             {''.join(parts)}
-            <div class="footer">{self._template.name} — {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>
+            <div class="footer">{self._template.name} —
+            {datetime.now().strftime("%Y-%m-%d %H:%M")}</div>
             </body></html>
             """
         self._preview.setHtml(html)

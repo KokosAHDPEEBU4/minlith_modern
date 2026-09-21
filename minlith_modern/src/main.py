@@ -22,8 +22,8 @@ def _resolve_theme_path(theme: str) -> Path:
 def main() -> None:
     from PyQt6.QtWidgets import QApplication
 
-    from src.utils.logger import setup_logging
     from src.utils.config import ConfigManager
+    from src.utils.logger import setup_logging
 
     setup_logging()
 

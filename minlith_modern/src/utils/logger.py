@@ -8,7 +8,6 @@ import sys
 from collections import deque
 from logging import Handler, LogRecord
 from pathlib import Path
-from typing import Optional
 
 
 class GUILogHandler(Handler):
@@ -17,7 +16,7 @@ class GUILogHandler(Handler):
     def __init__(self, max_records: int = 1000) -> None:
         super().__init__()
         self.records: deque[LogRecord] = deque(maxlen=max_records)
-        self._callback: Optional[callable] = None
+        self._callback: callable | None = None
 
     def set_callback(self, callback: callable) -> None:
         self._callback = callback
@@ -33,7 +32,7 @@ class GUILogHandler(Handler):
         return [r for r in self.records if r.levelno >= level]
 
 
-_gui_handler: Optional[GUILogHandler] = None
+_gui_handler: GUILogHandler | None = None
 
 
 def setup_logging(level: int = logging.INFO, log_dir: Path | str | None = None) -> GUILogHandler:
@@ -81,5 +80,5 @@ def setup_logging(level: int = logging.INFO, log_dir: Path | str | None = None) 
     return _gui_handler
 
 
-def get_gui_handler() -> Optional[GUILogHandler]:
+def get_gui_handler() -> GUILogHandler | None:
     return _gui_handler

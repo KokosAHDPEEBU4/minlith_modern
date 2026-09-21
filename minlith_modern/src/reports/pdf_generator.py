@@ -178,7 +178,9 @@ class PDFGenerator:
             data.append(row)
 
         # Sum row
-        data.append(["Σ"] + [f"{sum(r.minerals_weight.__dict__.values()):.1f}" for r in self._results])
+        data.append(
+            ["Σ"] + [f"{sum(r.minerals_weight.__dict__.values()):.1f}" for r in self._results]
+        )
 
         table = Table(data, repeatRows=1)
         style = [
@@ -206,7 +208,9 @@ class PDFGenerator:
         header = ["Oxide"] + [r.sample_name for r in self._results]
         data = [header]
         for label, field in oxides:
-            row = [label] + [f"{getattr(r.input_composition, field, 0.0):.2f}" for r in self._results]
+            row = [label] + [
+                f"{getattr(r.input_composition, field, 0.0):.2f}" for r in self._results
+            ]
             data.append(row)
 
         table = Table(data, repeatRows=1)

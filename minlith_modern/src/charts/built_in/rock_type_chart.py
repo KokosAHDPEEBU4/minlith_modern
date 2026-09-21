@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
-from collections import Counter
-
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_bg_color, get_fg_color, get_grid_color
-
+from src.charts.engines.matplotlib_engine import (
+    COLORS,
+    create_figure,
+    get_bg_color,
+    get_fg_color,
+    get_grid_color,
+)
 
 _TYPE_NAMES = {
     1: "Type 1",

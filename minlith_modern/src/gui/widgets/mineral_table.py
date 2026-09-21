@@ -66,7 +66,9 @@ class MineralTable(QWidget):
 
         layout.addWidget(self._table)
 
-    def set_minerals(self, minerals: MineralComposition, fu: MineralComposition | None = None) -> None:
+    def set_minerals(
+        self, minerals: MineralComposition, fu: MineralComposition | None = None
+    ) -> None:
         self._table.setRowCount(len(MINERAL_COLUMNS))
         for i, (display, field, full_name) in enumerate(MINERAL_COLUMNS):
             wt = getattr(minerals, field, 0.0)

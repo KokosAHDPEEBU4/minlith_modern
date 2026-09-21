@@ -1,8 +1,9 @@
 # Changelog
 
-## [Unreleased] — 2026-09-21
+## [0.7.0] — 2026-09-21
 
 ### Changed
+- **Стилевая чистка кода:** ruff `check` (src + tests) приведён к нулю ошибок по правилам E/F/I/N/W/UP — авто-исправления `ruff --fix`, явные ренеймы по PEP8 (`A/F` → `a_vals`/`f_vals`, `F_values` → `f_vals`, `_DERIVED` → `derived`, `_output_to_mineralComposition` → `_output_to_mineral_composition` и др.), перенос длинных строк; для публичных доменных параметров `F`/`A` (коэффициенты, модели, мапперы) и Qt-оверрайдов drag & drop добавлены `per-file-ignores`; для тестов файл-исключения `N801`/`N802`/`N803`/`N806`
 - **Переименование движков расчёта в понятные имена:** ключ `algorithm_mode` → `calculation_engine`, значения `clean|stub|custom` → `excel_parity|geological_theory|python_rework`; пакет `clean_engine` → `excel_parity`, класс `CleanEngineAlgorithm` → `ExcelParityAlgorithm`, модуль `theory_algorithm.py` → `geological_theory.py`, класс `TheoryAlgorithm` → `GeologicalTheoryAlgorithm`; GUI-тулбар «Движки расчёта» (`_set_engine`, кнопки «Как в Excel» / «Геол. теория» / «Python-переработка»), CLI `--engine/-e`; старые ключ `algorithm_mode` и значения `clean`/`stub`/`custom` мигрируют автоматически
 - **Полный паритет с Excel-движком:** `excel_parity` == `excel_port(rounding=False)` на всей решётке 16000/16000 (n_ok=16000, n_gap=0, n_mis=0) — устранены все расхождения по типам T-1/T-2 и дефектам
 - База данных: потокобезопасный пул `NullPool`, CRUD-репозиторий (`src/database/repository.py`), мапперы domain ↔ db

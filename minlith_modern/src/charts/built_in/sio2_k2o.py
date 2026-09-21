@@ -8,7 +8,11 @@ import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import (
-    create_figure, COLORS, ACCENT, get_fg_color, get_grid_color,
+    ACCENT,
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
 )
 
 
@@ -43,9 +47,12 @@ class SiO2K2OPlugin(ChartPlugin):
 
         # Boundary lines (simplified)
         x = np.linspace(45, 80, 100)
-        ax.plot(x, 0.07 * (x - 45) + 0.5, "--", color=COLORS[3], linewidth=1.2, label="Tholeiitic / Calc-Alkaline")
-        ax.plot(x, 0.07 * (x - 45) + 1.5, "--", color=COLORS[2], linewidth=1.2, label="Calc-Alkaline / High-K")
-        ax.plot(x, 0.07 * (x - 45) + 3.0, "--", color=COLORS[4], linewidth=1.2, label="High-K / Shoshonite")
+        ax.plot(x, 0.07 * (x - 45) + 0.5, "--", color=COLORS[3],
+                linewidth=1.2, label="Tholeiitic / Calc-Alkaline")
+        ax.plot(x, 0.07 * (x - 45) + 1.5, "--", color=COLORS[2],
+                linewidth=1.2, label="Calc-Alkaline / High-K")
+        ax.plot(x, 0.07 * (x - 45) + 3.0, "--", color=COLORS[4],
+                linewidth=1.2, label="High-K / Shoshonite")
 
         ax.text(50, 0.3, "Tholeiitic", fontsize=9, alpha=0.5, fontstyle="italic", color=fg)
         ax.text(55, 1.8, "Calc-Alkaline", fontsize=9, alpha=0.5, fontstyle="italic", color=fg)

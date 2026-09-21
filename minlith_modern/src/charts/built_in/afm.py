@@ -8,7 +8,11 @@ import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import (
-    create_figure, COLORS, ACCENT, get_fg_color, get_grid_color,
+    ACCENT,
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
 )
 
 
@@ -31,10 +35,13 @@ class AFMPlugin(ChartPlugin):
         fg = get_fg_color()
         grid = get_grid_color()
 
-        fig = create_figure(figsize=(8, 7), title=kwargs.get("title", "AFM Diagram (Irvine & Baragar, 1971)"))
+        fig = create_figure(
+            figsize=(8, 7),
+            title=kwargs.get("title", "AFM Diagram (Irvine & Baragar, 1971)"),
+        )
         ax = fig.axes[0]
 
-        A, FM = [], []
+        a_vals, fm_vals = [], []
         for i, name in enumerate(data.sample_names):
             feot = data.oxides.get("feo", np.zeros(len(data.sample_names)))[i]
             fe2o3 = data.oxides.get("fe2o3", np.zeros(len(data.sample_names)))[i]
@@ -45,13 +52,13 @@ class AFMPlugin(ChartPlugin):
             total = feot + alk + mg
             if total == 0:
                 continue
-            A.append(alk / total * 100)
-            FM.append((feot + mg) / total * 100)
+            a_vals.append(alk / total * 100)
+            fm_vals.append((feot + mg) / total * 100)
 
-        if not A:
+        if not a_vals:
             return fig
 
-        ax.scatter(A, FM, c=ACCENT, s=50, alpha=0.8,
+        ax.scatter(a_vals, fm_vals, c=ACCENT, s=50, alpha=0.8,
                    edgecolors=fg, linewidth=0.5, zorder=5)
 
         # Irvine & Baragar (1971) boundary line
@@ -68,7 +75,7 @@ class AFMPlugin(ChartPlugin):
         ax.set_xlabel("A = Na₂O + K₂O")
         ax.set_ylabel("F + M = FeOᵀ + MgO")
         ax.legend(loc="upper right", fontsize=9, framealpha=0.3, labelcolor=fg)
-        ax.set_xlim(0, max(A) * 1.2 if A else 100)
+        ax.set_xlim(0, max(a_vals) * 1.2 if a_vals else 100)
         ax.set_ylim(0, 100)
         ax.grid(True, color=grid, alpha=0.3)
         fig.tight_layout()

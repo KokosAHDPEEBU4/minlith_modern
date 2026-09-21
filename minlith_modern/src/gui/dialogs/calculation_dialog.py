@@ -4,24 +4,21 @@ from __future__ import annotations
 
 import time
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QDialog,
+    QHBoxLayout,
     QLabel,
     QListWidget,
-    QListWidgetItem,
     QProgressBar,
     QPushButton,
     QVBoxLayout,
-    QHBoxLayout,
 )
 
 from src.core.calculator import Calculator
 from src.core.models import LEGACY_ENGINE_ALIASES, Sample
 from src.workers.calculation_worker import CalculationWorker
-
 
 ENGINE_DESCRIPTIONS = {
     "excel_parity": "Как в Excel — точный паритет с Excel-версией (без округлений)",

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor, QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
@@ -17,7 +15,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from src.core.models import CalculationResult, MineralComposition
+from src.core.models import CalculationResult
 
 DISPLAY_MINERALS: list[tuple[str, str, str]] = [
     ("Ab", "ab", "Альбит"),
@@ -48,14 +46,17 @@ DISPLAY_MINERALS: list[tuple[str, str, str]] = [
 class ResultsTable(QWidget):
     """Таблица результатов расчёта."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self._header = QLabel("Результаты")
-        self._header.setStyleSheet("font-weight: bold; font-size: 14px; padding: 4px; color: #e0e0e0; background: transparent;")
+        self._header.setStyleSheet(
+            "font-weight: bold; font-size: 14px; padding: 4px; "
+            "color: #e0e0e0; background: transparent;"
+        )
         layout.addWidget(self._header)
 
         self._search = QLineEdit()

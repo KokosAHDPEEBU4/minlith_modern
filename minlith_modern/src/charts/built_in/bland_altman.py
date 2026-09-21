@@ -8,7 +8,11 @@ import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import (
-    create_figure, COLORS, ACCENT, get_fg_color, get_grid_color,
+    ACCENT,
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
 )
 
 

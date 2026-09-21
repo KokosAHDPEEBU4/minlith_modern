@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import logging
-
 from PyQt6.QtWidgets import QVBoxLayout, QWidget
 
 from src.gui.widgets.log_widget import LogWidget

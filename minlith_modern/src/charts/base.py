@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -56,7 +56,8 @@ class ChartPlugin(ABC):
     def render(self, data: ChartData, **kwargs) -> Any:
         """Render chart and return the matplotlib Figure."""
 
-    def export(self, data: ChartData, path: Path, fmt: str = "png", dpi: int = 150, **kwargs) -> None:
+    def export(self, data: ChartData, path: Path, fmt: str = "png",
+               dpi: int = 150, **kwargs) -> None:
         """Export chart to file.
 
         ``fmt`` defaults to the file extension of ``path`` (``png`` if unknown).

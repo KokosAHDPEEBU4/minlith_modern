@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern v0.6.8 — Нормативный минералогический расчёт")
+        self.setWindowTitle("MINLITH Modern v0.7.0 — Нормативный минералогический расчёт")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
@@ -290,7 +290,6 @@ class MainWindow(QMainWindow):
                     logger.warning("Failed to save result to DB: %s", e)
 
         from PyQt6.QtCore import QThread
-        from PyQt6.QtWidgets import QApplication
 
         class _SaveThread(QThread):  # noqa: N801
             def run(self) -> None:  # type: ignore[override]

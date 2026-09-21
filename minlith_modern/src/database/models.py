@@ -5,8 +5,13 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
-    Column, DateTime, Float, ForeignKey, Integer, String, Text,
-    create_engine,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -21,7 +26,8 @@ class SampleDB(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     oxides = relationship("SampleOxideDB", back_populates="sample", cascade="all, delete-orphan")
-    calculations = relationship("CalculationDB", back_populates="sample", cascade="all, delete-orphan")
+    calculations = relationship("CalculationDB", back_populates="sample",
+                                cascade="all, delete-orphan")
 
 
 class SampleOxideDB(Base):
@@ -52,7 +58,8 @@ class CalculationDB(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     sample = relationship("SampleDB", back_populates="calculations")
-    minerals = relationship("CalculationMineralDB", back_populates="calculation", cascade="all, delete-orphan")
+    minerals = relationship("CalculationMineralDB", back_populates="calculation",
+                            cascade="all, delete-orphan")
 
 
 class CalculationMineralDB(Base):

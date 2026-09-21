@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
-
 from src.charts.base import ChartData, ChartPlugin
 from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_bg_color, get_fg_color
 
@@ -34,7 +32,10 @@ class PieChart(ChartPlugin):
             return create_figure(title="No mineral data")
 
         sample_idx = kwargs.get("sample_idx", 0)
-        sample_name = data.sample_names[sample_idx] if sample_idx < len(data.sample_names) else "Sample"
+        sample_name = (
+            data.sample_names[sample_idx]
+            if sample_idx < len(data.sample_names) else "Sample"
+        )
 
         # Collect non-zero minerals
         labels = []

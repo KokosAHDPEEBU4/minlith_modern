@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -26,15 +25,16 @@ def _add_common_args(parser: argparse.ArgumentParser) -> None:
 
 def cmd_calculate(args: argparse.Namespace) -> int:
     """Рассчитать минеральный состав из входных файлов."""
-    from src.io.excel import load_samples, save_results, save_results_json, save_results_csv
-    from src.io.csv_handler import read_csv
-    from src.io.zip_handler import load_samples_from_zip
-    from src.core.calculator import Calculator, CalculationTimeoutError
+    import json as json_mod
+
+    from src.core.calculator import CalculationTimeoutError, Calculator
     from src.core.models import CalculationConfig
     from src.database.engine import init_db
     from src.database.repository import SampleRepository
+    from src.io.csv_handler import read_csv
+    from src.io.excel import load_samples, save_results, save_results_csv, save_results_json
+    from src.io.zip_handler import load_samples_from_zip
     from src.utils.cache import ResultCache
-    import json as json_mod
 
     init_db()
 
@@ -69,8 +69,11 @@ def cmd_calculate(args: argparse.Namespace) -> int:
             print(f"  Из кэша: {len(cached)} образцов")
             # Deserialize cached dicts to CalculationResult objects
             from src.core.models import (
-                CalculationResult, OxideComposition, MineralComposition,
-                AdaptiveCoefficients, RockType,
+                AdaptiveCoefficients,
+                CalculationResult,
+                MineralComposition,
+                OxideComposition,
+                RockType,
             )
             for cd in cached:
                 result = CalculationResult(
@@ -166,8 +169,8 @@ def cmd_calculate(args: argparse.Namespace) -> int:
 
 def cmd_info(args: argparse.Namespace) -> int:
     """Show information about samples in file(s)."""
-    from src.io.excel import load_samples
     from src.io.csv_handler import read_csv
+    from src.io.excel import load_samples
     from src.io.zip_handler import load_samples_from_zip
 
     for input_path in args.input:
@@ -203,11 +206,11 @@ def cmd_info(args: argparse.Namespace) -> int:
 
 def cmd_validate(args: argparse.Namespace) -> int:
     """Validate input data without calculating."""
-    from src.io.excel import load_samples
-    from src.io.csv_handler import read_csv
-    from src.io.zip_handler import load_samples_from_zip
-    from src.core.validation import validate_sample
     from src.core.models import CalculationConfig
+    from src.core.validation import validate_sample
+    from src.io.csv_handler import read_csv
+    from src.io.excel import load_samples
+    from src.io.zip_handler import load_samples_from_zip
 
     config = CalculationConfig()
     errors = 0
@@ -249,12 +252,13 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_chart(args: argparse.Namespace) -> int:
     """Generate a chart from input data."""
-    from src.io.excel import load_samples
-    from src.io.csv_handler import read_csv
-    from src.io.zip_handler import load_samples_from_zip
-    from src.core.calculator import Calculator
-    from src.charts import BUILTIN_CHARTS, ChartData
     import numpy as np
+
+    from src.charts import BUILTIN_CHARTS, ChartData
+    from src.core.calculator import Calculator
+    from src.io.csv_handler import read_csv
+    from src.io.excel import load_samples
+    from src.io.zip_handler import load_samples_from_zip
 
     calc = Calculator()
     all_results = []
@@ -278,9 +282,14 @@ def cmd_chart(args: argparse.Namespace) -> int:
     data = ChartData(sample_names=[r.sample_name for r in all_results])
     for field in ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb",
                    "ap", "cc", "dl", "ank", "rch", "sd", "srp", "mst", "ht", "prl"]:
-        data.minerals_wt[field] = np.array([getattr(r.minerals_weight, field, 0.0) for r in all_results])
-    for field in ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao", "na2o", "k2o", "p2o5", "mno", "tio2"]:
-        data.oxides[field] = np.array([getattr(r.input_composition, field, 0.0) for r in all_results])
+        data.minerals_wt[field] = np.array(
+            [getattr(r.minerals_weight, field, 0.0) for r in all_results]
+        )
+    for field in ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao",
+                      "na2o", "k2o", "p2o5", "mno", "tio2"]:
+        data.oxides[field] = np.array(
+            [getattr(r.input_composition, field, 0.0) for r in all_results]
+        )
     data.rock_types = [int(r.rock_type) for r in all_results]
     if all_results and all_results[0].defect:
         for oxide in all_results[0].defect:
@@ -297,7 +306,9 @@ def cmd_chart(args: argparse.Namespace) -> int:
         print("Доступные: " + ", ".join(c.get_name().lower() for c in BUILTIN_CHARTS))
         return 1
 
-    output = Path(args.output) if args.output else Path(f"{chart.get_name().lower().replace(' ', '_')}.png")
+    output = Path(args.output) if args.output else Path(
+        f"{chart.get_name().lower().replace(' ', '_')}.png"
+    )
 
     if args.interactive:
         # Plotly interactive HTML
@@ -319,11 +330,10 @@ def cmd_chart(args: argparse.Namespace) -> int:
 
 def cmd_report(args: argparse.Namespace) -> int:
     """Generate a report from input data."""
-    from src.io.excel import load_samples
-    from src.io.csv_handler import read_csv
-    from src.io.zip_handler import load_samples_from_zip
     from src.core.calculator import Calculator
-    from src.reports.template_builder import PREDEFINED_TEMPLATES
+    from src.io.csv_handler import read_csv
+    from src.io.excel import load_samples
+    from src.io.zip_handler import load_samples_from_zip
 
     calc = Calculator()
     all_results = []
@@ -345,8 +355,6 @@ def cmd_report(args: argparse.Namespace) -> int:
 
     fmt = args.format or (Path(args.output).suffix.lstrip(".") if args.output else "pdf")
     output = Path(args.output) if args.output else Path(f"minlith_report.{fmt}")
-
-    template = PREDEFINED_TEMPLATES.get(args.template, PREDEFINED_TEMPLATES["standard"])()
 
     _export_report(output, fmt, all_results, args.template)
     print(f"Отчёт экспортирован: {output}")
@@ -444,7 +452,7 @@ def main_cli() -> int:
         prog="minlith",
         description="MINLITH Modern — Нормативный минералогический расчёт",
     )
-    parser.add_argument("--version", action="version", version="MINLITH Modern 0.6.8")
+    parser.add_argument("--version", action="version", version="MINLITH Modern 0.7.0")
     parser.add_argument("--verbose", "-V", action="store_true",
                         help="Подробный вывод (debug trace)")
     parser.add_argument("--timeout", type=int, default=120,
@@ -465,7 +473,8 @@ def main_cli() -> int:
                                     help="Рассчитать минеральный состав")
     _add_common_args(p_calc)
     p_calc.add_argument("-o", "--output", help="Путь для выходного файла")
-    p_calc.add_argument("--template", "-t", choices=["brief", "standard", "full", "core", "geochemical"],
+    p_calc.add_argument("--template", "-t",
+                        choices=["brief", "standard", "full", "core", "geochemical"],
                         default="standard", help="Шаблон отчёта (для pdf/docx/html)")
     p_calc.add_argument("--no-cache", action="store_true",
                         help="Не использовать кэш результатов")
@@ -491,7 +500,8 @@ def main_cli() -> int:
     _add_common_args(p_chart)
     p_chart.add_argument("-o", "--output", help="Путь для выходного файла")
     p_chart.add_argument("--type", "-T", default="bar",
-                         help="Тип диаграммы: bar, pie, qapf, tas, acnk, defect, heatmap, feldspar, "
+                         help="Тип диаграммы: bar, pie, qapf, tas, acnk, "
+                              "defect, heatmap, feldspar, "
                               "harker, afm, sio2_k2o, bland_altman, correlation")
     p_chart.add_argument("--dpi", type=int, default=150, help="Разрешение изображения (DPI)")
     p_chart.add_argument("--interactive", action="store_true",
@@ -503,8 +513,11 @@ def main_cli() -> int:
                                       help="Создать отчёт")
     _add_common_args(p_report)
     p_report.add_argument("-o", "--output", help="Путь для выходного файла")
-    p_report.add_argument("--template", "-t", choices=["brief", "standard", "full", "core", "geochemical"],
-                          default="standard")
+    p_report.add_argument(
+        "--template", "-t",
+        choices=["brief", "standard", "full", "core", "geochemical"],
+        default="standard",
+    )
     p_report.set_defaults(func=cmd_report)
 
     # list-charts

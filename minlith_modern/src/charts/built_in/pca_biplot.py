@@ -7,7 +7,13 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_figure, get_fg_color, get_grid_color
+from src.charts.engines.matplotlib_engine import (
+    ACCENT,
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
+)
 
 
 class PCABiplot(ChartPlugin):

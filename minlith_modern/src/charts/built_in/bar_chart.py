@@ -54,11 +54,14 @@ class BarChart(ChartPlugin):
             for i, mineral in enumerate(names):
                 values = np.array(minerals[mineral], dtype=float)
                 if normalized:
-                    row_sums = np.array([sum(minerals[m][s] for m in minerals) for s in range(n_samples)])
+                    row_sums = np.array([
+                        sum(minerals[m][s] for m in minerals) for s in range(n_samples)
+                    ])
                     row_sums[row_sums == 0] = 1
                     values = values / row_sums * 100
                 color = COLORS[i % len(COLORS)]
-                ax.bar(x, values, bottom=bottom, label=mineral, color=color, edgecolor="none", width=0.7)
+                ax.bar(x, values, bottom=bottom, label=mineral, color=color,
+                       edgecolor="none", width=0.7)
                 bottom += values
             if normalized:
                 ax.set_ylabel("Normalized %")
@@ -69,7 +72,9 @@ class BarChart(ChartPlugin):
             for i, mineral in enumerate(names):
                 values = np.array(minerals[mineral], dtype=float)
                 if normalized:
-                    row_sums = np.array([sum(minerals[m][s] for m in minerals) for s in range(n_samples)])
+                    row_sums = np.array([
+                        sum(minerals[m][s] for m in minerals) for s in range(n_samples)
+                    ])
                     row_sums[row_sums == 0] = 1
                     values = values / row_sums * 100
                 color = COLORS[i % len(COLORS)]

@@ -70,7 +70,8 @@ class QAPFChart(ChartPlugin):
         for q_val in [0.1, 0.2, 0.6]:
             x_left, y_left = _ternary_to_cartesian(q_val, 1 - q_val, 0)
             x_right, y_right = _ternary_to_cartesian(q_val, 0, 1 - q_val)
-            ax.plot([x_left, x_right], [y_left, y_right], color=fg, linewidth=0.4, alpha=0.3, linestyle="--")
+            ax.plot([x_left, x_right], [y_left, y_right], color=fg,
+                    linewidth=0.4, alpha=0.3, linestyle="--")
 
         # A=P line (vertical at x=0.5)
         ax.plot([0.5, 0.5], [0, 0.2], color=fg, linewidth=0.4, alpha=0.3, linestyle="--")

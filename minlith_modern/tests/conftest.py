@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from src.core.models import OxideComposition, Sample, AdaptiveCoefficients, RockType
 from src.core.calculator import Calculator
+from src.core.models import OxideComposition, Sample
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -18,27 +18,35 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 SAMPLES = {
     "quartzite": Sample(
         name="Quartzite",
-        composition=OxideComposition(sio2=95.0, al2o3=2.5, fe2o3=0.5, feo=0.3, mgo=0.2, cao=0.1, na2o=0.2, k2o=0.5),
+        composition=OxideComposition(sio2=95.0, al2o3=2.5, fe2o3=0.5, feo=0.3,
+                                     mgo=0.2, cao=0.1, na2o=0.2, k2o=0.5),
     ),
     "granite": Sample(
         name="Granite",
-        composition=OxideComposition(sio2=72.0, al2o3=14.0, fe2o3=1.5, feo=1.0, mgo=0.5, cao=1.5, na2o=3.5, k2o=4.5, p2o5=0.2),
+        composition=OxideComposition(sio2=72.0, al2o3=14.0, fe2o3=1.5, feo=1.0,
+                                     mgo=0.5, cao=1.5, na2o=3.5, k2o=4.5, p2o5=0.2),
     ),
     "basalt": Sample(
         name="Basalt",
-        composition=OxideComposition(sio2=50.0, al2o3=14.5, fe2o3=3.0, feo=9.0, mgo=8.0, cao=10.5, na2o=2.5, k2o=0.5, tio2=1.5, p2o5=0.3),
+        composition=OxideComposition(sio2=50.0, al2o3=14.5, fe2o3=3.0, feo=9.0,
+                                     mgo=8.0, cao=10.5, na2o=2.5, k2o=0.5,
+                                     tio2=1.5, p2o5=0.3),
     ),
     "shale": Sample(
         name="Shale",
-        composition=OxideComposition(sio2=58.0, al2o3=18.0, fe2o3=5.0, feo=4.0, mgo=2.5, cao=3.0, na2o=1.5, k2o=3.5, p2o5=0.2, mno=0.08),
+        composition=OxideComposition(sio2=58.0, al2o3=18.0, fe2o3=5.0, feo=4.0,
+                                     mgo=2.5, cao=3.0, na2o=1.5, k2o=3.5,
+                                     p2o5=0.2, mno=0.08),
     ),
     "limestone": Sample(
         name="Limestone",
-        composition=OxideComposition(sio2=5.0, al2o3=1.5, fe2o3=0.5, feo=0.3, mgo=1.0, cao=52.0, na2o=0.1, k2o=0.3),
+        composition=OxideComposition(sio2=5.0, al2o3=1.5, fe2o3=0.5, feo=0.3,
+                                     mgo=1.0, cao=52.0, na2o=0.1, k2o=0.3),
     ),
     "sandstone": Sample(
         name="Sandstone",
-        composition=OxideComposition(sio2=88.0, al2o3=5.0, fe2o3=1.0, feo=0.8, mgo=0.5, cao=1.5, na2o=0.8, k2o=1.2),
+        composition=OxideComposition(sio2=88.0, al2o3=5.0, fe2o3=1.0, feo=0.8,
+                                     mgo=0.5, cao=1.5, na2o=0.8, k2o=1.2),
     ),
     "t_o2_type5": Sample(
         name="T-O2",

@@ -10,8 +10,6 @@ K2O делится между Or и Ilt через коэффициент k_or (
 
 from __future__ import annotations
 
-from typing import Optional
-
 from src.core.debug_tracer import DebugTraceCollector
 
 # Доля K2O, идущая в ортоклаз (не в иллит) по типу породы.
@@ -38,14 +36,14 @@ def classify_rock_type(al: float, na: float, k: float, ca: float) -> int:
     denom = na + k + ca
     if denom <= 1e-12:
         return 5 if al > 1e-12 else 1
-    R = al / denom
-    if R < R_THRESHOLDS[0]:
+    r = al / denom
+    if r < R_THRESHOLDS[0]:
         return 1
-    if R < R_THRESHOLDS[1]:
+    if r < R_THRESHOLDS[1]:
         return 2
-    if R < R_THRESHOLDS[2]:
+    if r < R_THRESHOLDS[2]:
         return 3
-    if R < R_THRESHOLDS[3]:
+    if r < R_THRESHOLDS[3]:
         return 4
     return 5
 
@@ -63,7 +61,7 @@ def stage2(
     fe: dict[str, float],
     rock_type: int,
     k_or: float,
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> tuple[dict[str, float], dict[str, float]]:
     """Стадия 2: Or → Ab → An → Ilt → Kln → Chl → Gbs.
 

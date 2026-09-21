@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
-from src.utils.helpers import sha256_file, now_iso
+from src.utils.helpers import now_iso, sha256_file
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +83,7 @@ class ResultCache:
         # Serialize results
         from src.core.models import CalculationResult
         # Fields derived from other minerals (always 0, excluded from cache)
-        _DERIVED = frozenset({"pl", "fsp", "pel", "pel_fsp", "carsd", "ill_kn", "chl_mm_srp"})
+        derived = frozenset({"pl", "fsp", "pel", "pel_fsp", "carsd", "ill_kn", "chl_mm_srp"})
 
         data = []
         for r in results:
@@ -94,7 +94,7 @@ class ResultCache:
                     "F": r.coefficients.F,
                     "A": r.coefficients.A,
                     "minerals": {k: v for k, v in r.minerals_weight.__dict__.items()
-                                 if not k.startswith("_") and k not in _DERIVED},
+                                 if not k.startswith("_") and k not in derived},
                     "defect": r.defect,
                 })
             elif isinstance(r, dict):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 from src.core.models import CalculationResult
 
@@ -21,8 +20,8 @@ class LaTeXExporter:
         self,
         path: Path,
         style: str = "gost",  # "gost" | "nature" | "springer"
-        caption: Optional[str] = None,
-        label: Optional[str] = None,
+        caption: str | None = None,
+        label: str | None = None,
     ) -> Path:
         """Export results to LaTeX table."""
         lines = []
@@ -38,7 +37,6 @@ class LaTeXExporter:
         lines.append("")
 
         # Table
-        n_cols = 1 + len(self._results)
         col_spec = "l" + "S[table-format=2.2]" * len(self._results)
         lines.append(r"\begin{table}[htbp]")
         lines.append(r"\centering")

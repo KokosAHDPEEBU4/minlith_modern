@@ -111,7 +111,9 @@ def _find_plugin(name: str):
 
 
 @pytest.mark.parametrize("cls_name,needs_minerals,needs_oxides", CHART_TEST_PARAMS)
-def test_chart_renders(cls_name: str, needs_minerals: bool, needs_oxides: bool, chart_data: ChartData):
+def test_chart_renders(
+    cls_name: str, needs_minerals: bool, needs_oxides: bool, chart_data: ChartData
+):
     plugin = _find_plugin(cls_name)
     fig = plugin.render(chart_data)
     assert fig is not None, f"{cls_name}.render() returned None"

@@ -4,17 +4,16 @@ from __future__ import annotations
 
 import logging
 import shutil
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator, Optional
 
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from src.core.models import (
     CalculationResult,
-    MineralComposition,
     OxideComposition,
     Sample,
 )
@@ -136,7 +135,7 @@ class SampleRepository:
                 session.rollback()
                 raise
 
-    def get_sample(self, sample_id: int) -> Optional[Sample]:
+    def get_sample(self, sample_id: int) -> Sample | None:
         with self._scoped_session() as session:
             db_sample = session.get(SampleDB, sample_id)
             if db_sample is None:
@@ -149,7 +148,12 @@ class SampleRepository:
 
     def list_samples(self, limit: int = 100) -> list[tuple[int, str]]:
         with self._scoped_session() as session:
-            rows = session.query(SampleDB.id, SampleDB.name).order_by(desc(SampleDB.created_at)).limit(limit).all()
+            rows = (
+                session.query(SampleDB.id, SampleDB.name)
+                .order_by(desc(SampleDB.created_at))
+                .limit(limit)
+                .all()
+            )
             return [(r.id, r.name) for r in rows]
 
     def delete_sample(self, sample_id: int) -> None:
@@ -257,8 +261,11 @@ class SampleRepository:
             try:
                 if "minerals" in entry and "sample" in entry:
                     from src.core.models import (
-                        CalculationResult, OxideComposition, MineralComposition,
-                        AdaptiveCoefficients, RockType,
+                        AdaptiveCoefficients,
+                        CalculationResult,
+                        MineralComposition,
+                        OxideComposition,
+                        RockType,
                     )
                     result = CalculationResult(
                         sample_name=entry["sample"],

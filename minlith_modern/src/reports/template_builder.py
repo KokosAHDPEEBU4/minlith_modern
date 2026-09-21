@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,10 @@ class ReportTemplate:
                 min_wt_percent=b.get("min_wt_percent", 0.0),
                 sort_by=b.get("sort_by", ""),
             ))
-        return cls(name=data.get("name", "Custom"), blocks=blocks, metadata=data.get("metadata", {}))
+        return cls(
+            name=data.get("name", "Custom"), blocks=blocks,
+            metadata=data.get("metadata", {}),
+        )
 
     def save(self, path: Path) -> None:
         path.write_text(json.dumps(self.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")

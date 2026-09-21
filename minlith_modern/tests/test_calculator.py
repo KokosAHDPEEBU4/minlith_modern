@@ -1,7 +1,7 @@
 """Tests for calculator — basic runs, all rock types, edge cases."""
 
-from src.core.models import OxideComposition, Sample, CalculationConfig, FormulaUnits
 from src.core.calculator import Calculator
+from src.core.models import OxideComposition, Sample
 
 
 class TestCalculatorBasic:

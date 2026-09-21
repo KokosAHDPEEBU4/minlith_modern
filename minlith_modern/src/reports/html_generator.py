@@ -23,13 +23,15 @@ HTML_TEMPLATE = """\
 body { font-family: "Segoe UI", Arial, sans-serif; margin: 20px; background: #fafafa; color: #333; }
 h1 { color: #1e1e2e; border-bottom: 2px solid #4a9eff; padding-bottom: 8px; }
 h2 { color: #45475a; margin-top: 24px; }
-table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white;
+box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 th { background: #1e1e2e; color: white; padding: 8px 12px; text-align: left; font-size: 13px; }
 td { padding: 6px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
 tr:nth-child(even) { background: #f8f9fa; }
 .negative { color: #e74c3c; }
 .param { font-weight: bold; color: #4a9eff; }
-.footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #999; }
+.footer { margin-top: 32px; padding-top: 12px; border-top:
+1px solid #ddd; font-size: 11px; color: #999; }
 </style>
 </head>
 <body>
@@ -90,8 +92,13 @@ def _mineral_table_html(results: list[CalculationResult], block: ReportBlock) ->
     ]
 
     if block.min_wt_percent > 0:
-        minerals = [(c, f) for c, f in minerals
-                    if any(getattr(r.minerals_weight, f, 0.0) >= block.min_wt_percent for r in results)]
+        minerals = [
+            (c, f) for c, f in minerals
+            if any(
+                getattr(r.minerals_weight, f, 0.0) >= block.min_wt_percent
+                for r in results
+            )
+        ]
 
     title = f"<h2>{block.title}</h2>" if block.title else ""
     headers = "".join(f"<th>{r.sample_name}</th>" for r in results)

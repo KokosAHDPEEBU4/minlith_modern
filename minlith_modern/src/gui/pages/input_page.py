@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
@@ -33,7 +32,7 @@ class InputPage(QWidget):
     def __init__(self, calculator: Calculator, parent=None) -> None:
         super().__init__(parent)
         self._calculator = calculator
-        self._last_result: Optional[CalculationResult] = None
+        self._last_result: CalculationResult | None = None
         self._history = ChangeHistory()
         self._batch_samples: list[Sample] = []
 

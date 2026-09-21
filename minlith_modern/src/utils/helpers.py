@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import math
 import hashlib
-from pathlib import Path
+import math
 from datetime import datetime
-
+from pathlib import Path
 
 # ── Formatting ──────────────────────────────────────────────────────────────
 
@@ -40,7 +39,7 @@ def fmt_mineral_name(name: str) -> str:
     """Capitalize mineral name."""
     _map = {
         "q": "Quartz", "ab": "Albite", "an": "Anorthite", "or_": "Orthoclase",
-        "ill": "Illite", "chl": "Chlorite", "kn": "Kaolinite", "dl": "Dickite",
+        "ill": "Illite", "chl": "Chlorite", "kn": "Kaolinite",
         "gb": "Gibbsite", "srp": "Serpentine", "prl": "Pyrophyllite",
         "act": "Actinolite", "hb": "Hornblende", "di": "Diopside",
         "cc": "Calcite", "dl": "Dolomite", "ms": "Muscovite", "bt": "Biotite",
@@ -91,20 +90,27 @@ def cation_moles(oxide_val: float, mw: float, n_cations: int) -> float:
 def tas_classify(total_alkali: float, silica: float) -> str:
     """Simple TAS classification (Le Maitre et al. 2002)."""
     if silica < 45:
-        if total_alkali < 1.0: return "Picrobasalt"
-        if total_alkali < 5.0: return "Basalt"
+        if total_alkali < 1.0:
+            return "Picrobasalt"
+        if total_alkali < 5.0:
+            return "Basalt"
         return "Tephrite/Phonolite"
     if silica < 52:
-        if total_alkali < 5.0: return "Basalt"
-        if total_alkali < 7.0: return "Basaltic Andesite"
+        if total_alkali < 5.0:
+            return "Basalt"
+        if total_alkali < 7.0:
+            return "Basaltic Andesite"
         return "Trachybasalt"
     if silica < 57:
-        if total_alkali < 6.0: return "Andesite"
+        if total_alkali < 6.0:
+            return "Andesite"
         return "Trachyandesite"
     if silica < 63:
-        if total_alkali < 7.0: return "Dacite"
+        if total_alkali < 7.0:
+            return "Dacite"
         return "Trachyte"
-    if total_alkali < 8.0: return "Rhyolite"
+    if total_alkali < 8.0:
+        return "Rhyolite"
     return "Alkaline Rhyolite"
 
 

@@ -7,7 +7,13 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_triangle, get_bg_color, get_fg_color
+from src.charts.engines.matplotlib_engine import (
+    ACCENT,
+    COLORS,
+    create_triangle,
+    get_bg_color,
+    get_fg_color,
+)
 
 
 def _to_cartesian(ab: float, an: float, or_: float) -> tuple[float, float]:

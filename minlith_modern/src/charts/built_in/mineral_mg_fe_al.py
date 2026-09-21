@@ -7,7 +7,12 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, ACCENT, create_triangle, get_bg_color, get_fg_color
+from src.charts.engines.matplotlib_engine import (
+    COLORS,
+    create_triangle,
+    get_bg_color,
+    get_fg_color,
+)
 
 
 class MineralMgFeAl(ChartPlugin):
@@ -71,8 +76,10 @@ class MineralMgFeAl(ChartPlugin):
 
         # Labels
         ax.text(0.5, -0.08, "FeO", ha="center", fontsize=11, fontweight="bold", color=fg)
-        ax.text(1.05, 0.5, "MgO", ha="center", fontsize=11, fontweight="bold", color=fg, rotation=-60)
-        ax.text(-0.05, 0.5, "Al₂O₃", ha="center", fontsize=11, fontweight="bold", color=fg, rotation=60)
+        ax.text(1.05, 0.5, "MgO", ha="center", fontsize=11,
+                fontweight="bold", color=fg, rotation=-60)
+        ax.text(-0.05, 0.5, "Al₂O₃", ha="center", fontsize=11,
+                fontweight="bold", color=fg, rotation=60)
 
         fig.tight_layout()
         return fig

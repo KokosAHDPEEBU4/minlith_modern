@@ -107,7 +107,10 @@ def _parse_code(code: str) -> list[dict]:
                 break
         if not matched:
             # прочие значимые строки (например, Rows/Columns, ActiveSheet.Paste)
-            if re.match(r"^(Rows|Columns|ActiveSheet\.|Selection\.|Sheets\(|If |Else|End If)", line):
+            if re.match(
+                r"^(Rows|Columns|ActiveSheet\.|Selection\.|Sheets\(|If |Else|End If)",
+                line,
+            ):
                 current["ops"].append({"op": "other", "arg": line[:80], "line": lineno})
     if current:
         procs.append(current)
@@ -139,6 +142,8 @@ def main(xlsm_path: str, out_dir: str) -> None:
 if __name__ == "__main__":
     import sys
 
-    xlsm = sys.argv[1] if len(sys.argv) > 1 else r"C:\Users\kokos\Desktop\Lene\Ispravlenny_MINLITH1_2010.xlsm"
-    outdir = sys.argv[2] if len(sys.argv) > 2 else r"C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\excel_port\data"
+    xlsm = (sys.argv[1] if len(sys.argv) > 1
+            else r"C:\Users\kokos\Desktop\Lene\Ispravlenny_MINLITH1_2010.xlsm")
+    outdir = (sys.argv[2] if len(sys.argv) > 2
+              else r"C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\excel_port\data")
     main(xlsm, outdir)
