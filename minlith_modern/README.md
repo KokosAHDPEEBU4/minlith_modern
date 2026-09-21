@@ -163,7 +163,7 @@ pyinstaller minlith.spec
 ## Тесты
 
 ```bash
-# Все тесты (1192 passed, 5 skipped)
+# Все тесты (1212 passed, 5 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -184,6 +184,7 @@ minlith_modern/
 │   ├── core/           # Расчётный движок
 │   │   ├── calculator.py       # Оркестратор
 │   │   ├── excel_parity/       # Движок «как в Excel» (корректные округления, без ROUND)
+│   │   │   └── branches.py     # Траектория веток (BranchPath) — база графа разветвлений
 │   │   ├── excel_exact/        # Движок «Excel 1:1» (адаптер к excel_port, с ROUND)
 │   │   ├── excel_port/         # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
 │   │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
@@ -207,7 +208,7 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 1192 теста (5 skipped)
+├── tests/              # 1212 тестов (5 skipped)
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша

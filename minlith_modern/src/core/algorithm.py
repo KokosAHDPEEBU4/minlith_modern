@@ -104,6 +104,10 @@ class AlgorithmOutput:
     # Остаточные пулы оксидов (defect по теории). Заполняется GeologicalTheoryAlgorithm.
     residuals: dict[str, float] | None = None
 
+    # Маршрут веток алгоритма (для графа разветвлений/диагностики).
+    # Заполняется excel_parity; у остальных движков остаётся None.
+    path: dict | None = None
+
 
 @runtime_checkable
 class MineralAlgorithm(Protocol):

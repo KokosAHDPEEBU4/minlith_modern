@@ -32,7 +32,14 @@ if str(ROOT) not in sys.path:
 import win32com.client  # noqa: E402
 
 from src.core.excel_parity.runner import run_sample as py_run  # noqa: E402
-from src.core.excel_port.runner import run_sample as port_run  # noqa: E402
+from src.core.excel_port.runner import (  # noqa: E402
+    load_structure,
+    load_workbook,
+)
+from src.core.excel_port.runner import (  # noqa: E402
+    run_sample as port_run,
+)
+from src.core.excel_port.vm import VbaVM  # noqa: E402
 
 XLSM = r"C:\Users\kokos\Desktop\Lene\src_excel\Ispravlenny_MINLITH1_2010.xlsm"
 
@@ -192,6 +199,32 @@ def fmt(v) -> str:
     return f"{v:.4f}"
 
 
+def _col_letters(n: int) -> str:
+    """2 -> 'B', 28 -> 'AB' (для row287 B..AI)."""
+    s = ""
+    while n:
+        n, r = divmod(n - 1, 26)
+        s = chr(65 + r) + s
+    return s
+
+
+def port_cells(ox: dict[str, float]) -> tuple[list, list]:
+    """Строка 287 (B..AI) и невязки D164..D171 полного порта excel_port.
+
+    Нужны для сверки excel_exact (rounding=True) с Excel: run_sample возвращает
+    только именованные переменные, а row287/defect — это ячейки листа.
+    """
+    wb = load_workbook(rounding=True)
+    structure = load_structure()
+    wb.set_input("Нач+Type 3", ox)
+    vm = VbaVM(wb, structure)
+    vm.active_sheet = "Нач+Type 3"
+    vm.run("aDefin")
+    row = [wb.eval_cell("Нач+Type 12", f"{_col_letters(c)}287") for c in range(2, 36)]
+    defect = [wb.eval_cell("Нач+Type 12", f"D{r}") for r in range(164, 172)]
+    return row, defect
+
+
 def compare_sample(name: str, comp: dict[str, float], session: ExcelSession) -> dict:
     ox = norm(comp)
 
@@ -257,9 +290,26 @@ def compare_sample(name: str, comp: dict[str, float], session: ExcelSession) -> 
         ov = py.out.defect.get(oxide)
         defect.append((oxide, ev, ov, ev - ov if ev is not None and ov is not None else None))
 
+    # ---- excel_exact (порт rounding=True) vs Excel: строка 287 и невязки ----
+    prow, pdef = port_cells(ox)
+    row287_exact = []
+    for i, ev in enumerate(ex["row287"]):
+        col = row287[i][0]
+        num = _num(ev)
+        pv = _num(prow[i])
+        row287_exact.append((col, num, pv,
+                             num - pv if pv is not None and num is not None else None))
+    defect_exact = []
+    for i, oxide in enumerate(DEFECT_OXIDES):
+        ev = _num(ex["defect"][i])
+        pv = _num(pdef[i])
+        defect_exact.append((oxide, ev, pv,
+                             ev - pv if ev is not None and pv is not None else None))
+
     return {
         "ox": ox, "py": py, "ex": ex,
         "coeff": coeff, "vars": vars_rows, "row287": row287, "defect": defect,
+        "row287_exact": row287_exact, "defect_exact": defect_exact,
         "rock": py.st0.rock_type,
         "flags": {k: _num(ex["cells"].get(k)) for k in
                   [f"{ch}{r}" for ch in ("E", "F") for r in range(20, 27)]},
@@ -329,7 +379,26 @@ def main() -> int:
                 print(f"     {v:<8} Excel={fmt(ev)}  ours={fmt(ov)}  "
                       f"port={fmt(pv)}  |d|={abs(d):.4f}  {mark(d)}")
 
-            summary.append((name, t["rock"], nq, nb))
+            # ---- excel_exact (полная копия с ROUND) vs Excel ----
+            exact_diffs = []
+            for _p, ev, _ov, pv, _d in t["coeff"]:
+                if ev is not None and pv is not None:
+                    exact_diffs.append(ev - pv)
+            for _v, ev, _ov, pv, _d in t["vars"]:
+                if ev is not None and pv is not None:
+                    exact_diffs.append(ev - pv)
+            for row in t["row287_exact"] + t["defect_exact"]:
+                if row[-1] is not None:
+                    exact_diffs.append(row[-1])
+            ex_max = max((abs(d) for d in exact_diffs), default=0.0)
+            ex_bad = sum(1 for d in exact_diffs if abs(d) > TOL_BAD)
+            ex_susp = sum(1 for d in exact_diffs
+                          if TOL_SUSPECT < abs(d) <= TOL_BAD)
+            print(f"   excel_exact (rounding=True) vs Excel: "
+                  f"max|d|={ex_max:.3g}  достоверных={ex_bad}  "
+                  f"подозрительных={ex_susp}")
+
+            summary.append((name, t["rock"], nq, nb, ex_susp, ex_bad))
 
             d = out_root / name
             d.mkdir(parents=True, exist_ok=True)
@@ -353,20 +422,34 @@ def main() -> int:
                 w.writerow(["oxide", "excel", "excel_parity", "d_abs"])
                 for oxide, ev, ov, dd in t["defect"]:
                     w.writerow([oxide, ev, ov, abs(dd) if dd is not None else ""])
+            with (d / "row287_exact.csv").open("w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow(["cell", "excel", "excel_exact", "d_abs"])
+                for col, ev, pv, dd in t["row287_exact"]:
+                    w.writerow([col + "287", ev, pv,
+                                abs(dd) if dd is not None else ""])
+            with (d / "defect_exact.csv").open("w", newline="", encoding="utf-8") as f:
+                w = csv.writer(f)
+                w.writerow(["oxide", "excel", "excel_exact", "d_abs"])
+                for oxide, ev, pv, dd in t["defect_exact"]:
+                    w.writerow([oxide, ev, pv, abs(dd) if dd is not None else ""])
     finally:
         session.close()
 
     with (out_root / "summary.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["sample", "rock_type", "suspect_count", "bad_count"])
+        w.writerow(["sample", "rock_type", "suspect_count", "bad_count",
+                    "exact_suspect_count", "exact_bad_count"])
         w.writerows(summary)
 
     print("=" * 78)
     print("ИТОГ")
-    for name, rock, nq, nb in summary:
-        print(f"  {name:<22} тип={rock}  подозрительных={nq}  "
-              f"достоверных расхождений={nb}")
-    print(f"Достоверных расхождений всего: {n_bad_total}")
+    for name, rock, nq, nb, exq, exb in summary:
+        print(f"  {name:<22} тип={rock}  excel_parity: ?={nq} !={nb}  |  "
+              f"excel_exact: ?={exq} !={exb}")
+    exact_bad_total = sum(exb for *_r, exb in summary)
+    print(f"excel_parity: достоверных расхождений всего: {n_bad_total}")
+    print(f"excel_exact:  достоверных расхождений всего: {exact_bad_total}")
     print(f"Отчёты: {out_root}")
     return 1 if n_bad_total else 0
 

@@ -4,6 +4,10 @@
 **Статус:** ✅ ПОЛНЫЙ ПАРИТЕТ (2026-09-16): clean_engine == excel_port(rounding=False) на всей решётке 16000/16000 (n_ok=16000, n_gap=0, n_mis=0)
 **Обновление:** 🆕 движок `excel_exact` = `excel_port(rounding=True)` выведен как отдельный
 движок и доступен пользователю в GUI рядом с `excel_parity` (без ROUND); оба — «как в Excel».
+**Обновление:** 🆕 структурированная траектория веток `excel_parity`
+(`src/core/excel_parity/branches.py`, `ExcelRun.path`, `AlgorithmOutput.path`) — база
+графа разветвлений; сверка `scripts/verify_excel_parity.py` теперь считает сходимость
+обоих Excel-движков (у `excel_exact` — 0 расхождений с живым макросом на 10 образцах).
 **Назначение файла:** подробное описание плана, заданные вопросы и ответы пользователя, todo-список.
 
 ---

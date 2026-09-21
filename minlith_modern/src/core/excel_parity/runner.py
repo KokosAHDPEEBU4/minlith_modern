@@ -4,6 +4,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from src.core.excel_parity.branches import (
+    COEFFICIENT_BAND_INFO,
+    ROCK_TYPE_INFO,
+    STAGE_VI_INFO,
+    TYPE_BRANCH_INFO,
+    BranchPath,
+)
 from src.core.excel_parity.output import Output, output
 from src.core.excel_parity.stage0 import DEFAULT_OXIDES, Stage0, compute_stage0
 from src.core.excel_parity.stage_vi import StageVI, solve_stage_vi
@@ -47,6 +54,29 @@ class ExcelRun:
             "ht": self.vi.ht,
         }
         return n
+
+    @property
+    def path(self) -> BranchPath:
+        """Структурированный маршрут веток (для графа/диагностики).
+
+        Собирается из уже принятых решений: полоса коэффициентов и тип
+        породы (стадия 0), подписи веток типа и VI этапа. Расчёт не меняет.
+        """
+        p = BranchPath()
+        band = self.st0.coefficient_band
+        cond, src = COEFFICIENT_BAND_INFO.get(band, ("", ""))
+        p.add("stage0", f"band_{band or '?'}", condition=cond, source=src,
+              value=self.st0.F)
+        rt = int(self.st0.rock_type)
+        cond, src = ROCK_TYPE_INFO.get(rt, ("", ""))
+        p.add("stage0", f"rock_type_{rt}", condition=cond, source=src)
+        for label in self.tsol.trace:
+            cond, src = TYPE_BRANCH_INFO.get(label, ("", ""))
+            p.add("type", label, condition=cond, source=src)
+        for label in self.vi.trace:
+            cond, src = STAGE_VI_INFO.get(label, ("", ""))
+            p.add("stage_vi", label, condition=cond, source=src)
+        return p
 
 
 def run_from_stage0(st0: Stage0) -> ExcelRun:

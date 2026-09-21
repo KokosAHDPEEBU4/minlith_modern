@@ -341,6 +341,25 @@ calc = Calculator(config=CalculationConfig(calculation_engine="excel_exact"))
 > исходные вес.% оксидов (ключи Excel: `"SiO2"`, `"TiO2"`, …), т.к. книга сама пересчитывает
 > вес.% → ф.е. с `ROUND`. Без `oxide_wt` движок поднимает `ValueError`.
 
+**Траектория веток (для графа разветвлений).** Движок `excel_parity` дополнительно
+возвращает структурированный маршрут принятых решений:
+
+```python
+from src.core.excel_parity.runner import run_sample
+from src.core.excel_parity.branches import BranchPath, BranchDecision
+
+run = run_sample({"SiO2": 70.0, "Al2O3": 12.0, "Na2O": 3.0, "K2O": 6.0})
+run.st0.coefficient_band      # "H5" | "J5" | "L5" | "H12" | "J12" | "L12"
+run.st0.type_conditions       # {"e20": .., "e21": .., "e22": .., "e24": .., "e25": ..}
+path: BranchPath = run.path   # полоса, тип, подписи веток типа и VI этапа
+path.labels()                 # ["band_H5", "rock_type_1", "t_52~53", "A"]
+path.to_dict()                # {"labels": [...], "decisions": [{stage, name, condition, source, value}]}
+```
+
+`AlgorithmOutput.path: dict | None` — тот же маршрут на выходе `algorithm.compute`
+(`Calculator.calculate_single(debug=True)` дополнительно пишет его в
+`DebugTraceCollector` через `record_branch_path`). У других движков `path = None`.
+
 ---
 
 ### 2.3. Coefficients

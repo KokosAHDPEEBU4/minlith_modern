@@ -48,6 +48,35 @@ class DebugTraceCollector:
             TraceCondition(step=step, condition=condition, result=result, branch=branch)
         )
 
+    def record_branch_path(self, path) -> None:
+        """Записать маршрут веток (BranchPath или dict) в conditions.
+
+        Принимает объект с ``.decisions`` (список с полями ``stage``,
+        ``name``, ``condition``) либо словарь ``{"decisions": [...]}``.
+        Ничего не ломает: те же условия видны в ``to_dict``/``to_text``.
+        """
+        if path is None:
+            return
+        if isinstance(path, dict):
+            decisions = path.get("decisions", [])
+        else:
+            decisions = getattr(path, "decisions", [])
+        for d in decisions:
+            if isinstance(d, dict):
+                stage = d.get("stage", "")
+                name = d.get("name", "")
+                condition = d.get("condition", "")
+            else:
+                stage = getattr(d, "stage", "")
+                name = getattr(d, "name", "")
+                condition = getattr(d, "condition", "")
+            self.record_condition(
+                step=f"branch:{stage}",
+                condition=condition or name,
+                result=True,
+                branch=name,
+            )
+
     def to_dict(self) -> dict:
         """Export trace as dictionary."""
         return {

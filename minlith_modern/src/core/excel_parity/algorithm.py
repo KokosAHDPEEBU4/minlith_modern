@@ -74,4 +74,5 @@ class ExcelParityAlgorithm:
             Sd=vi.sd, Srp=vi.srp, Mst=vi.mst, Ht=vi.ht, Prl=vi.prl,
             residuals={"ca_n": tsol.ca_n, "mg_n": tsol.mg_n,
                        "fe_n": tsol.fe_n, "si_n": tsol.si_n},
+            path=run.path.to_dict(),
         )

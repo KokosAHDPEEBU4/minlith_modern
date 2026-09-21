@@ -334,6 +334,8 @@ class Calculator:
         # Run algorithm with timeout
         wrapper = _TimeoutWrapper(self.config.timeout_seconds)
         alg_output = wrapper.run(self.algorithm.compute, alg_input)
+        if tracer and getattr(alg_output, "path", None):
+            tracer.record_branch_path(alg_output.path)
         if tracer:
             tracer.record("Алгоритм", "Ab", alg_output.Ab)
             tracer.record("Алгоритм", "An", alg_output.An)

@@ -59,6 +59,9 @@ class Stage0:
     ca: float = 0.0          # E10 — CaO для стадий типов (D8 при D8>0 иначе 0)
     ca_n_in: float = 0.0     # D8 — CaO остаток при отрицательном Ca (T-O2)
     s: float = 0.0           # D17 — S_ф.е. + SO3_ф.е.
+    # Траектория веток (для графа разветвлений), в расчёте не участвует:
+    coefficient_band: str = ""                       # H5/J5/L5/H12/J12/L12
+    type_conditions: dict[str, float] = field(default_factory=dict)  # e20..e25
 
 
 def formula_units(ox: dict[str, float]) -> dict[str, float]:
@@ -155,6 +158,44 @@ def coefficients(f: float, a: float) -> tuple[float, float, float, float, float]
     return k1, k2, k3, k4, achl2
 
 
+def coefficient_band(f: float, a: float) -> str:
+    """Идентификатор полосы коэффициентов (для траектории веток).
+
+    Условия повторяют ``coefficients``; консистентность проверяется тестом
+    ``tests/test_branch_path.py``. Возвращает ``H5/J5/L5/H12/J12/L12``.
+    """
+    if 0.0 < f < 0.21:
+        return "H5"
+    if 0.21 <= f < 0.51:
+        return "J5"
+    if 0.51 <= f < 0.69:
+        return "L5"
+    if 0.69 <= f < 0.87 and a > 0.47:
+        return "H12"
+    if 0.69 <= f < 0.87 and 0.40 < a < 0.47:
+        return "J12"
+    return "L12"
+
+
+def classify_conditions(fe: dict[str, float], k1: float, k3: float) -> dict[str, float]:
+    """Значения условий E20..E25 классификатора (для траектории веток).
+
+    Повторяет вычисления ``classify``; консистентность проверяется тестом
+    ``tests/test_branch_path.py``.
+    """
+    al = fe["Al2O3"]
+    na = fe["Na2O"]
+    k = fe["K2O"]
+    mg = fe["MgO"]
+    return {
+        "e20": al - na - k,
+        "e21": al - (1.2 * na + k),
+        "e22": al - (1.2 * na + 3.25 * k),
+        "e24": al - (1.2 * na + 3.25 * k + (mg - 0.5 * k) * k3 / k1),
+        "e25": al - (5 * na + 3.25 * k + (mg - 0.5 * k - 2 * na) * k3 / k1),
+    }
+
+
 def classify(fe: dict[str, float], k1: float, k3: float) -> int:
     """Определить тип породы по условиям E20..E25 (чистые, без округлений).
 
@@ -208,4 +249,6 @@ def compute_stage0(ox: dict[str, float]) -> Stage0:
         ca=ca,
         ca_n_in=d8,
         s=s_total,
+        coefficient_band=coefficient_band(f, a),
+        type_conditions=classify_conditions(fe, k1, k3),
     )

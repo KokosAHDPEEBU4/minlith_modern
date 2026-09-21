@@ -6,9 +6,13 @@
 - **Отдельный движок `excel_exact` — полная 1:1 копия Excel:** `ExcelExactAlgorithm` (`src/core/excel_exact/algorithm.py`) исполняет формулы+VBA через `excel_port.run_sample(rounding=True)`, воспроизводя пошаговые `ROUND` и накопление ошибки округления книги MINLITH. В отличие от `excel_parity`, который считает те же формулы в float64 без пошаговых округлений. Движку передаются исходные вес.% оксидов (`AlgorithmInput.oxide_wt`), т.к. книга сама пересчитывает вес.% → ф.е. с `ROUND`.
 - GUI: в тулбаре «Движки расчёта» и в списках движков (Настройки, диалог расчёта) теперь два «экселевских» варианта — «Excel (корректные округл.)» (`excel_parity`, по умолчанию) и «Excel 1:1 (ROUND)» (`excel_exact`); CLI `--engine` принимает `excel_exact`.
 - Тесты: `tests/test_excel_exact_adapter.py` (14 шт.) — протокол, разрешение движка Calculator'ом, совпадение ф.е. с `excel_port(rounding=True)` на 7 образцах, end-to-end через Calculator, проброс `oxide_wt`, ошибка без вес.%.
+- **Структурированная траектория веток движка `excel_parity`** (`src/core/excel_parity/branches.py`): `BranchDecision`/`BranchPath`, каталоги `COEFFICIENT_BAND_INFO` (H5/J5/L5/H12/J12/L12), `ROCK_TYPE_INFO` (1-5), `STAGE_VI_INFO` (A/B/C), `TYPE_BRANCH_INFO` (подписи `t_*`/`p_*`/`m_*`). `Stage0` получил поля `coefficient_band` и `type_conditions`; `ExcelRun.path` собирает маршрут образца; `AlgorithmOutput.path` отдаёт его наружу. Чистое добавление — расчёт не менялся. База для графа разветвлений (`docs/planning/BRANCH_GRAPH_SELECTION.md`).
+- `DebugTraceCollector.record_branch_path()` — запись маршрута веток в трассировку; `Calculator.calculate_single(debug=True)` подхватывает `AlgorithmOutput.path`.
+- Тесты: `tests/test_branch_path.py` (20 шт.) — согласованность зеркальных `coefficient_band`/`classify_conditions` с `coefficients`/`classify` на сетке, структура `ExcelRun.path`, round-trip `to_dict`, запись в трассировку, сквозной путь через `Calculator(debug=True)`.
+- `scripts/verify_excel_parity.py`: добавлен подсчёт сходимости **`excel_exact`** (= `excel_port(rounding=True)`) с живым Excel — строка 287 и невязки восстанавливаются прогоном книги; новые колонки `exact_suspect_count`/`exact_bad_count` в `summary.csv` и новые отчёты `row287_exact.csv`/`defect_exact.csv`.
 
 ### Changed
-- `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`.
+- `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`. `AlgorithmOutput` получил необязательное поле `path: dict | None`.
 
 ## [0.7.0] — 2026-09-21
 

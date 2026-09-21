@@ -16,7 +16,7 @@ python -m src.cli calculate input.xlsx -o results.xlsx
 ### 2. Тестирование
 
 ```bash
-# Все тесты (1192)
+# Все тесты (1212)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -41,8 +41,9 @@ python -m mypy src/ --ignore-missing-imports
 ```
 src/
 ├── core/                  # Расчётный движок
-│   ├── algorithm.py       # Protocol + AlgorithmInput
+│   ├── algorithm.py       # Protocol + AlgorithmInput/AlgorithmOutput (+path)
 │   ├── excel_parity/      # Движок «как в Excel» (корректные округления, без ROUND)
+│   │   └── branches.py    # Структурированная траектория веток (BranchPath)
 │   ├── excel_exact/       # Движок «Excel 1:1» (адаптер к excel_port, с ROUND)
 │   ├── excel_port/        # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
 │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
