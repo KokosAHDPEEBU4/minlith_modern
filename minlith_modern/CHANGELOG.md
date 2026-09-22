@@ -20,6 +20,7 @@
   - type1 `t_74t`: `si_n` остаётся `= C70 = si_r` (записан в `t_68t`), а не обнуляется; тест `test_type1_t74_si_n_matches_excel`.
   - `_t45_513`: в `m_279` передаётся исходный `fe3_1` (m_513 пишет только `fe3_2`), а не `fe4_2`; тест `test_type45_m346_fe3_1_matches_excel`.
   - Остался 1 вход (type5→type3): Excel проносит `al3_3=al4_1` через ячейку `I51` из стадии type45 в `aType_3` (сквозное состояние именованных ячеек) — осознанно не портирован.
+- **Подсказка имени образца при наведении на точку диаграммы** (в приложении, как в интерактивном Plotly-HTML): плитка диаграммы находит ближайшую точку под курсором и показывает имя образца в строке статуса. Реализация: `_ChartTile._connect_point_hover/_on_point_hover`, чистый помощник `src/gui/widgets/hover_math.py`; плитке передаётся `sample_names`. Работает для точечных/линейных диаграмм (числи точек == числу образцов); у круговой — своя подсказка.
 
 ### Fixed
 - **Падение приложения при старте:** `MainWindow._apply_zoom_step` обращался к `page._view`, но у `ChartsPage` после перехода на вкладки такого атрибута нет (`AttributeError: 'ChartsPage' object has no attribute '_view'`). Добавлены методы `set_zoom_step()` в `ChartsPage` (применяет шаг ко всем вкладкам) и `OutputPage` (делегирует в `_view`); `main_window` вызывает `page.set_zoom_step(step)`.
@@ -29,6 +30,7 @@
 ### Changed
 - **Вкладки диаграмм:** кнопка создания новой вкладки теперь оформлена как в браузере — отдельная вкладка «＋» сразу после последней открытой (вместо угловой кнопки справа); «＋» не закрывается и при перетаскивании остаётся последней. Логика вкладок: `ChartsPage._add_plus_tab/_on_tab_bar_clicked/_on_tab_moved`, `set_data`/`set_zoom_step` пропускают вкладку-заглушку.
 - **Диалог «Расчёт…»:** добавлены кнопки «Выбрать все образцы» и «Снять выделение» (`src/gui/dialogs/calculation_dialog.py`).
+- **Панель выбора на странице диаграмм — три уровня слева направо:** «Диаграммы | Образцы | Минералы» (было: диаграммы+минералы в один столбец, образцы — кнопкой сверху). Выбор образцов перенесён в панель чекбоксами, синхронизируется между вкладками (`MultiChartView.set_sample_names/selected_sample_indexes/samplesChanged`, `ChartsPage._on_samples_changed`). На странице «Вывод» уровень образцов скрыт (`set_samples_visible(False)`).
 - `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`, `AlgorithmOutput` — поле `path: dict | None`, `CalculationResult` — поле `branch_path: dict | None` (все с дефолтами, обратно совместимо).
 
 ## [0.7.0] — 2026-09-21

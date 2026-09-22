@@ -6,7 +6,7 @@ import logging
 from typing import NamedTuple
 
 import numpy as np
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -31,6 +31,7 @@ from src.gui.widgets.chart_interactions import (
     resolve_type_id,
 )
 from src.gui.widgets.chart_sizes import ChartSizeSpec, aspect_for, get_size_spec
+from src.gui.widgets.hover_math import nearest_point_index
 from src.gui.widgets.zoom_math import (
     DEFAULT_ZOOM_STEP,
     MIN_RANGE_WIDTH,
@@ -157,6 +158,7 @@ class _ChartTile(QWidget):
         self._toolbar = None
         self._spec: InteractionSpec | None = None
         self._cids: dict[str, int] = {}
+        self._sample_names: list[str] = []
 
     @property
     def chart_idx(self) -> int:
@@ -184,11 +186,13 @@ class _ChartTile(QWidget):
         fig,
         title: str,
         chart_type: str | None = None,
+        sample_names: list[str] | None = None,
     ) -> None:
         self.disconnect_events()
         self._chart_idx = idx
         self._title.setText(title)
         self._fig = fig
+        self._sample_names = list(sample_names or [])
 
         self._spec = get_spec(chart_type) if chart_type else None
         self._size_spec = get_size_spec(chart_type)
@@ -217,7 +221,56 @@ class _ChartTile(QWidget):
         self._snapshot_home()
         self._apply_spec()
         self._connect_pie_events()
+        self._connect_point_hover()
         self._apply_display_size()
+
+    def _connect_point_hover(self) -> None:
+        """Подсказка «имя образца» при наведении на точку (кроме круговой)."""
+        if self._canvas is None or self._fig is None or not self._sample_names:
+            return
+        if self._spec is not None and self._spec.category is ChartCategory.PIE:
+            return  # у круговой своя подсказка
+        self._cids["hover_points"] = self._canvas.mpl_connect(
+            "motion_notify_event", self._on_point_hover)
+
+    def _iter_point_arrays(self):
+        """Итератор (ax, data[N,2]) там, где число точек совпадает с числом образцов."""
+        n = len(self._sample_names)
+        if n == 0 or self._fig is None:
+            return
+        for ax in self._fig.axes:
+            for coll in ax.collections:
+                offs = coll.get_offsets()
+                if offs is None or len(offs) != n:
+                    continue
+                yield ax, np.asarray(offs, dtype=float)
+            for line in ax.lines:
+                xd = np.asarray(line.get_xdata(), dtype=float)
+                yd = np.asarray(line.get_ydata(), dtype=float)
+                if len(xd) == n and len(yd) == n:
+                    yield ax, np.column_stack([xd, yd])
+
+    def _on_point_hover(self, event) -> None:
+        """Показать имя ближайшего образца в статус-строке тулбара плитки."""
+        if self._toolbar is None or self._fig is None or not self._sample_names:
+            return
+        if event.x is None or event.y is None:
+            return
+        best_name: str | None = None
+        best_dist = 12.0
+        for ax, data in self._iter_point_arrays():
+            try:
+                disp = ax.transData.transform(data)
+            except Exception:  # noqa: BLE001 - защитный: оси без данных
+                continue
+            idx = nearest_point_index(event.x, event.y, disp, best_dist)
+            if idx is None:
+                continue
+            dist = float(np.hypot(disp[idx, 0] - event.x, disp[idx, 1] - event.y))
+            if dist < best_dist:
+                best_dist = dist
+                best_name = self._sample_names[idx]
+        self._toolbar.set_message(best_name or "")
 
     def resizeEvent(self, event) -> None:  # noqa: N802 (Qt override)
         super().resizeEvent(event)
@@ -830,6 +883,8 @@ class MultiChartView(QWidget):
     Supports multi-select rendering, column control, per-tile and bulk export.
     """
 
+    samplesChanged = pyqtSignal(object)  # noqa: N815 - PyQt сигнал (convention)
+
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._data: ChartData | None = None
@@ -837,6 +892,8 @@ class MultiChartView(QWidget):
         self._checkboxes: list[QCheckBox] = []
         self._zoom_step: float = DEFAULT_ZOOM_STEP
         self._syncing: bool = False
+        self._sample_checkboxes: dict[int, QCheckBox] = {}
+        self._samples_block: bool = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -900,6 +957,11 @@ class MultiChartView(QWidget):
         side_layout.setContentsMargins(0, 0, 0, 0)
         side_layout.setSpacing(6)
 
+        # Три уровня выбора слева направо: диаграммы | образцы | минералы.
+        columns = QHBoxLayout()
+        columns.setSpacing(6)
+
+        # ── Уровень 1: выбор диаграммы ──
         check_group = QGroupBox("Диаграммы")
         check_layout = QVBoxLayout(check_group)
         check_layout.setContentsMargins(8, 12, 8, 8)
@@ -911,10 +973,34 @@ class MultiChartView(QWidget):
             check_layout.addWidget(cb)
 
         check_layout.addStretch()
-        side_layout.addWidget(check_group, stretch=1)
+        columns.addWidget(check_group, stretch=1)
 
-        # Блок выбора минералов — между чекбоксами диаграмм и построением.
-        self._mineral_group = QGroupBox("Минералы для построения")
+        # ── Уровень 2: выбор образца ──
+        self._samples_group = QGroupBox("Образцы")
+        samples_layout = QVBoxLayout(self._samples_group)
+        samples_layout.setContentsMargins(8, 12, 8, 8)
+
+        sample_tools = QHBoxLayout()
+        btn_smp_all = QPushButton("Все")
+        btn_smp_all.setToolTip("Отметить все образцы")
+        btn_smp_all.clicked.connect(lambda: self._set_samples(True))
+        sample_tools.addWidget(btn_smp_all)
+        btn_smp_none = QPushButton("Снять")
+        btn_smp_none.setToolTip("Снять отметки со всех образцов")
+        btn_smp_none.clicked.connect(lambda: self._set_samples(False))
+        sample_tools.addWidget(btn_smp_none)
+        sample_tools.addStretch()
+        samples_layout.addLayout(sample_tools)
+
+        self._samples_widget = QWidget()
+        self._samples_checkbox_layout = QVBoxLayout(self._samples_widget)
+        self._samples_checkbox_layout.setContentsMargins(0, 0, 0, 0)
+        self._samples_checkbox_layout.setSpacing(2)
+        samples_layout.addWidget(self._samples_widget)
+        columns.addWidget(self._samples_group, stretch=1)
+
+        # ── Уровень 3: выбор минералов ──
+        self._mineral_group = QGroupBox("Минералы")
         mineral_layout = QVBoxLayout(self._mineral_group)
         mineral_layout.setContentsMargins(8, 12, 8, 8)
 
@@ -936,7 +1022,9 @@ class MultiChartView(QWidget):
         self._mineral_checkbox_layout.setSpacing(2)
         mineral_layout.addWidget(self._mineral_widget)
 
-        side_layout.addWidget(self._mineral_group, stretch=1)
+        columns.addWidget(self._mineral_group, stretch=1)
+
+        side_layout.addLayout(columns, stretch=1)
 
         self._btn_render = QPushButton("Построить выбранные")
         self._btn_render.setStyleSheet("font-weight: bold; padding: 8px 16px;")
@@ -946,7 +1034,7 @@ class MultiChartView(QWidget):
         side_scroll = QScrollArea()
         side_scroll.setWidgetResizable(True)
         side_scroll.setWidget(side)
-        side_scroll.setFixedWidth(300)
+        side_scroll.setFixedWidth(560)
         side_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         body.addWidget(side_scroll, stretch=0)
 
@@ -1001,6 +1089,50 @@ class MultiChartView(QWidget):
             self._mineral_checkboxes[key] = cb
             self._mineral_checkbox_layout.addWidget(cb)
         self._mineral_checkbox_layout.addStretch()
+
+    def set_sample_names(self, names, selected=None) -> None:
+        """Пересоздать чекбоксы образцов (уровень 2 выбора).
+
+        ``selected`` — множество индексов отмеченных; ``None`` = отметить все.
+        Сигнал при построении не эмитится (подключается после ``setChecked``).
+        """
+        while self._samples_checkbox_layout.count():
+            item = self._samples_checkbox_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        self._sample_checkboxes.clear()
+
+        names = list(names or [])
+        self._samples_group.setEnabled(bool(names))
+        for i, name in enumerate(names):
+            cb = QCheckBox(str(name))
+            cb.setChecked(selected is None or i in selected)
+            cb.stateChanged.connect(self._on_sample_toggled)
+            self._sample_checkboxes[i] = cb
+            self._samples_checkbox_layout.addWidget(cb)
+        self._samples_checkbox_layout.addStretch()
+
+    def selected_sample_indexes(self) -> set[int]:
+        return {i for i, cb in self._sample_checkboxes.items() if cb.isChecked()}
+
+    def set_samples_visible(self, visible: bool) -> None:
+        """Показать/скрыть уровень выбора образцов (напр. на странице «Вывод»)."""
+        self._samples_group.setVisible(bool(visible))
+
+    def _set_samples(self, checked: bool) -> None:
+        self._samples_block = True
+        try:
+            for cb in self._sample_checkboxes.values():
+                cb.setChecked(checked)
+        finally:
+            self._samples_block = False
+        self.samplesChanged.emit(self.selected_sample_indexes())
+
+    def _on_sample_toggled(self, _state: int) -> None:
+        if self._samples_block:
+            return
+        self.samplesChanged.emit(self.selected_sample_indexes())
 
     def _set_minerals(self, checked: bool) -> None:
         for cb in self._mineral_checkboxes.values():
@@ -1150,7 +1282,9 @@ class MultiChartView(QWidget):
                 fig = chart.render(render_data)
                 chart_type = resolve_type_id(chart_idx)
                 tile = _ChartTile(zoom_step=self._zoom_step)
-                tile.set_figure(chart_idx, fig, chart.get_name(), chart_type=chart_type)
+                tile.set_figure(chart_idx, fig, chart.get_name(),
+                                chart_type=chart_type,
+                                sample_names=render_data.sample_names)
                 tile._full_width = self._is_wide_chart(chart_idx)
                 tile._view_notify = self.on_tile_view_changed
                 tile._btn_export.clicked.connect(

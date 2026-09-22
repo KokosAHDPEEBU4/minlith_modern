@@ -74,6 +74,68 @@ def test_calculation_dialog_select_all_samples(qapp):
     assert not any(dialog._samples_list.item(i).isSelected() for i in range(3))
 
 
+def test_hover_math_nearest_point():
+    """Наведение на точку: ближайшая в пределах порога, иначе None."""
+    import numpy as np
+
+    from src.gui.widgets.hover_math import nearest_point_index
+
+    points = np.array([[0.0, 0.0], [100.0, 0.0], [0.0, 100.0]])
+    assert nearest_point_index(3.0, 3.0, points, 12.0) == 0
+    assert nearest_point_index(50.0, 50.0, points, 12.0) is None
+    assert nearest_point_index(0.0, 0.0, None) is None
+    assert nearest_point_index(0.0, 0.0, np.zeros((0, 2))) is None
+
+
+def test_chart_view_sample_selection_signal(qapp):
+    """Уровень выбора образцов в MultiChartView: чекбоксы + сигнал."""
+    from src.gui.widgets.chart_grid import MultiChartView
+
+    view = MultiChartView()
+    received: list[set] = []
+    view.samplesChanged.connect(lambda sel: received.append(set(sel)))
+
+    view.set_sample_names(["A", "B", "C"], {0, 2})
+    assert view.selected_sample_indexes() == {0, 2}
+    assert received == []  # при построении сигнал не эмитится
+
+    view._sample_checkboxes[1].setChecked(True)
+    assert view.selected_sample_indexes() == {0, 1, 2}
+    assert received and received[-1] == {0, 1, 2}
+
+    view._set_samples(False)
+    assert view.selected_sample_indexes() == set()
+
+
+def test_charts_page_samples_sync_across_tabs(qapp):
+    """Выбор образцов на странице диаграмм синхронизируется между вкладками."""
+    from src.core.calculator import Calculator
+    from src.core.models import OxideComposition, Sample
+    from src.gui.pages.charts_page import ChartsPage
+
+    samples = [
+        Sample(name=f"S{i}", composition=OxideComposition(
+            sio2=50.0, al2o3=15.0, feo=5.0, mgo=3.0, cao=4.0, na2o=3.0, k2o=2.0))
+        for i in range(3)
+    ]
+    results = Calculator().calculate(samples)
+
+    page = ChartsPage()
+    page.set_results(results)
+    page._add_tab()   # вторая реальная вкладка (первая — «＋»)
+
+    for i in range(page._tabs.count()):
+        widget = page._tabs.widget(i)
+        if hasattr(widget, "selected_sample_indexes"):
+            assert widget.selected_sample_indexes() == {0, 1, 2}
+
+    first = page._tabs.widget(0)
+    second = page._tabs.widget(1)
+    first._sample_checkboxes[1].setChecked(False)
+    assert page._selected == {0, 2}
+    assert second.selected_sample_indexes() == {0, 2}
+
+
 def test_main_window_constructs_and_applies_zoom(qapp):
     """Главное окно создаётся, а _apply_zoom_step не падает (регрессия)."""
     from src.gui.main_window import MainWindow

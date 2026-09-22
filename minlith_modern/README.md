@@ -15,6 +15,7 @@ MINLITH Modern — это перезапись легендарной Excel-пр
 - SQLite база данных с версионированием
 - 23 типов диаграмм (matplotlib): bar, pie, defect, QAPF, TAS, A-CN-K, heatmap, rock type, feldspar triangle, harker, AFM, SiO₂-K₂O, Bland-Altman, correlation, k1-k4, box plot, radar, coefficient heatmap, defect accumulation, PCA biplot, dendrogram, parallel coordinates, Mg-Fe-Al ternary
 - 14 интерактивных диаграмм (Plotly HTML): bar, TAS, harker, pie, QAPF, A-CN-K, AFM, heatmap, correlation, k1-k4, boxplot, violin, parallel, rock type (экспорт из GUI: «Диаграммы» → «Интерактивный HTML…», и CLI `--interactive`)
+- Диаграммы в GUI: вкладки (кнопка «＋» рядом с последней), три уровня выбора слева-направо (диаграммы | образцы | минералы), подсказка с именем образца при наведении на точку
 - Генератор отчётов (PDF, Word, HTML) с встроенными диаграммами
 - 5 шаблонов отчётов: brief, standard, full, core, geochemical
 - Параллельный расчёт через ProcessPoolExecutor
@@ -163,7 +164,7 @@ pyinstaller minlith.spec
 ## Тесты
 
 ```bash
-# Все тесты (1223 passed, 5 skipped)
+# Все тесты (1226 passed, 5 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -208,7 +209,7 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 1223 теста (5 skipped)
+├── tests/              # 1226 теста (5 skipped)
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша

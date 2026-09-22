@@ -383,6 +383,86 @@ Sample ──► Calculator.calculate_single
 
 - `../reference/EXCEL_REFERENCE_MINLITH.md` — формулы оригинала на уровне ячеек.
 - `../algorithm/00_overview_and_math_basis.md` — теория (типы, стадии).
+
+---
+
+## 15. Реализация: каталог решений (этап 1, 2026-09-22)
+
+Этап 1 ТЗ `TZ_BRANCH_GRAPH.md` — **статический каталог решений**.
+
+### 15.1. Что добавлено
+
+| Файл | Назначение |
+|---|---|
+| `src/core/excel_parity/branch_catalog.py` | каталог `DECISIONS` + API (`find_decision`, `branch_ids`, `catalog_to_dict`, `branch_ids`) |
+| `tests/test_branch_catalog.py` | 14 тестов на целостность каталога |
+| `BRANCH_GRAPH_SELECTION.md` (этот файл) | секции 15.x |
+
+Каталог — **чистый** модуль (без Qt), импортируется только `branches.py`.
+
+### 15.2. Общедоступный API
+
+```python
+from src.core.excel_parity.branch_catalog import (
+    DECISIONS,               # dict[str, DecisionSpec]
+    find_decision,           # find_decision("coefficient_band") -> DecisionSpec
+    branch_ids,              # все id веток решения
+    catalog_to_dict,         # -> dict (для GUI/экспорта JSON)
+)
+```
+
+Дата-классы (frozen):
+
+```python
+@dataclass(frozen=True)
+class BranchInfo:
+    id: str          # "H5", "3", "A", "t_67", "C-srp" …
+    title: str       # человекочитаемая подпись
+    condition: str   # условие выбора
+    source: str      # источник: ячейка/флаг/VBA-процедура
+
+@dataclass(frozen=True)
+class DecisionSpec:
+    id: str                       # "coefficient_band", "rock_type", "stage_vi" …
+    title: str
+    stage: str                    # "stage0" | "type" | "stage_vi"
+    overridable: bool
+    branches: tuple[BranchInfo, ...]
+```
+
+### 15.3. Состав каталога
+
+**MUST-решения (переопределяемые, `overridable=True`):**
+
+| `id` | stage | Ветки (id) | Источник данных |
+|---|---|---|---|
+| `coefficient_band` | `stage0` | H5, J5, L5, H12, J12, L12 | `COEFFICIENT_BAND_INFO` (branches.py) |
+| `rock_type` | `stage0` | 1, 2, 3, 4, 5 | `ROCK_TYPE_INFO` (branches.py) |
+| `stage_vi` | `stage_vi` | A, B, C-srp, C-mst, C-mst2 | `STAGE_VI_INFO` (branches.py) |
+
+**Заготовки внутренних решений типов (этап 6, `overridable=False`, id веток —
+сигнатуры из `TYPE_BRANCH_INFO`):**
+
+| `id` | Название | Ветки |
+|---|---|---|
+| `type12.plagioclase` | Типы 1–2: распределение плагиоклаза | t_52~53, t_58, t_67, t_83, an=0.2na, an=0.2na(I), an=ca, D61, D68 |
+| `type12.illite` | Типы 1–2: распределение иллита | ill-kz (D177-D179), ill+or, ill-gb (D274), fe-ill, fe-ill-mg, p_53t, p_142 |
+| `type3.chlorite` | Тип 3: распределение хлорита | F119+, F126-, 3331, 3332a, 3332b, 3333a, 3333b, s_271 |
+| `type3.exit` | Тип 3: выход в тип 5 | p253->t5, t5 |
+| `type45.route` | Типы 4/5: Fe-путь и rVI | t45-aType5, t45-m504, t45-m513->t5, t45-m552t->t5, t45-m418t, t45-m424->t5, type45-normal, D106 |
+
+> Заготовки ниже «реальных» решений этапа 6: они объединяют все ветки из
+> `TYPE_BRANCH_INFO` в грубые группы. На этапе 6 группы будут разбиты на
+> отдельные решения `overridable=True` (где это безопасно для паритета).
+
+### 15.4. Инварианты (проверяются тестами)
+
+1. Все `id` решений уникальны.
+2. Все `id` веток внутри решения уникальны.
+3. У каждого решения **≥ 2 ветки** (иначе нет «выбора»).
+4. Ветки MUST-решений в точности совпадают с ключами соответствующего
+   `*_INFO` в `branches.py` (защита от рассинхрона каталога и движка).
+5. `catalog_to_dict()` сериализуется в JSON (без Qt-зависимостей).
 - `minlith_modern/docs/EXCEL_VERSION_*.md` — разбор Excel-версии (в т.ч.
   `EXCEL_VERSION_06_rounding.md`, `EXCEL_VERSION_07_vba_flow.md`).
 - `minlith_modern/docs/CHART_INTERACTIONS_SPEC.md` — правила интерактива.

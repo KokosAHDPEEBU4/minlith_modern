@@ -119,6 +119,7 @@ class ChartsPage(QWidget):
         self._data: ChartData | None = None
         self._results: list = []
         self._selected: set[int] = set()
+        self._syncing: bool = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 8, 8)
@@ -129,10 +130,6 @@ class ChartsPage(QWidget):
         layout.addWidget(header)
 
         toolbar = QHBoxLayout()
-        self._btn_select = QPushButton("Выбор образцов…")
-        self._btn_select.setEnabled(False)
-        self._btn_select.clicked.connect(self._open_sample_selector)
-        toolbar.addWidget(self._btn_select)
 
         self._btn_plotly = QPushButton("Интерактивный HTML…")
         self._btn_plotly.setEnabled(False)
@@ -190,6 +187,8 @@ class ChartsPage(QWidget):
 
     def _add_tab(self, name: str | None = None) -> MultiChartView:
         view = MultiChartView()
+        view.samplesChanged.connect(self._on_samples_changed)
+        view.set_sample_names(self._sample_names(), self._selected)
         if name is None:
             name = f"Вкладка {self._real_tab_count() + 1}"
         plus = self._tabs.indexOf(self._plus_widget) if self._plus_widget else -1
@@ -228,6 +227,31 @@ class ChartsPage(QWidget):
         """Принять результаты, сбросить выбор на все образцы и построить."""
         self._results = list(results)
         self._selected = set(range(len(self._results)))
+        self._apply_samples_to_views()
+        self._rebuild()
+
+    def _sample_names(self) -> list[str]:
+        return [getattr(r, "sample_name", f"Образец {i + 1}")
+                for i, r in enumerate(self._results)]
+
+    def _apply_samples_to_views(self) -> None:
+        """Разослать список образцов и текущий выбор во все вкладки."""
+        names = self._sample_names()
+        for i in range(self._tabs.count()):
+            view = self._tabs.widget(i)
+            if hasattr(view, "set_sample_names"):
+                view.set_sample_names(names, self._selected)
+
+    def _on_samples_changed(self, selected) -> None:
+        """Выбор образцов в одной вкладке — синхронизировать остальные и пересобрать."""
+        if self._syncing:
+            return
+        self._syncing = True
+        try:
+            self._selected = set(selected)
+            self._apply_samples_to_views()
+        finally:
+            self._syncing = False
         self._rebuild()
 
     def _open_sample_selector(self) -> None:
@@ -241,7 +265,6 @@ class ChartsPage(QWidget):
             self._rebuild()
 
     def _rebuild(self) -> None:
-        self._btn_select.setEnabled(bool(self._results))
         self._btn_plotly.setEnabled(bool(self._results))
         if not self._results:
             self._lbl_selection.setText("")

@@ -27,6 +27,9 @@ class OutputPage(QWidget):
         layout.addWidget(header)
 
         self._view = MultiChartView()
+        # Страница «Вывод» только отображает уже выбранные данные — уровень
+        # выбора образцов здесь не нужен (фильтрация живёт на странице диаграмм).
+        self._view.set_samples_visible(False)
         layout.addWidget(self._view, stretch=1)
 
     def set_data(self, data: ChartData | None) -> None:
