@@ -164,7 +164,7 @@ pyinstaller minlith.spec
 ## Тесты
 
 ```bash
-# Все тесты (1226 passed, 5 skipped)
+# Все тесты (1241 passed, 5 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -209,7 +209,7 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 1226 теста (5 skipped)
+├── tests/              # 1241 теста (5 skipped)
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша

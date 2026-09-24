@@ -493,7 +493,7 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
 
 
 # --------------------------------------------------------------------------
-def type3(st0: Stage0) -> TypeSolution:
+def type3(st0: Stage0, al3_3_in: float | None = None) -> TypeSolution:
     """Полный порт «Нач+Type 3»: плагиоклаз + p_90/p_93/p_97/p_114 + p_142 +
     Fe-путь (p_159/p_163/p_163t/3331/3332/3333) + хвосты p_227/p_236/p_246/p_257."""
     d = st0.fe
@@ -611,7 +611,9 @@ def type3(st0: Stage0) -> TypeSolution:
     sol.chl = chl
     sol.mg_n = mg_1
     sol.fe_n = fe3_2
-    al3_3 = 0.0                                # p_119t/p_126 al3_3 не пастят
+    # p_119t/p_126 al3_3 не пастят: сохраняется входящее значение ячейки I51
+    # (напр. из коридора aType_5→m_531, где al3_3=C534); иначе 0.
+    al3_3 = al3_3_in if al3_3_in is not None else 0.0
     if fe3_2 < 0:                              # p_132 → p_159 (Fe-путь)
         _t3_fe_path(sol, si3_2, al3_2, mg, k, k1, k2, k3, k4,
                     fe3_1, ill, or_in=0.0, ca_in=ca_in,
@@ -914,14 +916,14 @@ def _t45_m528_corridor(sol: TypeSolution, si: float, al: float, mg: float,
     sol.fe_n = fe4_2
     sol.mg_n = mg4_1
     if mg4_1 <= 0:                            # d538 → cleane_4 → aType_3
-        return type3(st0)
+        return type3(st0, al3_3_in=al4_1)     # m_531 уже записал al3_3 = C534
     c539 = ca - 0.2 * na                      # C539
     c540 = si4_1 - 6.0 * na - ca              # C540
     if c539 < 0 and c540 <= 0:                # d540 → cleane_4
-        return type3(st0)
+        return type3(st0, al3_3_in=al4_1)
     c542 = si4_1 - 6.0 * na - 0.4 * na        # C542
     if c539 >= 0 and c542 <= 0:               # d542 → cleane_4
-        return type3(st0)
+        return type3(st0, al3_3_in=al4_1)
     mm = na                                   # C544
     si2 = si4_1 - 24.0 * mm                   # C545
     mg2 = mg4_1 - 2.0 * mm                    # C546

@@ -201,6 +201,27 @@ def test_type45_m346_fe3_1_matches_excel():
     assert cr.names["ht"] == pytest.approx(er["ht"], abs=1e-9)
 
 
+# Тип 5 → коридор m_528/m_531 → aType_3: m_531 пишет al3_3=C534, и это
+# значение проносится в type3 (ячейка I51 сохраняется между стадиями).
+_TYPE5_TO_TYPE3_AL33_INPUT = {
+    "SiO2": 39.303, "TiO2": 4.78, "Al2O3": 35.527, "Fe2O3": 0.744,
+    "FeO": 18.716, "MgO": 0.255, "CaO": 15.329, "Na2O": 9.834, "K2O": 5.731,
+    "P2O5": 3.036, "SO3": 4.619, "F": 1.646, "Cl": 3.114, "S": 9.533,
+    "CO2": 8.927, "SO": 4.674,
+}
+
+
+def test_type5_corridor_to_type3_carries_al3_3():
+    """al3_3 из коридора (m_531) проносится в type3 — совпадение с эталоном."""
+    cr = parity_run(_TYPE5_TO_TYPE3_AL33_INPUT)
+    er = excel_run(_TYPE5_TO_TYPE3_AL33_INPUT, rounding=False)
+    for k, a in cr.names.items():
+        b = er.get(k)
+        if isinstance(a, str) or not isinstance(b, (int, float)):
+            continue
+        assert abs(a - b) <= 1e-9, f"{k} = {a!r}, excel = {b!r}"
+
+
 def test_type3_p196_branch_implemented():
     """p_196 (ветка else p_181/p_189) больше не падает и совпадает с эталоном."""
     cr = parity_run(_P196_TYPE3_INPUT)
