@@ -6,7 +6,7 @@
 
 import pytest
 
-from src.core.branch_overrides import BranchOverrides
+from src.core.branch_overrides import BranchOverrides, validate_overrides
 from src.core.excel_parity.branches import (
     COEFFICIENT_BAND_INFO,
     STAGE_VI_INFO,
@@ -73,6 +73,36 @@ def test_run_sample_stage_vi_override(branch):
     assert forced.vi.trace and forced.vi.trace[0] == branch
     assert any(d.stage == "stage_vi" and d.forced and d.name == branch
                for d in forced.path.decisions)
+
+
+_BASALT = {"SiO2": 50.0, "Al2O3": 14.5, "Fe2O3": 3.0, "FeO": 9.0, "MgO": 8.0,
+           "CaO": 10.5, "Na2O": 2.5, "K2O": 0.5, "TiO2": 1.5, "P2O5": 0.3}
+_EXT_M418 = {"SiO2": 58.409, "TiO2": 6.509, "Al2O3": 7.481, "Fe2O3": 8.596,
+             "FeO": 6.124, "MgO": 2.473, "CaO": 8.537, "MnO": 6.995, "C": 0.132,
+             "F": 9.441, "Cl": 11.869, "S": 6.009, "SO": 1.294}
+
+
+@pytest.mark.parametrize("branch", ["F119+", "F126-"])
+def test_type3_p114_override(branch):
+    run = run_sample(_BASALT, overrides=BranchOverrides(
+        choices={"type3.p_114": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
+@pytest.mark.parametrize("branch", ["t45-m418t", "t45-m424->t5"])
+def test_type45_d418_override(branch):
+    run = run_sample(_EXT_M418, overrides=BranchOverrides(
+        choices={"type45.d418": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
+def test_validate_accepts_internal_overrides():
+    validate_overrides(BranchOverrides(choices={"type3.p_114": "F119+"}))
+    validate_overrides(BranchOverrides(choices={"type45.d418": "t45-m418t"}))
 
 
 def test_auto_behavior_unchanged_without_overrides():

@@ -80,9 +80,11 @@ class ExcelRun:
         cond, src = ROCK_TYPE_INFO.get(rt, ("", ""))
         p.add("stage0", f"rock_type_{rt}", condition=cond, source=src,
               forced=forced_type)
+        forced_choice_ids = set(ov.choices.values()) if ov else set()
         for label in self.tsol.trace:
             cond, src = TYPE_BRANCH_INFO.get(label, ("", ""))
-            p.add("type", label, condition=cond, source=src)
+            p.add("type", label, condition=cond, source=src,
+                  forced=label in forced_choice_ids)
         for label in self.vi.trace:
             cond, src = STAGE_VI_INFO.get(label, ("", ""))
             p.add("stage_vi", label, condition=cond, source=src,

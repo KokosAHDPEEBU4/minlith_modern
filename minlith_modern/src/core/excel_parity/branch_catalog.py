@@ -121,6 +121,31 @@ def _build_catalog() -> dict[str, DecisionSpec]:
             overridable=False,
             branches=tuple(_type_branch(k) for k in keys),
         ))
+    # Этап 6: переопределяемые внутренние решения (однозначные бинарные).
+    specs.append(DecisionSpec(
+        id="type3.p_114",
+        title="Тип 3: хлорит по Al / по Mg (p_114)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="F119+", title="F119+ (хлорит по Al)",
+                       condition="E119 >= 0", source="p_119t"),
+            BranchInfo(id="F126-", title="F126- (хлорит по Mg)",
+                       condition="E119 < 0", source="p_126"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type45.d418",
+        title="Типы 4/5: Fe-путь m_418t / m_424 (d418)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="t45-m418t", title="m_418t (Fe-путь p_201)",
+                       condition="0.2*Na - Ca >= 0", source="d418"),
+            BranchInfo(id="t45-m424->t5", title="m_424 (тип 5)",
+                       condition="0.2*Na - Ca < 0", source="m_424"),
+        ),
+    ))
     return {s.id: s for s in specs}
 
 

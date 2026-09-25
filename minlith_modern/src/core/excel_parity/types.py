@@ -57,13 +57,14 @@ def _base(d: dict[str, float]) -> tuple[float, float, float, float, float, float
 def solve_type(st0: Stage0) -> TypeSolution:
     """Диспетчер по rock_type из стадии 0."""
     t = st0.rock_type
+    ov = getattr(st0, "overrides", None)
     if t == 1:
         return type1(st0)
     if t == 2:
         return type2(st0)
     if t == 3:
-        return type3(st0)
-    return type45(st0)
+        return type3(st0, overrides=ov)
+    return type45(st0, overrides=ov)
 
 
 # --------------------------------------------------------------------------
@@ -493,7 +494,8 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
 
 
 # --------------------------------------------------------------------------
-def type3(st0: Stage0, al3_3_in: float | None = None) -> TypeSolution:
+def type3(st0: Stage0, al3_3_in: float | None = None,
+          overrides=None) -> TypeSolution:
     """Полный порт «Нач+Type 3»: плагиоклаз + p_90/p_93/p_97/p_114 + p_142 +
     Fe-путь (p_159/p_163/p_163t/3331/3332/3333) + хвосты p_227/p_236/p_246/p_257."""
     d = st0.fe
@@ -596,7 +598,14 @@ def type3(st0: Stage0, al3_3_in: float | None = None) -> TypeSolution:
     ill = k / 2.0                              # C116
     sol.ill = ill
     e119 = mg - 0.5 * k - (k1 / k3) * (al3_2 - 3.25 * k)   # E119
-    if e119 >= 0:                              # f119 → p_119t: хлорит по Al
+    forced_p114 = overrides.get("type3.p_114") if overrides else None
+    if forced_p114 == "F119+":
+        e119_ok = True
+    elif forced_p114 == "F126-":
+        e119_ok = False
+    else:
+        e119_ok = e119 >= 0
+    if e119_ok:                                # f119 → p_119t: хлорит по Al
         chl = (al3_2 - 6.5 * ill) / k3         # C120
         mg_1 = mg - ill - k1 * chl             # C121
         fe3_2 = fe3_1 - ill - k2 * chl         # C122
@@ -916,14 +925,17 @@ def _t45_m528_corridor(sol: TypeSolution, si: float, al: float, mg: float,
     sol.fe_n = fe4_2
     sol.mg_n = mg4_1
     if mg4_1 <= 0:                            # d538 → cleane_4 → aType_3
-        return type3(st0, al3_3_in=al4_1)     # m_531 уже записал al3_3 = C534
+        return type3(st0, al3_3_in=al4_1,
+                     overrides=getattr(st0, "overrides", None))
     c539 = ca - 0.2 * na                      # C539
     c540 = si4_1 - 6.0 * na - ca              # C540
     if c539 < 0 and c540 <= 0:                # d540 → cleane_4
-        return type3(st0, al3_3_in=al4_1)
+        return type3(st0, al3_3_in=al4_1,
+                     overrides=getattr(st0, "overrides", None))
     c542 = si4_1 - 6.0 * na - 0.4 * na        # C542
     if c539 >= 0 and c542 <= 0:               # d542 → cleane_4
-        return type3(st0, al3_3_in=al4_1)
+        return type3(st0, al3_3_in=al4_1,
+                     overrides=getattr(st0, "overrides", None))
     mm = na                                   # C544
     si2 = si4_1 - 24.0 * mm                   # C545
     mg2 = mg4_1 - 2.0 * mm                    # C546
@@ -951,7 +963,7 @@ def _t45_m528_corridor(sol: TypeSolution, si: float, al: float, mg: float,
                       fe3_1, st0)
 
 
-def type45(st0: Stage0) -> TypeSolution:
+def type45(st0: Stage0, overrides=None) -> TypeSolution:
     """Полный порт «Нач+Type 3» типов 4-5: aType_4 + m_274t/m_385t/m_401 +
     m_414t/m_418t/m_424, m_433..m_513 (нормальный путь) и m_279/m_334 (mm-путь)."""
     d = st0.fe
@@ -983,7 +995,7 @@ def type45(st0: Stage0) -> TypeSolution:
         # иначе fe3_1-k/2<=0 → d528 → m_385 (fallthrough)
 
     if k1 == 0 and k3 == 0:                    # aType_4: d271 → m_272 → aType_3
-        return type3(st0)
+        return type3(st0, overrides=overrides)
 
     if k2 == 0:                                # d274 → m_274t (or, si4_1, al4_1)
         or_ = k                                # C275
@@ -1013,7 +1025,7 @@ def type45(st0: Stage0) -> TypeSolution:
             sol.si_n = si_n
             return _t45_m279(sol, si_n, al4_1, mg0, na, k1, k2, k3, k4,
                              ca, ca_in, fe3_1, al, si, k, mg)
-        return type3(st0)                      # m_398 → aType_3
+        return type3(st0, overrides=overrides)  # m_398 → aType_3
 
     # m_401: ill = k/2
     ill = k / 2.0                              # C402
@@ -1025,20 +1037,27 @@ def type45(st0: Stage0) -> TypeSolution:
     sol.fe_n = fe4_2
     sol.mg_n = mg4_1
     if mg4_1 <= 0:                             # m_408 → aType_3
-        return type3(st0)
+        return type3(st0, overrides=overrides)
     c409 = ca - 0.2 * na
     c410 = si4_1 - 6.0 * na - 2.0 * ca
     if c409 < 0 and c410 <= 0:                 # m_410 → aType_3
-        return type3(st0)
+        return type3(st0, overrides=overrides)
     c412 = si4_1 - 6.0 * na - 0.4 * na
     if c409 >= 0 and c412 <= 0:                # m_412 → aType_3
-        return type3(st0)
+        return type3(st0, overrides=overrides)
 
     if 1.9 * k1 - k3 <= 0:                     # d414 → m_414t
         sol.ab = na                             # C415
         si4_2 = si4_1 - 6.0 * na               # C416
         sol.si_n = si4_2
-        if 0.2 * na - ca_in >= 0:              # d418 → m_418t (Fe-путь)
+        forced_d418 = overrides.get("type45.d418") if overrides else None
+        if forced_d418 == "t45-m418t":
+            d418 = True
+        elif forced_d418 == "t45-m424->t5":
+            d418 = False
+        else:
+            d418 = 0.2 * na - ca_in >= 0
+        if d418:                               # d418 → m_418t (Fe-путь)
             sol.an = ca                         # C419
             sol.ca_n = 0.0                      # C420
             si3_2_ = si4_2 - 2.0 * ca           # C421
