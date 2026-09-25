@@ -236,6 +236,80 @@ def _build_catalog() -> dict[str, DecisionSpec]:
                        condition="C90 >= 0", source=""),
         ),
     ))
+    specs.append(DecisionSpec(
+        id="type2.s204",
+        title="Тип 2: s_208 / s_271 (s_204)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="s208", title="s_208 (анортит по Ca)",
+                       condition="si_2 - (11.5k+2al_1)/2.25 >= 0", source="s_204"),
+            BranchInfo(id="s271", title="s_271 (ill-gb)",
+                       condition="иначе", source="s_271"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type2.ill_or",
+        title="Тип 2: ill+or / Fe-иллит (s_213)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="ill+or", title="ill+or (s_213t)",
+                       condition="Fe3-ill_a>0 и Mg-ill_a>0", source="s_213t"),
+            BranchInfo(id="no_ill_or", title="без ill+or (Fe-иллит)",
+                       condition="иначе", source="s_221"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type3.d162",
+        title="Тип 3: Fe-путь 3331 / иначе (d162)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="3331", title="3331 (ill = fe3_1-k2·chl)",
+                       condition="C162 > 0", source="p_163t"),
+            BranchInfo(id="no_3331", title="без 3331 (ill = k/2)",
+                       condition="C162 <= 0", source="p_176t"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type3.d188",
+        title="Тип 3: Fe-путь 3332b / p_196 (d188)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="3332b", title="3332b (chl по Fe)",
+                       condition="C188 < 0", source="p_189t"),
+            BranchInfo(id="no_3332b", title="без 3332b (p_196)",
+                       condition="C188 >= 0", source="p_196"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type3.p_53",
+        title="Тип 3: редкая плагиоклазовая p_53t / иначе",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="p_53t", title="p_53t (редкая ветка D51&D53)",
+                       condition="C50≥0, C51<0, C52<0, C53<0", source="p_53t"),
+            BranchInfo(id="no_p_53", title="без p_53t (обычный путь)",
+                       condition="иначе", source=""),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type3.p_97",
+        title="Тип 3: Mg-путь D106 / D109-fe / p_253 (p_97)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="D106", title="D106 (rVI)",
+                       condition="C100>=0 и C101>=0", source="D106"),
+            BranchInfo(id="D109-fe", title="D109-fe (Fe-путь)",
+                       condition="C100 < 0", source="D109"),
+            BranchInfo(id="p253->t5", title="p_253 -> t5",
+                       condition="иначе", source="D112"),
+        ),
+    ))
     return {s.id: s for s in specs}
 
 

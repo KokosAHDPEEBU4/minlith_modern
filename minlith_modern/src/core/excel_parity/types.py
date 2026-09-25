@@ -35,6 +35,8 @@ class TypeSolution:
 
     # подпись ветки для отладки
     trace: list[str] = field(default_factory=list)
+    # контекст ручного выбора веток (передаётся вглубь хелперов type4/5)
+    overrides: object = None
 
     def mineral_vars(self) -> dict[str, float]:
         return {
@@ -76,6 +78,7 @@ def type1(st0: Stage0, overrides=None) -> TypeSolution:
     ca = st0.ca
     fe3_1 = st0.fe3_1
     sol = TypeSolution(ab=na, or_=k)
+    sol.overrides = overrides
 
     si_1 = si - 6.0 * na            # E45
     e46 = si_1 - 6.0 * k            # E46 = si после Ab и Or
@@ -152,6 +155,7 @@ def type2(st0: Stage0, overrides=None) -> TypeSolution:
     ca_fe = st0.ca_n_in                  # D8 — сырой CaO ф.е. (может быть <0)
     fe3_1 = st0.fe3_1
     sol = TypeSolution(ab=na)
+    sol.overrides = overrides
 
     si_1 = si - 6.0 * na                # C175
 
@@ -202,10 +206,24 @@ def type2(st0: Stage0, overrides=None) -> TypeSolution:
         sol.ca_n = 0.0                  # I202
         sol.trace.append("an=0.2na(I)")
 
-    if si_2 - (11.5 * k + 2.0 * al_1) / 2.25 >= 0:   # s_204 -> s_208
+    forced_s204 = overrides.get("type2.s204") if overrides else None
+    s204_ok = si_2 - (11.5 * k + 2.0 * al_1) / 2.25 >= 0
+    if forced_s204 == "s208":
+        s204_ok = True
+    elif forced_s204 == "s271":
+        s204_ok = False
+    if s204_ok:                          # s_204 -> s_208
+        if forced_s204 == "s208":
+            sol.trace.append("s208")
         if 0.2 * na - ca - 3.25 * k < 0:             # d208 -> s_213
             ill_a = (al_1 - k) / 4.5                 # C214
-            if fe3_1 - ill_a > 0 and mg - ill_a > 0:  # d213 -> s_213t
+            forced_illo = overrides.get("type2.ill_or") if overrides else None
+            ill_ok = fe3_1 - ill_a > 0 and mg - ill_a > 0
+            if forced_illo == "ill+or":
+                ill_ok = True
+            elif forced_illo == "no_ill_or":
+                ill_ok = False
+            if ill_ok:                   # d213 -> s_213t
                 sol.ill = ill_a
                 sol.or_ = k - 2.0 * sol.ill
                 sol.fe_n = fe3_1 - sol.ill
@@ -214,9 +232,13 @@ def type2(st0: Stage0, overrides=None) -> TypeSolution:
                 sol.trace.append("ill+or")
             else:                        # d213 FALSE -> s_221 (Fe-иллит)
                 _type2_fe_illite(sol, si_2, al_1, mg, k, fe3_1, overrides)
+                if forced_illo == "no_ill_or":
+                    sol.trace.append("no_ill_or")
         else:                            # d208 FALSE -> s_251 (бедный Ca)
             _type2_ca_poor(sol, si_2, al_1, mg, k, fe3_1, ca_fe, overrides)
     else:                                # s_204 else -> s_271 -> s_274
+        if forced_s204 == "s271":
+            sol.trace.append("s271")
         ill_c = (si_2 - 6.0 * k) / 4.0   # C275
         if fe3_1 - ill_c > 0 and ca_fe - ill_c > 0:   # d274 -> s_274t
             sol.ill = ill_c
@@ -410,7 +432,13 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
     if not skip_fe_lookup and c158 >= 0 and c159 > 0:    # d159 → p_163
         c162 = (k / 2.0
                 - (fe3_1 - k2 * (k + 4.5 * fe3_1 - al3_2) / (4.5 * k2 - k3)))
-        if c162 > 0:                           # d162 → p_163t (3331)
+        forced_d162 = overrides.get("type3.d162") if overrides else None
+        c162_pos = c162 > 0
+        if forced_d162 == "3331":
+            c162_pos = True
+        elif forced_d162 == "no_3331":
+            c162_pos = False
+        if c162_pos:                           # d162 → p_163t (3331)
             chl = (k + 4.5 * fe3_1 - al3_2) / (4.5 * k2 - k3)   # C163
             ill = fe3_1 - k2 * chl                             # C164
             or_ = k - 2.0 * ill                                # C165
@@ -427,9 +455,10 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
             _t3_after_p253(sol, si3_2, al3_2, k, ca_in, mg_1, 0.0,
                            k1, k2, k3, k4)
             return
-        if c162 < 0:                           # p_176t: ill = k/2
-            ill3 = k / 2.0
-            sol.ill = ill3
+        if forced_d162 == "no_3331":
+            sol.trace.append("no_3331")
+        ill3 = k / 2.0                         # p_176t: ill = k/2
+        sol.ill = ill3
         # p_181/p_189
         c180 = fe3_1 - k / 2.0 - (k1 / k2) * (al3_2 - 3.25 * k)   # C180
         forced_d180 = overrides.get("type3.d180") if overrides else None
@@ -457,7 +486,13 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
         if forced_d180 == "no_3332a":
             sol.trace.append("no_3332a")
         c188 = fe3_1 - k / 2.0 - (k1 / k3) * (al3_2 - 3.25 * k)   # C188
-        if c188 < 0:                           # p_189t (3332b: chl по Fe)
+        forced_d188 = overrides.get("type3.d188") if overrides else None
+        c188_neg = c188 < 0
+        if forced_d188 == "3332b":
+            c188_neg = True
+        elif forced_d188 == "no_3332b":
+            c188_neg = False
+        if c188_neg:                           # p_189t (3332b: chl по Fe)
             chl = (fe3_1 - ill3) / k2                              # C189
             fe3_2 = 0.0                        # C190
             mg_1 = mg - ill3 - k1 * chl                           # C191
@@ -471,6 +506,8 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
             _t3_after_ill(sol, ca_in, si3_2, al3_2, k, mg_1, fe3_2, al3_3,
                           si3_3, k1, k2, k3, k4)
             return
+        if forced_d188 == "no_3332b":
+            sol.trace.append("no_3332b")
         # p_196 (else p_181/p_189): используются ВХОДЯЩИЕ si3_3/al3_3
         # (на листе это ячейки C195/C198 и ранее записанные имена).
         if si3_3_in is None or al3_3_in is None:
@@ -554,6 +591,7 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
     k1, k2, k3, k4 = st0.k1, st0.k2, st0.k3, st0.k4
     fe3_1 = st0.fe3_1
     sol = TypeSolution(ab=na)
+    sol.overrides = overrides
 
     # ---- плагиоклазовая зона (rows 46-72) ----
     si3_1 = si - 6.0 * na                      # C47
@@ -564,7 +602,13 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
     c53 = si3_1 - 6.0 * k - 2.0 * ca           # C53
     c60 = ca - 0.2 * na                        # C60
     c61 = si3_1 - 6.0 * k - 0.4 * na           # C61
-    if c50 >= 0 and c51 < 0 and c52 < 0 and c53 < 0:
+    forced_p53 = overrides.get("type3.p_53") if overrides else None
+    p53 = c50 >= 0 and c51 < 0 and c52 < 0 and c53 < 0
+    if forced_p53 == "p_53t":
+        p53 = True
+    elif forced_p53 == "no_p_53":
+        p53 = False
+    if p53:
         # p_53 → p_53t → rVI (редкая плагиоклазовая ветка D51&D53)
         an_p = (si3_1 - 6.0 * k) / 2.0         # C55
         sol.or_ = k                            # C54
@@ -576,6 +620,8 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
         sol.mg_n = mg                          # mg_n ← mg (ф.к)
         sol.trace.append("p_53t")
         return sol
+    if forced_p53 == "no_p_53":
+        sol.trace.append("no_p_53")
     forced_d61 = overrides.get("type3.d61") if overrides else None
     d61 = c60 >= 0 and c61 >= 0
     if forced_d61 == "D61":
@@ -643,12 +689,21 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
         sol.mg_n = 0.0                       # C99 — статичный ноль
         c100 = fe3_1 - c97 - k2 * c95        # C100
         c101 = si3_2 - 16.0 * c97 - k4 * c95 - 6.0 * sol.or_   # C101
-        if c100 >= 0 and c101 >= 0:            # D106 → rVI
+        forced_p97 = overrides.get("type3.p_97") if overrides else None
+        if forced_p97 in ("D106", "D109-fe", "p253->t5"):
+            p97_take = forced_p97
+        elif c100 >= 0 and c101 >= 0:
+            p97_take = "D106"
+        elif c100 < 0:
+            p97_take = "D109-fe"
+        else:
+            p97_take = "p253->t5"
+        if p97_take == "D106":                 # D106 → rVI
             sol.fe_n = c100
             sol.si_n = c101
             sol.trace.append("D106")
             return sol
-        if c100 < 0:                           # D109 → p_159 (Fe-путь)
+        if p97_take == "D109-fe":              # D109 → p_159 (Fe-путь)
             sol.trace.append("D109-fe")
             _t3_fe_path(sol, si3_2, al3_2, mg, k, k1, k2, k3, k4,
                     fe3_1, c97, or_in=0.0, ca_in=ca_in,
@@ -741,11 +796,21 @@ def _t45_after_m37x(sol: TypeSolution, si: float, al: float, k: float,
 def _t45_m334(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
               na: float, k1: float, k2: float, k3: float, k4: float,
               ca: float, ca_in: float, fe3_1: float, si: float, al: float,
-              k: float, mg: float, mm4: float) -> TypeSolution:
+              k: float, mg: float, mm4: float,
+              overrides=None) -> TypeSolution:
     """m_334: mm-путь по Na (C333..C341) + коридоры m_343/m_346/m_360."""
+    if overrides is None:
+        overrides = getattr(sol, "overrides", None)
     c333 = si4_1 - 6.4 * na
     c334 = si4_1 - 24.0 * na
-    if c333 > 0 and c334 <= 0:                 # d334 → m_334t
+    forced_d334 = overrides.get("type45.d334") if overrides else None
+    if forced_d334 == "mm-path":
+        d334 = True
+    elif forced_d334 == "no_mm":
+        d334 = False
+    else:
+        d334 = c333 > 0 and c334 <= 0
+    if d334:                                   # d334 → m_334t
         mm = (si4_1 - 6.4 * na) / 17.6         # C335
         ab = na - mm                           # C336 (mm_4 = C335)
         an = 0.2 * ab                          # C337
@@ -764,7 +829,18 @@ def _t45_m334(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
             return sol
         sol.trace.append("mm-path (D334)")
         return sol
-    if si4_1 - 6.4 * na <= 0:                  # d346 → m_346t
+    if forced_d334 == "no_mm":
+        sol.trace.append("no_mm")
+    forced_d346 = overrides.get("type45.d346") if overrides else None
+    if forced_d346 == "m_346":
+        d346 = True
+    elif forced_d346 == "m_360":
+        d346 = False
+    else:
+        d346 = si4_1 - 6.4 * na <= 0
+    if d346:                                   # d346 → m_346t
+        if forced_d346 == "m_346":
+            sol.trace.append("m_346")
         sol.ab = na                             # C347
         sol.fe_n = fe3_1                        # C348 (копия fe3_1)
         c336 = na - mm4                         # C336 (входящий mm_4)
@@ -783,6 +859,8 @@ def _t45_m334(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         _t3_balance(sol, si_n, al3)             # p_81
         sol.trace.append("m_354->p81")
         return sol
+    if forced_d346 == "m_360":
+        sol.trace.append("m_360")
     sol.mm = na                                 # m_360
     sol.mg_n = mg0v - 2.0 * na                  # C362
     si_n = si4_1 - 24.0 * na                    # C363
@@ -1041,6 +1119,7 @@ def type45(st0: Stage0, overrides=None) -> TypeSolution:
     # (коридор m_528 задаёт mg0 через m_531, и там значение проброшено явно).
     mg0 = mg if st0.rock_type != 5 else 0.0
     sol = TypeSolution()
+    sol.overrides = overrides
 
     if st0.rock_type == 5:                     # aType_5: d525 → m_274 | m_528
         if k2 == 0:                            # m_274t (421): or=K, si1, al1
