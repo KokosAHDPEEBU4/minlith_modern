@@ -67,6 +67,14 @@ def read_csv(path: Path, separator: str | None = None) -> list[Sample]:
                 composition=OxideComposition(**oxide_data),
             ))
 
+    # Если оксиды не распознаны (нестандартный файл) — универсальный автоимпорт.
+    if not any(getattr(s.composition, "sio2") or getattr(s.composition, "al2o3")
+               for s in samples):
+        from src.io.auto_table import load_samples_csv
+        auto = load_samples_csv(path)
+        if auto:
+            samples = auto
+
     logger.info("Read %d samples from CSV: %s", len(samples), path.name)
     return samples
 

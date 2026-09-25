@@ -91,8 +91,18 @@ def load_samples(path: str | Path) -> list[Sample]:
     elif str(cell_a1).strip().lower() == "name" if cell_a1 else False:
         samples = _load_transposed(ws)
     else:
-        # Try horizontal by default
-        samples = _load_horizontal(ws)
+        # Файл не похож на шаблон — пробуем универсальный автоимпорт,
+        # при неудаче — прежнее поведение (горизонтальный формат).
+        wb.close()
+        from src.io.auto_table import load_samples_excel
+        samples = load_samples_excel(path)
+        if not samples:
+            wb = openpyxl.load_workbook(str(path), data_only=True, read_only=True)
+            ws = wb.active
+            samples = _load_horizontal(ws) if ws is not None else []
+        wb.close()
+        logger.info("Loaded %d samples from %s", len(samples), path.name)
+        return samples
 
     wb.close()
     logger.info("Loaded %d samples from %s", len(samples), path.name)
