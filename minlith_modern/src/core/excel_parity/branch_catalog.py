@@ -199,6 +199,20 @@ def _build_catalog() -> dict[str, DecisionSpec]:
         ),
     ))
     specs.append(DecisionSpec(
+        id="type2.an",
+        title="Тип 2: анортит по Na / Ca / Na(I)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="an=0.2na", title="an = 0.2Na",
+                       condition="Ca >= 0.2*Na", source="D192"),
+            BranchInfo(id="an=ca", title="an = Ca",
+                       condition="0 < Ca < 0.2*Na", source="D199"),
+            BranchInfo(id="an=0.2na(I)", title="an = 0.2Na (I)",
+                       condition="Ca <= 0", source="s_198an"),
+        ),
+    ))
+    specs.append(DecisionSpec(
         id="type2.fe_ill",
         title="Тип 2: иллит по Fe / по Mg (s_221)",
         stage="type",

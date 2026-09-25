@@ -174,13 +174,22 @@ def type2(st0: Stage0, overrides=None) -> TypeSolution:
     # иначе s_188(d188)/s_190 → s_192: анортит
 
     # ---- анортит: s_192 / s_197 (s_198 / s_198an) ----
-    if ca >= 0.2 * na:                  # D192: Ca хватает на анортит
+    forced_an = overrides.get("type2.an") if overrides else None
+    if forced_an in ("an=0.2na", "an=ca", "an=0.2na(I)"):
+        an_mode = forced_an
+    elif ca >= 0.2 * na:
+        an_mode = "an=0.2na"
+    elif ca > 0:
+        an_mode = "an=ca"
+    else:
+        an_mode = "an=0.2na(I)"
+    if an_mode == "an=0.2na":           # D192: Ca хватает на анортит
         sol.an = 0.2 * na
         si_2 = si_1 - 2.0 * sol.an      # C194
         al_1 = al - na - sol.an         # C195
         sol.ca_n = ca - sol.an          # C196
         sol.trace.append("an=0.2na")
-    elif ca > 0:                        # D199: анортит по Ca (s_198)
+    elif an_mode == "an=ca":            # D199: анортит по Ca (s_198)
         sol.an = ca
         si_2 = si_1 - 2.0 * sol.an      # C200
         al_1 = al - na - sol.an         # C201

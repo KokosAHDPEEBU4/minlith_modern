@@ -145,6 +145,15 @@ _TYPE2_FE = {"SiO2": 59.767, "TiO2": 5.855, "Al2O3": 13.703, "Fe2O3": 5.15,
              "CO2": 0.803, "SO": 7.914}
 
 
+@pytest.mark.parametrize("branch", ["an=0.2na", "an=ca", "an=0.2na(I)"])
+def test_type2_an_override(branch):
+    run = run_sample(_TYPE2_FE, overrides=BranchOverrides(
+        choices={"type2.an": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
 @pytest.mark.parametrize("branch", ["fe-ill", "fe-ill-mg"])
 def test_type2_fe_ill_override(branch):
     run = run_sample(_TYPE2_FE, overrides=BranchOverrides(
@@ -188,6 +197,7 @@ def test_validate_accepts_internal_overrides():
     validate_overrides(BranchOverrides(choices={"type3.p_142": "p_142"}))
     validate_overrides(BranchOverrides(choices={"type2.fe_ill": "fe-ill"}))
     validate_overrides(BranchOverrides(choices={"type3.d180": "3332a"}))
+    validate_overrides(BranchOverrides(choices={"type2.an": "an=ca"}))
 
 
 def test_auto_behavior_unchanged_without_overrides():

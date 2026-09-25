@@ -34,7 +34,8 @@
   - `type3.d200` — Fe-путь `3333a` / `3333b`;
   - `type3.p_142` — `p_142` (ill = mg) / `no_p_142` (ill = k/2);
   - `type2.fe_ill` — иллит по Fe `fe-ill` / по Mg `fe-ill-mg` (s_221);
-  - `type3.d180` — Fe-путь `3332a` (chl по Al) / `no_3332a` (3332b / p_196).
+  - `type3.d180` — Fe-путь `3332a` (chl по Al) / `no_3332a` (3332b / p_196);
+  - `type2.an` — анортит `an=0.2na` / `an=ca` / `an=0.2na(I)`.
   Форсированные внутренние ветки помечаются `forced` в маршруте (по id из `overrides.choices`). Остальные внутренние решения типов — заглушки `overridable=False`. Тесты: `test_type3_p114_override`, `test_type45_d418_override`, `test_type1_t49_override`, `test_type3_d61_override`, `test_validate_accepts_internal_overrides`.
 - **Экспорт и сравнение маршрутов (этап 5 ТЗ):** чистые функции `branch_report.branch_path_json` и `branch_report.diff_branch_paths`; на странице «Граф» — кнопки «Экспорт маршрута (JSON)» и «Сравнить с авто» (различия авто-маршрута и принудительного). Тест: `test_branch_path_json_and_diff`.
 - **GUI-страница «Граф разветвлений» (этап 4 ТЗ):** `src/gui/pages/branch_graph_page.py` — дерево решений из каталога, подсветка пройденного маршрута (✓) и принудительных веток (★), выбор образца, кнопки «Принудительно выбрать ветку» / «Снять выбор» / «Пересчитать с выбранными ветками». Встроена в `MainWindow` (сайдбар «Граф», индекс перед «Журналом»), получает результаты расчёта. Чистые помощники `branch_report.path_branch_ids/forced_branch_ids`. Заодно адаптер `stage0_from_input` теперь применяет override полосы/типа (раньше только `compute_stage0`). Тесты: +3 (`test_branch_graph_page_override_and_recalc`, `test_main_window_has_branch_graph_page`, `test_path_branch_id_helpers`).
