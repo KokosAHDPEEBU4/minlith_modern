@@ -43,6 +43,12 @@ class ResultsPage(QWidget):
         self._btn_branch_path.clicked.connect(self._on_show_branch_path)
         header.addWidget(self._btn_branch_path)
 
+        self._btn_compare_engines = QPushButton("Сравнить движки")
+        self._btn_compare_engines.setToolTip(
+            "Сравнить excel_parity и excel_exact по минералам (ф.е.)")
+        self._btn_compare_engines.clicked.connect(self._on_compare_engines)
+        header.addWidget(self._btn_compare_engines)
+
         self._btn_export_all = QPushButton("Экспорт всех в .xlsx")
         self._btn_export_all.clicked.connect(self._on_export_all)
         header.addWidget(self._btn_export_all)
@@ -138,6 +144,14 @@ class ResultsPage(QWidget):
         from src.gui.dialogs.branch_path_dialog import BranchPathDialog
         dlg = BranchPathDialog(r.branch_path, r.sample_name, self)
         dlg.exec()
+
+    def _on_compare_engines(self) -> None:
+        if not self._results:
+            QMessageBox.information(
+                self, "Сравнение движков", "Нет результатов для сравнения.")
+            return
+        from src.gui.dialogs.engine_compare_dialog import EngineCompareDialog
+        EngineCompareDialog(self._results, self).exec()
 
     def _on_export_all(self) -> None:
         if not self._results:

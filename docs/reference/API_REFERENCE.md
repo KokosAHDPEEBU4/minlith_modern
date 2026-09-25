@@ -397,6 +397,19 @@ result = Calculator(config=cfg).calculate_single(sample)
   `validate_overrides()` (неизвестное решение/ветка или `overridable=False` → `ValueError`).
   Пустой выбор не меняет поведение.
 
+**Сравнение движков.** По-минеральное сравнение `excel_parity` и `excel_exact`:
+
+```python
+from src.core.engine_compare import compare_engines, max_abs_delta
+
+rows = compare_engines({"SiO2": 52.5, "Al2O3": 23.41, ...})
+# [MineralDiff(name='Альбит', parity=..., exact=..., delta=parity-exact), ...]
+worst, name = max_abs_delta(rows)
+```
+
+В GUI: страница «Результаты» → кнопка «Сравнить движки»
+(`src/gui/dialogs/engine_compare_dialog.py`).
+
 ---
 
 ### 2.3. Coefficients

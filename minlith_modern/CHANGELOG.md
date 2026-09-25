@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- **GUI-сравнение движков «бок о бок»:** чистое ядро `src/core/engine_compare.py` (`compare_engines` → по-минеральные ф.е. `excel_parity` vs `excel_exact` + `max_abs_delta`) и диалог `src/gui/dialogs/engine_compare_dialog.py` (кнопка **«Сравнить движки»** на странице «Результаты»). Тесты: `tests/test_engine_compare.py`, GUI-смоук.
 - **Отдельный движок `excel_exact` — полная 1:1 копия Excel:** `ExcelExactAlgorithm` (`src/core/excel_exact/algorithm.py`) исполняет формулы+VBA через `excel_port.run_sample(rounding=True)`, воспроизводя пошаговые `ROUND` и накопление ошибки округления книги MINLITH. В отличие от `excel_parity`, который считает те же формулы в float64 без пошаговых округлений. Движку передаются исходные вес.% оксидов (`AlgorithmInput.oxide_wt`), т.к. книга сама пересчитывает вес.% → ф.е. с `ROUND`.
 - GUI: в тулбаре «Движки расчёта» и в списках движков (Настройки, диалог расчёта) теперь два «экселевских» варианта — «Excel (корректные округл.)» (`excel_parity`, по умолчанию) и «Excel 1:1 (ROUND)» (`excel_exact`); CLI `--engine` принимает `excel_exact`.
 - Тесты: `tests/test_excel_exact_adapter.py` (14 шт.) — протокол, разрешение движка Calculator'ом, совпадение ф.е. с `excel_port(rounding=True)` на 7 образцах, end-to-end через Calculator, проброс `oxide_wt`, ошибка без вес.%.
@@ -59,6 +60,7 @@
 - **Диалог «Расчёт…»:** добавлены кнопки «Выбрать все образцы» и «Снять выделение» (`src/gui/dialogs/calculation_dialog.py`).
 - **Панель выбора на странице диаграмм — три уровня слева направо:** «Диаграммы | Образцы | Минералы» (было: диаграммы+минералы в один столбец, образцы — кнопкой сверху). Выбор образцов перенесён в панель чекбоксами, синхронизируется между вкладками (`MultiChartView.set_sample_names/selected_sample_indexes/samplesChanged`, `ChartsPage._on_samples_changed`). На странице «Вывод» уровень образцов скрыт (`set_samples_visible(False)`).
 - `CALCULATION_ENGINES` теперь `("excel_parity", "excel_exact", "geological_theory", "python_rework")`; дефолт остался `excel_parity`. `AlgorithmInput` получил необязательное поле `oxide_wt: dict[str, float] | None`, `AlgorithmOutput` — поле `path: dict | None`, `CalculationResult` — поле `branch_path: dict | None` (все с дефолтами, обратно совместимо).
+- **Производительность `excel_exact`:** `excel_port.load_structure()` кэшируется (`lru_cache`, структура читается только на чтение) → время прогона образца **~17.5 → ~12.6 мс** (−28%). Прочее кэширование (разобранная книга) не вводится: `deepcopy` дороже повторного `json.loads`, а общий мутируемый `Workbook` нарушил бы изоляцию прогонов.
 
 ## [0.7.0] — 2026-09-21
 

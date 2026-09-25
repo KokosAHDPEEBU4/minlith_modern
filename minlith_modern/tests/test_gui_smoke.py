@@ -170,6 +170,22 @@ def test_main_window_has_branch_graph_page(qapp):
     assert window._stack.currentWidget() is window._branch_graph_page
 
 
+def test_engine_compare_dialog(qapp):
+    """Диалог сравнения движков заполняет таблицу по минералам."""
+    from src.core.calculator import Calculator
+    from src.core.engine_compare import MINERAL_ORDER
+    from src.core.models import OxideComposition, Sample
+    from src.gui.dialogs.engine_compare_dialog import EngineCompareDialog
+
+    sample = Sample(name="S", composition=OxideComposition(
+        sio2=52.5, al2o3=23.41, fe2o3=1.71, feo=8.06, mgo=2.35,
+        cao=0.28, na2o=0.94, k2o=3.45, p2o5=0.31, mno=0.157502))
+    results = Calculator().calculate([sample])
+    dialog = EngineCompareDialog(results)
+    dialog._on_compare()
+    assert dialog._table.rowCount() == len(MINERAL_ORDER)
+
+
 def test_main_window_constructs_and_applies_zoom(qapp):
     """Главное окно создаётся, а _apply_zoom_step не падает (регрессия)."""
     from src.gui.main_window import MainWindow

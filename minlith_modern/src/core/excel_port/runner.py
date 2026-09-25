@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from pathlib import Path
 
 from src.core.excel_port.interpreter import identity_round
@@ -23,7 +24,9 @@ def load_workbook(data_dir: Path | None = None, rounding: bool = True) -> Workbo
     return Workbook(raw, round_fn=round_fn)
 
 
+@lru_cache(maxsize=4)
 def load_structure(data_dir: Path | None = None) -> dict:
+    """VBA-структура процедур (кэшируется: читается только на чтение)."""
     d = data_dir or DATA
     return json.loads((d / "vba_structure.json").read_text(encoding="utf-8"))
 
