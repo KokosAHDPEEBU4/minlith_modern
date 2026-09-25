@@ -59,7 +59,7 @@ def solve_type(st0: Stage0) -> TypeSolution:
     t = st0.rock_type
     ov = getattr(st0, "overrides", None)
     if t == 1:
-        return type1(st0)
+        return type1(st0, overrides=ov)
     if t == 2:
         return type2(st0)
     if t == 3:
@@ -70,7 +70,7 @@ def solve_type(st0: Stage0) -> TypeSolution:
 # --------------------------------------------------------------------------
 # Тип 1: Al <= Na + K   (t_49..t_83)
 # --------------------------------------------------------------------------
-def type1(st0: Stage0) -> TypeSolution:
+def type1(st0: Stage0, overrides=None) -> TypeSolution:
     d = st0.fe
     si, al, mg, na, k = _base(d)
     ca = st0.ca
@@ -81,10 +81,20 @@ def type1(st0: Stage0) -> TypeSolution:
     e46 = si_1 - 6.0 * k            # E46 = si после Ab и Or
     al1 = al - 2.0 * k              # E47 = Al после Or (D4 - k - k)
 
+    forced_t49 = overrides.get("type1.t_49") if overrides else None
     d49 = al1 - ca <= 0
+    if forced_t49 in ("t_52~53", "t_58"):
+        d49 = True
+    elif forced_t49 in ("t_67", "t_83"):
+        d49 = False
     if d49:
         c51 = e46 - 2.0 * al1       # Si для анортита
-        if c51 >= 0:
+        c51_ok = c51 >= 0
+        if forced_t49 == "t_58":
+            c51_ok = False
+        elif forced_t49 == "t_52~53":
+            c51_ok = True
+        if c51_ok:
             if al1 > 0:             # t_52t
                 sol.an = al1
             else:                   # t_53an (anorthite по лимиту Na)
@@ -99,7 +109,12 @@ def type1(st0: Stage0) -> TypeSolution:
             sol.si_n = 0.0
             sol.trace.append("t_58")
     else:                           # al1 > ca
-        if e46 - 2.0 * ca >= 0:     # t_67/68: Si для анортита по Ca
+        e46_ok = e46 - 2.0 * ca >= 0
+        if forced_t49 == "t_83":
+            e46_ok = False
+        elif forced_t49 == "t_67":
+            e46_ok = True
+        if e46_ok:                  # t_67/68: Si для анортита по Ca
             sol.an = ca
             al_r = al1 - ca
             si_r = e46 - 2.0 * ca
@@ -527,7 +542,13 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
         sol.mg_n = mg                          # mg_n ← mg (ф.к)
         sol.trace.append("p_53t")
         return sol
-    if c60 >= 0 and c61 >= 0:                  # p_61t (D61)
+    forced_d61 = overrides.get("type3.d61") if overrides else None
+    d61 = c60 >= 0 and c61 >= 0
+    if forced_d61 == "D61":
+        d61 = True
+    elif forced_d61 == "D68":
+        d61 = False
+    if d61:                                    # p_61t (D61)
         sol.an = 0.2 * na                      # C62
         si3_2 = si3_1 - 2.0 * sol.an           # C63
         al3_2 = al3_1 - sol.an                 # C64

@@ -100,9 +100,33 @@ def test_type45_d418_override(branch):
                for d in run.path.decisions)
 
 
+_ARKOSE = {"SiO2": 70.0, "Al2O3": 12.0, "Fe2O3": 1.0, "FeO": 0.5,
+           "MgO": 0.3, "CaO": 0.5, "Na2O": 3.0, "K2O": 6.0}
+
+
+@pytest.mark.parametrize("branch", ["t_52~53", "t_58", "t_67", "t_83"])
+def test_type1_t49_override(branch):
+    run = run_sample(_ARKOSE, overrides=BranchOverrides(
+        choices={"type1.t_49": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
+@pytest.mark.parametrize("branch", ["D61", "D68"])
+def test_type3_d61_override(branch):
+    run = run_sample(_BASALT, overrides=BranchOverrides(
+        choices={"type3.d61": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
 def test_validate_accepts_internal_overrides():
     validate_overrides(BranchOverrides(choices={"type3.p_114": "F119+"}))
     validate_overrides(BranchOverrides(choices={"type45.d418": "t45-m418t"}))
+    validate_overrides(BranchOverrides(choices={"type1.t_49": "t_67"}))
+    validate_overrides(BranchOverrides(choices={"type3.d61": "D68"}))
 
 
 def test_auto_behavior_unchanged_without_overrides():

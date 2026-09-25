@@ -146,6 +146,34 @@ def _build_catalog() -> dict[str, DecisionSpec]:
                        condition="0.2*Na - Ca < 0", source="m_424"),
         ),
     ))
+    specs.append(DecisionSpec(
+        id="type1.t_49",
+        title="Тип 1: an/kn/gb (t_49)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="t_52~53", title="t_52~53",
+                       condition="al1 <= ca и Si хватает", source="t_52/t_53"),
+            BranchInfo(id="t_58", title="t_58",
+                       condition="al1 <= ca, Si не хватает", source="t_58"),
+            BranchInfo(id="t_67", title="t_67",
+                       condition="al1 > ca и Si хватает", source="t_67"),
+            BranchInfo(id="t_83", title="t_83",
+                       condition="al1 > ca, Si не хватает", source="t_83"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type3.d61",
+        title="Тип 3: анортит D61 / D68",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="D61", title="D61 (an = 0.2Na)",
+                       condition="c60 >= 0 и c61 >= 0", source="p_61t"),
+            BranchInfo(id="D68", title="D68 (an = Ca)",
+                       condition="иначе", source="p_68"),
+        ),
+    ))
     return {s.id: s for s in specs}
 
 
