@@ -138,12 +138,22 @@ def test_type3_d200_override(branch):
                for d in run.path.decisions)
 
 
+@pytest.mark.parametrize("branch", ["p_142", "no_p_142"])
+def test_type3_p142_override(branch):
+    run = run_sample(_BASALT, overrides=BranchOverrides(
+        choices={"type3.p_142": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
 def test_validate_accepts_internal_overrides():
     validate_overrides(BranchOverrides(choices={"type3.p_114": "F119+"}))
     validate_overrides(BranchOverrides(choices={"type45.d418": "t45-m418t"}))
     validate_overrides(BranchOverrides(choices={"type1.t_49": "t_67"}))
     validate_overrides(BranchOverrides(choices={"type3.d61": "D68"}))
     validate_overrides(BranchOverrides(choices={"type3.d200": "3333b"}))
+    validate_overrides(BranchOverrides(choices={"type3.p_142": "p_142"}))
 
 
 def test_auto_behavior_unchanged_without_overrides():

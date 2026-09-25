@@ -577,7 +577,14 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
     c97 = mg - k1 * c95                        # C97
     f93 = (k / 2.0 - c97) >= 0                 # F93
 
-    if c90 < 0:                                # p_142: ill = mg
+    forced_p142 = overrides.get("type3.p_142") if overrides else None
+    if forced_p142 == "p_142":
+        p142 = True
+    elif forced_p142 == "no_p_142":
+        p142 = False
+    else:
+        p142 = c90 < 0
+    if p142:                                   # p_142: ill = mg
         ill = mg                               # C142
         or_ = k - 2.0 * ill                    # C143
         mg_1 = 0.0                             # C144
@@ -600,6 +607,8 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
         _t3_balance(sol, si3_3, al3_3)         # p_156 → p_81
         return sol
 
+    if forced_p142 == "no_p_142":
+        sol.trace.append("no_p_142")
     if f93 and c97 > 0:                        # p_97 → p_93t (Mg-путь)
         sol.ill = c97                        # C97 (ill_3+ill) — пишется сразу
         sol.chl = c95                        # C95 — пишется всегда

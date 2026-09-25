@@ -186,6 +186,18 @@ def _build_catalog() -> dict[str, DecisionSpec]:
                        condition="иначе", source="p_68"),
         ),
     ))
+    specs.append(DecisionSpec(
+        id="type3.p_142",
+        title="Тип 3: ill = mg (p_142) / иначе",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="p_142", title="p_142 (ill = mg)",
+                       condition="C90 < 0", source="p_142"),
+            BranchInfo(id="no_p_142", title="без p_142 (ill = k/2)",
+                       condition="C90 >= 0", source=""),
+        ),
+    ))
     return {s.id: s for s in specs}
 
 
