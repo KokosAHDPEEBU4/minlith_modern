@@ -381,7 +381,7 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
                 k4: float, fe3_1: float, ill3: float, or_in: float,
                 ca_in: float, si3_3_in: float | None = None,
                 al3_3_in: float | None = None,
-                skip_fe_lookup: bool = False) -> None:
+                skip_fe_lookup: bool = False, overrides=None) -> None:
     """Fe-путь типа 3: p_159 → (3331 | 3332a/b | 3333a/b) + tail.
 
     ``skip_fe_lookup=True`` — вызывающий (type45 m_418t) в Excel вызывает
@@ -460,7 +460,14 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
         return
     # p_201
     c200 = 4.5 * fe3_1 - al3_2 + k             # C200
-    if c200 < 0:                               # p_201t (3333a: ill = fe3_1)
+    forced_d200 = overrides.get("type3.d200") if overrides else None
+    if forced_d200 == "3333a":
+        c200_neg = True
+    elif forced_d200 == "3333b":
+        c200_neg = False
+    else:
+        c200_neg = c200 < 0
+    if c200_neg:                               # p_201t (3333a: ill = fe3_1)
         ill = fe3_1                            # C201
         or_ = k - 2.0 * ill                     # C202
         mg_1 = mg - ill                         # C204
@@ -608,8 +615,8 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
         if c100 < 0:                           # D109 → p_159 (Fe-путь)
             sol.trace.append("D109-fe")
             _t3_fe_path(sol, si3_2, al3_2, mg, k, k1, k2, k3, k4,
-                        fe3_1, c97, or_in=0.0, ca_in=ca_in,
-                        si3_3_in=c101, al3_3_in=0.0)
+                    fe3_1, c97, or_in=0.0, ca_in=ca_in,
+                    si3_3_in=c101, al3_3_in=0.0, overrides=overrides)
             return sol
         _t3_after_p253(sol, si3_2, al3_2, k, ca_in, 0.0, c100,   # D112 → p_253
                        k1, k2, k3, k4)
@@ -647,7 +654,7 @@ def type3(st0: Stage0, al3_3_in: float | None = None,
     if fe3_2 < 0:                              # p_132 → p_159 (Fe-путь)
         _t3_fe_path(sol, si3_2, al3_2, mg, k, k1, k2, k3, k4,
                     fe3_1, ill, or_in=0.0, ca_in=ca_in,
-                    si3_3_in=si3_3, al3_3_in=al3_3)
+                    si3_3_in=si3_3, al3_3_in=al3_3, overrides=overrides)
         return sol
     if si3_3 < 0:                              # p_136 → p_253
         _t3_after_p253(sol, si3_2, al3_2, k, ca_in, mg_1, fe3_2,
@@ -1089,7 +1096,7 @@ def type45(st0: Stage0, overrides=None) -> TypeSolution:
             al3_2_ = al4_1 - na - ca            # C422 (пересчёт) → al3_2
             _t3_fe_path(sol, si3_2_, al3_2_, mg, k, k1, k2, k3, k4,
                         fe3_1, ill, or_in=0.0, ca_in=ca_in,
-                        skip_fe_lookup=True)
+                        skip_fe_lookup=True, overrides=overrides)
             sol.trace.append("t45-m418t")
             return sol
         an = 0.2 * na                           # C425 (m_424)
