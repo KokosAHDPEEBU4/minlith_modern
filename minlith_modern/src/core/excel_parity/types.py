@@ -811,6 +811,8 @@ def _t45_m334(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
     else:
         d334 = c333 > 0 and c334 <= 0
     if d334:                                   # d334 → m_334t
+        if forced_d334 == "mm-path":
+            sol.trace.append("mm-path")
         mm = (si4_1 - 6.4 * na) / 17.6         # C335
         ab = na - mm                           # C336 (mm_4 = C335)
         an = 0.2 * ab                          # C337

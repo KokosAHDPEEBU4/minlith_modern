@@ -310,6 +310,30 @@ def _build_catalog() -> dict[str, DecisionSpec]:
                        condition="иначе", source="D112"),
         ),
     ))
+    specs.append(DecisionSpec(
+        id="type45.d334",
+        title="Типы 4/5: mm-путь (d334) / иначе",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="mm-path", title="mm-путь (D334)",
+                       condition="C333>0 и C334<=0", source="m_334t"),
+            BranchInfo(id="no_mm", title="без mm (m_346/m_360)",
+                       condition="иначе", source=""),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type45.d346",
+        title="Типы 4/5: m_346t / m_360 (d346)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="m_346", title="m_346t",
+                       condition="C333 <= 0", source="m_346t"),
+            BranchInfo(id="m_360", title="m_360",
+                       condition="иначе", source="m_360"),
+        ),
+    ))
     return {s.id: s for s in specs}
 
 
