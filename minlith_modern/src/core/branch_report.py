@@ -8,6 +8,8 @@
 
 from __future__ import annotations
 
+import json
+
 STAGE_TITLES: dict[str, str] = {
     "stage0": "Стадия 0",
     "type": "Тип породы",
@@ -63,6 +65,35 @@ def forced_branch_ids(path: dict | None) -> set[str]:
         if decision.get("forced"):
             ids.add(_normalize_label(decision.get("name", "")))
     return ids
+
+
+def branch_path_json(path: dict | None) -> str:
+    """Маршрут в виде JSON-строки (для экспорта/сохранения)."""
+    return json.dumps(path or {"labels": [], "decisions": []},
+                      ensure_ascii=False, indent=2)
+
+
+def _decision_pairs(path: dict | None) -> list[tuple[str, str]]:
+    return [(d.get("stage", ""), d.get("name", ""))
+            for d in (path or {}).get("decisions", [])]
+
+
+def diff_branch_paths(path_a: dict | None, path_b: dict | None) -> list[dict]:
+    """Различия двух маршрутов: ветки, присутствующие только в одном.
+
+    Возвращает список ``{"stage", "name", "present_in"}``, где ``present_in``
+    — ``"a"`` или ``"b"``.
+    """
+    pairs_a = _decision_pairs(path_a)
+    pairs_b = _decision_pairs(path_b)
+    diff: list[dict] = []
+    for stage, name in pairs_a:
+        if (stage, name) not in pairs_b:
+            diff.append({"stage": stage, "name": name, "present_in": "a"})
+    for stage, name in pairs_b:
+        if (stage, name) not in pairs_a:
+            diff.append({"stage": stage, "name": name, "present_in": "b"})
+    return diff
 
 
 def format_branch_path_text(path: dict | None, sample: str = "") -> str:

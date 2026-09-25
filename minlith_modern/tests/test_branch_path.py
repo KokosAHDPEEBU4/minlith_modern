@@ -209,6 +209,25 @@ def test_path_branch_id_helpers():
     assert forced_branch_ids(None) == set()
 
 
+def test_branch_path_json_and_diff():
+    import json
+
+    from src.core.branch_report import branch_path_json, diff_branch_paths
+
+    path_a = {"labels": ["band_H5"], "decisions": [
+        {"stage": "stage0", "name": "band_H5"}]}
+    path_b = {"labels": ["band_H5", "rock_type_3"], "decisions": [
+        {"stage": "stage0", "name": "band_H5"},
+        {"stage": "stage0", "name": "rock_type_3"}]}
+
+    assert json.loads(branch_path_json(path_a))["labels"] == ["band_H5"]
+    assert branch_path_json(None)  # не падает на None
+
+    diff = diff_branch_paths(path_a, path_b)
+    assert {"stage": "stage0", "name": "rock_type_3", "present_in": "b"} in diff
+    assert diff_branch_paths(path_a, path_a) == []
+
+
 def test_debug_tracer_records_branch_path():
     from src.core.debug_tracer import DebugTraceCollector
 

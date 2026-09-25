@@ -12,6 +12,7 @@ from dataclasses import replace
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QComboBox,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QMessageBox,
@@ -22,7 +23,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from src.core.branch_report import forced_branch_ids, path_branch_ids
+from src.core.branch_report import (
+    branch_path_json,
+    diff_branch_paths,
+    forced_branch_ids,
+    path_branch_ids,
+)
 from src.core.excel_parity.branch_catalog import catalog_to_dict
 
 
@@ -62,6 +68,14 @@ class BranchGraphPage(QWidget):
         self._btn_recalc = QPushButton("Пересчитать с выбранными ветками")
         self._btn_recalc.clicked.connect(self._on_recalculate)
         top.addWidget(self._btn_recalc)
+
+        self._btn_export = QPushButton("Экспорт маршрута (JSON)")
+        self._btn_export.clicked.connect(self._on_export_json)
+        top.addWidget(self._btn_export)
+
+        self._btn_compare = QPushButton("Сравнить с авто")
+        self._btn_compare.clicked.connect(self._on_compare)
+        top.addWidget(self._btn_compare)
         layout.addLayout(top)
 
         body = QHBoxLayout()
@@ -251,3 +265,37 @@ class BranchGraphPage(QWidget):
             return
         self._current_result = result
         self._refresh()
+
+    def _on_export_json(self) -> None:
+        if self._current_result is None:
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Экспорт маршрута веток", "branch_path.json", "JSON (*.json)")
+        if not path:
+            return
+        if not path.lower().endswith(".json"):
+            path += ".json"
+        try:
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(branch_path_json(self._current_result.branch_path))
+        except OSError as exc:
+            QMessageBox.critical(self, "Ошибка экспорта", str(exc))
+            return
+        QMessageBox.information(self, "Готово", f"Маршрут сохранён:\n{path}")
+
+    def _on_compare(self) -> None:
+        index = self._sample_combo.currentIndex()
+        if index < 0 or index >= len(self._results) or self._current_result is None:
+            return
+        auto = self._results[index]
+        diff = diff_branch_paths(auto.branch_path, self._current_result.branch_path)
+        if not diff:
+            QMessageBox.information(
+                self, "Сравнение маршрутов",
+                "Маршруты совпадают (override не меняет маршрут для этого образца).")
+            return
+        lines = ["Различия маршрутов (авто → принудительный):", ""]
+        for item in diff:
+            who = "авто" if item["present_in"] == "a" else "принудительный"
+            lines.append(f"  {item['stage']}: {item['name']}  (только {who})")
+        QMessageBox.information(self, "Сравнение маршрутов", "\n".join(lines))
