@@ -187,6 +187,18 @@ def _build_catalog() -> dict[str, DecisionSpec]:
         ),
     ))
     specs.append(DecisionSpec(
+        id="type2.fe_ill",
+        title="Тип 2: иллит по Fe / по Mg (s_221)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="fe-ill", title="fe-ill (Ill по Fe)",
+                       condition="Mg - Fe3 >= 0", source="s_221t"),
+            BranchInfo(id="fe-ill-mg", title="fe-ill-mg (Ill по Mg)",
+                       condition="Mg - Fe3 < 0", source="s_230"),
+        ),
+    ))
+    specs.append(DecisionSpec(
         id="type3.p_142",
         title="Тип 3: ill = mg (p_142) / иначе",
         stage="type",

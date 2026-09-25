@@ -61,7 +61,7 @@ def solve_type(st0: Stage0) -> TypeSolution:
     if t == 1:
         return type1(st0, overrides=ov)
     if t == 2:
-        return type2(st0)
+        return type2(st0, overrides=ov)
     if t == 3:
         return type3(st0, overrides=ov)
     return type45(st0, overrides=ov)
@@ -145,7 +145,7 @@ def type1(st0: Stage0, overrides=None) -> TypeSolution:
 # --------------------------------------------------------------------------
 # Тип 2: 1.2Na + 3.25K < Al  (granite_t2)
 # --------------------------------------------------------------------------
-def type2(st0: Stage0) -> TypeSolution:
+def type2(st0: Stage0, overrides=None) -> TypeSolution:
     d = st0.fe
     si, al, mg, na, k = _base(d)
     ca = st0.ca
@@ -204,9 +204,9 @@ def type2(st0: Stage0) -> TypeSolution:
                 sol.si_n = si_2 - 16.0 * sol.ill - 6.0 * sol.or_   # C218
                 sol.trace.append("ill+or")
             else:                        # d213 FALSE -> s_221 (Fe-иллит)
-                _type2_fe_illite(sol, si_2, al_1, mg, k, fe3_1)
+                _type2_fe_illite(sol, si_2, al_1, mg, k, fe3_1, overrides)
         else:                            # d208 FALSE -> s_251 (бедный Ca)
-            _type2_ca_poor(sol, si_2, al_1, mg, k, fe3_1, ca_fe)
+            _type2_ca_poor(sol, si_2, al_1, mg, k, fe3_1, ca_fe, overrides)
     else:                                # s_204 else -> s_271 -> s_274
         ill_c = (si_2 - 6.0 * k) / 4.0   # C275
         if fe3_1 - ill_c > 0 and ca_fe - ill_c > 0:   # d274 -> s_274t
@@ -218,14 +218,22 @@ def type2(st0: Stage0) -> TypeSolution:
             sol.si_n = 0.0                              # C280
             sol.trace.append("ill-gb (D274)")
         else:                            # s_274 else -> s_221 (Fe-иллит)
-            _type2_fe_illite(sol, si_2, al_1, mg, k, fe3_1)
+            _type2_fe_illite(sol, si_2, al_1, mg, k, fe3_1, overrides)
     return sol
 
 
 def _type2_fe_illite(sol: TypeSolution, si_2: float, al_1: float,
-                     mg: float, k: float, fe3_1: float) -> None:
+                     mg: float, k: float, fe3_1: float,
+                     overrides=None) -> None:
     """s_221: иллит лимитирован Fe (s_221t) или Mg (s_230); дальше kn/gb."""
-    if mg - fe3_1 >= 0:              # s_221t: Ill по Fe
+    forced_fe = overrides.get("type2.fe_ill") if overrides else None
+    if forced_fe == "fe-ill":
+        fe_ok = True
+    elif forced_fe == "fe-ill-mg":
+        fe_ok = False
+    else:
+        fe_ok = mg - fe3_1 >= 0
+    if fe_ok:                        # s_221t: Ill по Fe
         ill = fe3_1                  # C222
         sol.fe_n = fe3_1 - ill       # C224 = 0
         sol.mg_n = mg - ill          # C225
@@ -237,7 +245,7 @@ def _type2_fe_illite(sol: TypeSolution, si_2: float, al_1: float,
     sol.or_ = k - 2.0 * ill          # C223/C231
     si3_2 = si_2 - 16.0 * ill - 6.0 * sol.or_   # C226/C234
     al_2 = al_1 - 6.5 * ill - sol.or_           # C227/C235
-    sol.trace.append("fe-ill" if mg - fe3_1 >= 0 else "fe-ill-mg")
+    sol.trace.append("fe-ill" if fe_ok else "fe-ill-mg")
     if si3_2 - 2.0 * al_2 >= 0:      # s_238 -> s_238t
         sol.kn = al_2                # C239
         sol.si_n = si3_2 - 2.0 * sol.kn         # C240
@@ -251,7 +259,8 @@ def _type2_fe_illite(sol: TypeSolution, si_2: float, al_1: float,
 
 
 def _type2_ca_poor(sol: TypeSolution, si_2: float, al_1: float,
-                   mg: float, k: float, fe3_1: float, ca_fe: float) -> None:
+                   mg: float, k: float, fe3_1: float, ca_fe: float,
+                   overrides=None) -> None:
     """s_251: бедный Ca (Na доминирует) — либо ill=k/2, либо s_274."""
     d251 = (mg - 0.5 * k > 0) and (fe3_1 - 0.5 * k >= 0)
     if d251:                           # s_251t
@@ -283,7 +292,7 @@ def _type2_ca_poor(sol: TypeSolution, si_2: float, al_1: float,
             sol.si_n = 0.0
             sol.trace.append("ill-gb (D274b)")
         else:
-            _type2_fe_illite(sol, si_2, al_1, mg, k, fe3_1)
+            _type2_fe_illite(sol, si_2, al_1, mg, k, fe3_1, overrides)
 
 
 # --------------------------------------------------------------------------
