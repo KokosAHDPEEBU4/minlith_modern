@@ -270,6 +270,40 @@ _TYPE45_D322 = {"SiO2": 73.498, "TiO2": 3.376, "Al2O3": 18.552, "Fe2O3": 1.274,
                 "CO2": 5.368, "SO": 4.659}
 
 
+@pytest.mark.parametrize("branch", ["rVI", "m371"])
+def test_type45_d294_override(branch):
+    run = run_sample(_TYPE45_D287, overrides=BranchOverrides(
+        choices={"type45.d294": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
+@pytest.mark.parametrize("branch", ["d308-m334", "d308-p81"])
+def test_type45_d308_override(branch):
+    run = run_sample(_TYPE45_D302, overrides=BranchOverrides(
+        choices={"type45.d308": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
+_TYPE45_D317 = {"SiO2": 53.136, "TiO2": 4.418, "Al2O3": 28.503, "Fe2O3": 2.651,
+                "FeO": 11.977, "MgO": 0.983, "CaO": 2.355, "Na2O": 10.666,
+                "K2O": 2.958, "P2O5": 11.265, "MnO": 7.411, "C": 0.212,
+                "SO3": 6.65, "F": 9.79, "Cl": 7.111, "S": 0.653,
+                "CO2": 9.499, "SO": 2.489}
+
+
+@pytest.mark.parametrize("branch", ["d317-m334", "d317-p81"])
+def test_type45_d317_override(branch):
+    run = run_sample(_TYPE45_D317, overrides=BranchOverrides(
+        choices={"type45.d317": branch}))
+    assert branch in run.tsol.trace
+    assert any(d.stage == "type" and d.name == branch and d.forced
+               for d in run.path.decisions)
+
+
 @pytest.mark.parametrize("branch", ["m322", "m296"])
 def test_type45_d322_override(branch):
     run = run_sample(_TYPE45_D322, overrides=BranchOverrides(
@@ -360,6 +394,9 @@ def test_validate_accepts_internal_overrides():
     validate_overrides(BranchOverrides(choices={"type45.d287": "m287"}))
     validate_overrides(BranchOverrides(choices={"type45.d302": "m302"}))
     validate_overrides(BranchOverrides(choices={"type45.d322": "m322"}))
+    validate_overrides(BranchOverrides(choices={"type45.d294": "rVI"}))
+    validate_overrides(BranchOverrides(choices={"type45.d308": "d308-p81"}))
+    validate_overrides(BranchOverrides(choices={"type45.d317": "d317-m334"}))
 
 
 def test_auto_behavior_unchanged_without_overrides():

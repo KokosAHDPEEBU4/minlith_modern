@@ -914,9 +914,20 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
             sol.ab, sol.an = ab, an
             sol.ca_n = ca_n
             sol.si_n = si_n
-            if ca_n > 0:                   # d294 → rVI
+            forced_d294 = (getattr(sol, "overrides", None) or {}).get("type45.d294")
+            if forced_d294 == "rVI":
+                d294 = True
+            elif forced_d294 == "m371":
+                d294 = False
+            else:
+                d294 = ca_n > 0
+            if d294:                       # d294 → rVI
+                if forced_d294 == "rVI":
+                    sol.trace.append("rVI")
                 sol.trace.append("m_281t-m_287t")
                 return sol
+            if forced_d294 == "m371":
+                sol.trace.append("m371")
             _t45_after_m37x(sol, si, al, k, mg, na, ca)   # m_371
             return sol
         # d287 false → m_334
@@ -949,9 +960,20 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         si_n = si4_2 - 6.4 * (na - mm)     # C305
         al3 = al4_1 - 5.0 * mm - 1.2 * ab  # C306
         sol.si_n = si_n
-        if si_n < 0:                       # d308 → m_334
+        forced_d308 = (getattr(sol, "overrides", None) or {}).get("type45.d308")
+        if forced_d308 == "d308-m334":
+            d308 = True
+        elif forced_d308 == "d308-p81":
+            d308 = False
+        else:
+            d308 = si_n < 0
+        if d308:                           # d308 → m_334
+            if forced_d308 == "d308-m334":
+                sol.trace.append("d308-m334")
             return _t45_m334(sol, si4_1, al4_1, mg0v, na, k1, k2, k3,
                              k4, ca, ca_in, fe3_1, si, al, k, mg, mm)
+        if forced_d308 == "d308-p81":
+            sol.trace.append("d308-p81")
         _t3_balance(sol, si_n, al3)        # p_81 (si3_3=C305, al3_3=C306)
         sol.trace.append("m_296t->p81")
         return sol
@@ -964,9 +986,20 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
     si_n = si4_2 - (6.0 * na - mm) - 2.0 * ca   # C314
     al3 = (al - k) - 5.0 * mm - ab - ca    # C315 (C277)
     sol.si_n = si_n
-    if si_n < 0:                           # d317 → m_334
+    forced_d317 = (getattr(sol, "overrides", None) or {}).get("type45.d317")
+    if forced_d317 == "d317-m334":
+        d317 = True
+    elif forced_d317 == "d317-p81":
+        d317 = False
+    else:
+        d317 = si_n < 0
+    if d317:                               # d317 → m_334
+        if forced_d317 == "d317-m334":
+            sol.trace.append("d317-m334")
         return _t45_m334(sol, si4_1, al4_1, mg0v, na, k1, k2, k3,
                          k4, ca, ca_in, fe3_1, si, al, k, mg, mm)
+    if forced_d317 == "d317-p81":
+        sol.trace.append("d317-p81")
     _t3_balance(sol, si_n, al3)            # p_81 (si3_3=C314)
     sol.trace.append("m_311->p81")
     return sol

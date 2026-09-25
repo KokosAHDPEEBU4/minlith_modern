@@ -41,7 +41,8 @@
   - `type3.p_53` — `p_53t` / `no_p_53`; `type3.p_97` — `D106` / `D109-fe` / `p253->t5`;
   - `type45.d334` — `mm-path` / `no_mm`; `type45.d346` — `m_346` / `m_360`;
   - `type1.t_73` — `t_74t` / `t_78`;
-  - `type45.d287` — `m287` / `m334`; `type45.d302` — `m302` / `m311`; `type45.d322` — `m322` / `m296`.
+  - `type45.d287` — `m287` / `m334`; `type45.d302` — `m302` / `m311`; `type45.d322` — `m322` / `m296`;
+  - `type45.d294` — `rVI` / `m371`; `type45.d308` — `d308-m334` / `d308-p81`; `type45.d317` — `d317-m334` / `d317-p81`.
   Override для хелперов type4/5 проносится через поле `TypeSolution.overrides`.
   Форсированные внутренние ветки помечаются `forced` в маршруте (по id из `overrides.choices`). Остальные внутренние решения типов — заглушки `overridable=False`. Тесты: `test_type3_p114_override`, `test_type45_d418_override`, `test_type1_t49_override`, `test_type3_d61_override`, `test_validate_accepts_internal_overrides`.
 - **Экспорт и сравнение маршрутов (этап 5 ТЗ):** чистые функции `branch_report.branch_path_json` и `branch_report.diff_branch_paths`; на странице «Граф» — кнопки «Экспорт маршрута (JSON)» и «Сравнить с авто» (различия авто-маршрута и принудительного). Тест: `test_branch_path_json_and_diff`.
