@@ -66,27 +66,36 @@ class ExcelRun:
         Собирается из уже принятых решений: полоса коэффициентов и тип
         породы (стадия 0), подписи веток типа и VI этапа. Расчёт не меняет.
         """
+        ov = getattr(self.st0, "overrides", None)
+        forced_band = bool(ov and ov.get("coefficient_band"))
+        forced_type = bool(ov and ov.get("rock_type"))
+        forced_vi = ov.get("stage_vi") if ov else None
+
         p = BranchPath()
         band = self.st0.coefficient_band
         cond, src = COEFFICIENT_BAND_INFO.get(band, ("", ""))
         p.add("stage0", f"band_{band or '?'}", condition=cond, source=src,
-              value=self.st0.F)
+              value=self.st0.F, forced=forced_band)
         rt = int(self.st0.rock_type)
         cond, src = ROCK_TYPE_INFO.get(rt, ("", ""))
-        p.add("stage0", f"rock_type_{rt}", condition=cond, source=src)
+        p.add("stage0", f"rock_type_{rt}", condition=cond, source=src,
+              forced=forced_type)
         for label in self.tsol.trace:
             cond, src = TYPE_BRANCH_INFO.get(label, ("", ""))
             p.add("type", label, condition=cond, source=src)
         for label in self.vi.trace:
             cond, src = STAGE_VI_INFO.get(label, ("", ""))
-            p.add("stage_vi", label, condition=cond, source=src)
+            p.add("stage_vi", label, condition=cond, source=src,
+                  forced=bool(forced_vi and label == forced_vi))
         return p
 
 
 def run_from_stage0(st0: Stage0) -> ExcelRun:
     """Прогнать уже посчитанную стадию 0 через типы/VI-этап/вывод."""
     tsol = solve_type(st0)
-    vi = solve_stage_vi(st0, tsol)
+    overrides = getattr(st0, "overrides", None)
+    vi_override = overrides.get("stage_vi") if overrides else None
+    vi = solve_stage_vi(st0, tsol, override=vi_override)
     out = output(st0, tsol, vi)
     return ExcelRun(st0=st0, tsol=tsol, vi=vi, out=out)
 

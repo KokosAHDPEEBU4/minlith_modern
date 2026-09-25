@@ -30,6 +30,7 @@ class BranchDecision:
     condition: str = ""        # человекочитаемое условие (если известно)
     source: str = ""           # источник в Excel (ячейка/флаг/процедура)
     value: float | None = None  # значение условия/переменной, если применимо
+    forced: bool = False       # ветка выбрана пользователем (override), не авто
 
 
 @dataclass
@@ -45,10 +46,11 @@ class BranchPath:
         condition: str = "",
         source: str = "",
         value: float | None = None,
+        forced: bool = False,
     ) -> None:
         self.decisions.append(
             BranchDecision(stage=stage, name=name, condition=condition,
-                           source=source, value=value)
+                           source=source, value=value, forced=forced)
         )
 
     def labels(self) -> list[str]:

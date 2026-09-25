@@ -17,6 +17,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from src.core.excel_parity.branches import COEFFICIENT_BAND_INFO
+
 if TYPE_CHECKING:
     from src.core.branch_overrides import BranchOverrides
 
@@ -120,8 +122,15 @@ def f_and_a(fe: dict[str, float]) -> tuple[float, float]:
     return f, a
 
 
-def coefficients(f: float, a: float) -> tuple[float, float, float, float, float]:
+def coefficients(
+    f: float,
+    a: float,
+    override: str | None = None,
+) -> tuple[float, float, float, float, float]:
     """Коэффициенты хлорита k1..k4 и achl по диапазону F (и A).
+
+    ``override`` (id полосы H5/J5/L5/H12/J12/L12) — ручной выбор полосы
+    вместо авто-подбора по F/A (этап 3 ТЗ); иначе поведение не меняется.
 
     Полосы (каскад VBA u_0..u_10) и формулы ячеек-кандидатов:
       F 0.00-0.21   -> H5:H9: k1=4.42-5.18F;  k2=4.09F;  k3=(3.16-0.41F)/2;
@@ -135,29 +144,30 @@ def coefficients(f: float, a: float) -> tuple[float, float, float, float, float]
       126.89·F + 551.81 (полоса H5), 126.89·F + 555.81 (J5/L5),
       126.89 + F + 555.81 (H12/J12), 561.42·F + 182.12 (L12).
     """
-    if 0.0 < f < 0.21:
+    band = override if override in COEFFICIENT_BAND_INFO else coefficient_band(f, a)
+    if band == "H5":
         k1, k2, k3, _ = (4.42 - 5.18 * f, 4.09 * f, (3.16 - 0.41 * f) / 2.0, None)
         k4 = 10.0 - k1 - k2 - 2.0 * k3
         achl2 = 126.89 * f + 551.81
-    elif 0.21 <= f < 0.51:
+    elif band == "J5":
         k1, k2, k3, _ = (3.93 - 2.96 * f, 5.66 * f - 0.34, (3.66 - 2.69 * f) / 2.0, None)
         k4 = 10.0 - k1 - k2 - 2.0 * k3
         achl2 = 126.89 * f + 555.81
-    elif 0.51 <= f < 0.69:
+    elif band == "L5":
         k1, k2, k3, _ = (5.13 - 5.32 * f, 2.54 * f + 1.24, (3.46 * f + 0.53) / 2.0, None)
         k4 = 10.0 - k1 - k2 - 2.0 * k3
         achl2 = 126.89 * f + 555.81
-    elif 0.69 <= f < 0.87 and a > 0.47:
+    elif band == "H12":
         k1, k2, k3, _ = (0.56, 2.54 * f + 1.24, (3.46 * f + 0.53) / 2.0, None)
         k4 = 10.0 - k1 - k2 - 2.0 * k3
         achl2 = 126.89 + f + 555.81
-    elif 0.69 <= f < 0.87 and 0.40 < a < 0.47:
+    elif band == "J12":
         k1 = 6.2 - 12.0 * a
         k2 = 2.54 * f + 1.24
         k3 = (3.46 * f + 0.53) / 2.0
         k4 = 10.0 - k1 - k2 - 2.0 * k3
         achl2 = 126.89 + f + 555.81
-    else:  # 0.87 <= f < 1.0
+    else:  # L12 (0.87 <= f < 1.0 и др.)
         k1, k2, k3, _ = (4 - 4 * f, 18.36 * f - 12.36, (25 - 25 * f) / 2.0, None)
         k4 = 10.0 - k1 - k2 - 2.0 * k3
         achl2 = 561.42 * f + 182.12
@@ -202,8 +212,15 @@ def classify_conditions(fe: dict[str, float], k1: float, k3: float) -> dict[str,
     }
 
 
-def classify(fe: dict[str, float], k1: float, k3: float) -> int:
+def classify(
+    fe: dict[str, float],
+    k1: float,
+    k3: float,
+    override: str | None = None,
+) -> int:
     """Определить тип породы по условиям E20..E25 (чистые, без округлений).
+
+    ``override`` ("1".."5") — ручной выбор типа вместо авто (этап 3 ТЗ).
 
     Тип 1: Al ≤ Na + K            (F20: Al−Na−K < 0)
     Тип 2: Al ≤ 1.2·Na + 3.25·K   (F22: Al−1.2Na−3.25K ≤ 0)
@@ -211,6 +228,8 @@ def classify(fe: dict[str, float], k1: float, k3: float) -> int:
     Тип 4: Al ≤ 5Na+3.25K+(Mg−0.5K−2Na)·k3/k1
     Тип 5: прочее (больше всего Al).
     """
+    if override is not None:
+        return int(override)
     al = fe["Al2O3"]
     na = fe["Na2O"]
     k = fe["K2O"]
@@ -236,10 +255,16 @@ def compute_stage0(
     overrides: BranchOverrides | None = None,
 ) -> Stage0:
     """Полная стадия 0 для входных весовых процентов оксидов."""
+    if overrides is not None and not overrides.is_empty():
+        from src.core.branch_overrides import validate_overrides
+        validate_overrides(overrides)
     fe = formula_units(ox)
     f, a = f_and_a(fe)
-    k1, k2, k3, k4, achl = coefficients(f, a)
-    rock_type = classify(fe, k1, k3)
+    band_override = overrides.get("coefficient_band") if overrides else None
+    type_override = overrides.get("rock_type") if overrides else None
+    resolved_band = band_override if band_override in COEFFICIENT_BAND_INFO else None
+    k1, k2, k3, k4, achl = coefficients(f, a, override=band_override)
+    rock_type = classify(fe, k1, k3, override=type_override)
 
     # s = D17 = S_ф.е. + SO3_ф.е. (сведено в fe["S"] внутри formula_units)
     s_total = fe["S"]
@@ -259,6 +284,6 @@ def compute_stage0(
         ca_n_in=d8,
         s=s_total,
         overrides=overrides,
-        coefficient_band=coefficient_band(f, a),
+        coefficient_band=resolved_band or coefficient_band(f, a),
         type_conditions=classify_conditions(fe, k1, k3),
     )

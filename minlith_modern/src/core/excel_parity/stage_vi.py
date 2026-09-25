@@ -29,8 +29,16 @@ class StageVI:
     trace: list[str] = field(default_factory=list)
 
 
-def solve_stage_vi(st0: Stage0, tsol: TypeSolution) -> StageVI:
-    """Выполняет VI этап по остаткам ca_n/mg_n/fe_n/si_n (rVI, s_97t..s_137)."""
+def solve_stage_vi(
+    st0: Stage0,
+    tsol: TypeSolution,
+    override: str | None = None,
+) -> StageVI:
+    """Выполняет VI этап по остаткам ca_n/mg_n/fe_n/si_n (rVI, s_97t..s_137).
+
+    ``override`` ("A"/"B"/"C-srp"/"C-mst"/"C-mst2") — ручной выбор ветки
+    вместо авто; формулы веток не меняются (этап 3 ТЗ).
+    """
     ca_n = tsol.ca_n
     mg_n = tsol.mg_n
     fe_n = tsol.fe_n
@@ -40,7 +48,7 @@ def solve_stage_vi(st0: Stage0, tsol: TypeSolution) -> StageVI:
 
     # Ветка A (s_97t): ca_n >= mg_n + fe_n
     # Fe -> анкерит, Mn -> родохрозит, весь Si -> кварц.
-    if ca_n - mg_n - fe_n >= 0.0:
+    if override == "A" or (override is None and ca_n - mg_n - fe_n >= 0.0):
         vi.dl = mg_n
         vi.ank = fe_n
         vi.cc = ca_n - vi.dl - vi.ank
@@ -50,7 +58,7 @@ def solve_stage_vi(st0: Stage0, tsol: TypeSolution) -> StageVI:
         return vi
 
     # Ветка B (s_104t + s_111): mg_n <= ca_n < mg_n + fe_n
-    if mg_n <= ca_n < mg_n + fe_n:
+    if override == "B" or (override is None and mg_n <= ca_n < mg_n + fe_n):
         vi.dl = mg_n
         vi.ank = ca_n - mg_n
         fe_left = fe_n - vi.ank
@@ -65,22 +73,25 @@ def solve_stage_vi(st0: Stage0, tsol: TypeSolution) -> StageVI:
         return vi
 
     # Ветка C (s_121): ca_n - mg_n < 0
-    if ca_n - mg_n < 0.0:
+    if override in ("C-srp", "C-mst", "C-mst2") or (
+            override is None and ca_n - mg_n < 0.0):
         vi.dl = ca_n
         c123 = mg_n - ca_n
-        if si_n - (2.0 / 3.0) * c123 > 0.0:   # s_125t: серпентин
-            vi.srp = c123 / 3.0
+        if override == "C-srp" or (
+                override is None and si_n - (2.0 / 3.0) * c123 > 0.0):
+            vi.srp = c123 / 3.0                # s_125t: серпентин
             vi.q = si_n - 2.0 * vi.srp
             vi.ht = fe_n / 2.0
             vi.prl = mn_fe
             vi.trace.append("C-srp")
-        elif si_n - c123 < 0.0:               # s_131: магнезит (srp=si_n/2)
-            vi.srp = si_n / 2.0
+        elif override == "C-mst" or (
+                override is None and si_n - c123 < 0.0):
+            vi.srp = si_n / 2.0                # s_131: магнезит (srp=si_n/2)
             vi.mst = c123 - 3.0 * vi.srp
             vi.ht = fe_n / 2.0
             vi.prl = mn_fe
             vi.trace.append("C-mst")
-        else:                                 # s_137: магнезит+сидерит
+        else:                                  # s_137: магнезит+сидерит
             vi.mst = c123
             vi.sd = fe_n
             vi.rch = mn_fe

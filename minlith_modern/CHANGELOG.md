@@ -25,6 +25,9 @@
 ### Added
 - **Ручной выбор веток — модель и проброс (этап 2 ТЗ `docs/planning/TZ_BRANCH_GRAPH.md`):** `src/core/branch_overrides.py` (`BranchOverrides`, `validate_overrides` — валидация по каталогу `branch_catalog`); `CalculationConfig.branch_overrides`/`forced_path`; `AlgorithmInput.overrides`; `Stage0.overrides`; `Calculator._build_algorithm_input` собирает и валидирует override; проброс в `excel_parity` (`run_sample(..., overrides=)`). Поведение по умолчанию не менялось (пустой выбор == авто). Тесты: `tests/test_branch_overrides.py` (9 шт.).
 
+### Added
+- **Применение ручного выбора веток в движке (этап 3 ТЗ):** `coefficients(f,a,override=)` и `classify(fe,k1,k3,override=)` выбирают полосу/тип по override; `solve_stage_vi(st0,tsol,override=)` — ветку A/B/C-srp/C-mst/C-mst2; `compute_stage0` прокидывает override и валидирует; в `ExcelRun.path` форсированные решения помечаются `forced=True`. Авто-поведение (без override) не изменилось — паритет зелёный. Тесты: `tests/test_branch_overrides_engine.py` (16 шт.).
+
 ### Fixed
 - **Падение приложения при старте:** `MainWindow._apply_zoom_step` обращался к `page._view`, но у `ChartsPage` после перехода на вкладки такого атрибута нет (`AttributeError: 'ChartsPage' object has no attribute '_view'`). Добавлены методы `set_zoom_step()` в `ChartsPage` (применяет шаг ко всем вкладкам) и `OutputPage` (делегирует в `_view`); `main_window` вызывает `page.set_zoom_step(step)`.
 - **Вылет при добавлении вкладки диаграмм:** кнопка «+» была подключена к `_add_tab` напрямую, а `clicked` передаёт `checked=False` → `_add_tab(name=False)` падал с `TypeError` в `QTabWidget.addTab`. Кнопка переделана: теперь это вкладка-«＋» последней вкладкой.
