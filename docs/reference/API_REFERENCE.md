@@ -405,6 +405,12 @@ from src.core.engine_compare import compare_engines, max_abs_delta
 rows = compare_engines({"SiO2": 52.5, "Al2O3": 23.41, ...})
 # [MineralDiff(name='Альбит', parity=..., exact=..., delta=parity-exact), ...]
 worst, name = max_abs_delta(rows)
+
+# Пакетно по нескольким образцам:
+from src.core.engine_compare import compare_all, summary_rows, to_csv
+compare_all({"A": ox_a, "B": ox_b})   # [(имя, rows), …]
+summary_rows({"A": ox_a, "B": ox_b})  # [(имя, max|Δ|, минерал), …]
+csv_text = to_csv({"A": ox_a, "B": ox_b})  # sample,mineral,parity,exact,delta
 ```
 
 В GUI: страница «Результаты» → кнопка «Сравнить движки»

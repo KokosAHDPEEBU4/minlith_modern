@@ -67,3 +67,37 @@ def max_abs_delta(rows: list[MineralDiff]) -> tuple[float, str]:
         return 0.0, ""
     worst = max(rows, key=lambda r: abs(r.delta))
     return abs(worst.delta), worst.name
+
+
+def compare_all(
+    compositions: dict[str, dict[str, float]],
+    data_dir: Path | None = None,
+) -> list[tuple[str, list[MineralDiff]]]:
+    """Сравнить движки по нескольким образцам: ``[(имя, строки), …]``."""
+    return [(name, compare_engines(ox, data_dir=data_dir))
+            for name, ox in compositions.items()]
+
+
+def summary_rows(
+    compositions: dict[str, dict[str, float]],
+    data_dir: Path | None = None,
+) -> list[tuple[str, float, str]]:
+    """Сводка: ``(имя, max|Δ|, минерал с максимальным |Δ|)`` по образцам."""
+    out: list[tuple[str, float, str]] = []
+    for name, rows in compare_all(compositions, data_dir=data_dir):
+        worst, worst_name = max_abs_delta(rows)
+        out.append((name, worst, worst_name))
+    return out
+
+
+def to_csv(
+    compositions: dict[str, dict[str, float]],
+    data_dir: Path | None = None,
+) -> str:
+    """CSV-отчёт по всем образцам: sample,mineral,parity,exact,delta."""
+    lines = ["sample,mineral,excel_parity,excel_exact,delta"]
+    for name, rows in compare_all(compositions, data_dir=data_dir):
+        for row in rows:
+            lines.append(f"{name},{row.name},{row.parity:.6g},"
+                         f"{row.exact:.6g},{row.delta:.6g}")
+    return "\n".join(lines)

@@ -43,3 +43,7 @@ coverage.xml
 dist/
 build/
 *.spec
+
+# Сгенерированные одиночные HTML-диаграммы (артефакты экспорта)
+diagrams.html
+acnk.html

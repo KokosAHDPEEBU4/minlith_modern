@@ -7,7 +7,12 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.core.models import Sample
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
@@ -35,7 +40,8 @@ from src.core.excel_parity.branch_catalog import catalog_to_dict
 class BranchGraphPage(QWidget):
     """Визуализация графа решений и ручной выбор веток."""
 
-    def __init__(self, calculator=None, parent=None) -> None:
+    def __init__(self, calculator: object | None = None,
+                 parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._calculator = calculator
         self._results: list = []
@@ -76,6 +82,14 @@ class BranchGraphPage(QWidget):
         self._btn_compare = QPushButton("Сравнить с авто")
         self._btn_compare.clicked.connect(self._on_compare)
         top.addWidget(self._btn_compare)
+
+        self._btn_save_scenario = QPushButton("Сохранить сценарий…")
+        self._btn_save_scenario.clicked.connect(self._on_save_scenario)
+        top.addWidget(self._btn_save_scenario)
+
+        self._btn_load_scenario = QPushButton("Загрузить сценарий…")
+        self._btn_load_scenario.clicked.connect(self._on_load_scenario)
+        top.addWidget(self._btn_load_scenario)
         layout.addLayout(top)
 
         body = QHBoxLayout()
@@ -128,7 +142,7 @@ class BranchGraphPage(QWidget):
 
     # ── данные ──
 
-    def set_calculator(self, calculator) -> None:
+    def set_calculator(self, calculator: object | None) -> None:
         self._calculator = calculator
 
     def set_results(self, results: list) -> None:
@@ -158,9 +172,13 @@ class BranchGraphPage(QWidget):
 
         for i in range(self._tree.topLevelItemCount()):
             parent = self._tree.topLevelItem(i)
+            if parent is None:
+                continue
             parent_taken = False
             for j in range(parent.childCount()):
                 child = parent.child(j)
+                if child is None:
+                    continue
                 data = child.data(0, Qt.ItemDataRole.UserRole)
                 if not data or data[1] is None:
                     continue
@@ -185,7 +203,7 @@ class BranchGraphPage(QWidget):
         self._update_result_label()
         self._update_overrides_label()
 
-    def _input_sample(self):
+    def _input_sample(self) -> Sample | None:
         from src.core.models import Sample
         result = self._current_result
         if result is None:
@@ -282,6 +300,46 @@ class BranchGraphPage(QWidget):
             QMessageBox.critical(self, "Ошибка экспорта", str(exc))
             return
         QMessageBox.information(self, "Готово", f"Маршрут сохранён:\n{path}")
+
+    def _on_save_scenario(self) -> None:
+        """Сохранить набор принудительных веток в JSON-сценарий."""
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Сохранить сценарий веток", "branch_scenario.json",
+            "JSON (*.json)")
+        if not path:
+            return
+        if not path.lower().endswith(".json"):
+            path += ".json"
+        data = {"branch_overrides": dict(self._overrides)}
+        try:
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(data, handle, ensure_ascii=False, indent=2)
+        except OSError as exc:
+            QMessageBox.critical(self, "Ошибка сохранения", str(exc))
+            return
+        QMessageBox.information(self, "Готово", f"Сценарий сохранён:\n{path}")
+
+    def _on_load_scenario(self) -> None:
+        """Загрузить сценарий веток и применить его к текущему образцу."""
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Загрузить сценарий веток", "", "JSON (*.json)")
+        if not path:
+            return
+        try:
+            with open(path, encoding="utf-8") as handle:
+                data = json.load(handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            QMessageBox.critical(self, "Ошибка загрузки", str(exc))
+            return
+        choices = data.get("branch_overrides", {}) if isinstance(data, dict) else {}
+        from src.core.branch_overrides import BranchOverrides, validate_overrides
+        try:
+            validate_overrides(BranchOverrides(choices=dict(choices)))
+        except ValueError as exc:
+            QMessageBox.critical(self, "Недопустимый сценарий", str(exc))
+            return
+        self._overrides = dict(choices)
+        self._update_overrides_label()
 
     def _on_compare(self) -> None:
         index = self._sample_combo.currentIndex()
