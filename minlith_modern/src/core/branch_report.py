@@ -39,6 +39,32 @@ def branch_path_headers() -> tuple[str, ...]:
     return _HEADERS
 
 
+def _normalize_label(name: str) -> str:
+    """'band_H5' -> 'H5', 'rock_type_3' -> '3', иначе без изменений."""
+    if name.startswith("band_"):
+        return name[len("band_"):]
+    if name.startswith("rock_type_"):
+        return name[len("rock_type_"):]
+    return name
+
+
+def path_branch_ids(path: dict | None) -> set[str]:
+    """Множество id веток, пройденных образцом (для подсветки дерева)."""
+    ids: set[str] = set()
+    for decision in (path or {}).get("decisions", []):
+        ids.add(_normalize_label(decision.get("name", "")))
+    return ids
+
+
+def forced_branch_ids(path: dict | None) -> set[str]:
+    """Множество id веток, выбранных пользователем (``forced``)."""
+    ids: set[str] = set()
+    for decision in (path or {}).get("decisions", []):
+        if decision.get("forced"):
+            ids.add(_normalize_label(decision.get("name", "")))
+    return ids
+
+
 def format_branch_path_text(path: dict | None, sample: str = "") -> str:
     """Человекочитаемый текст маршрута (для копирования/отчёта)."""
     rows = describe_branch_path(path)

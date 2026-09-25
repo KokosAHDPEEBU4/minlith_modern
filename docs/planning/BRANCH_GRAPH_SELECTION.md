@@ -17,8 +17,10 @@
 > ✅ этап 2 — модель override и проброс (`src/core/branch_overrides.py`,
 > `CalculationConfig.branch_overrides`, `AlgorithmInput.overrides`, `Stage0.overrides`);
 > ✅ этап 3 — применение override в движке (`coefficients`/`classify`/`solve_stage_vi`,
-> пометка `forced` в `ExcelRun.path`).
-> Дальше — этап 4 (GUI-страница «Граф»), этап 5 (экспорт/сравнение), этап 6 (внутренние ветки).
+> пометка `forced` в `ExcelRun.path`);
+> ✅ этап 4 — GUI-страница «Граф» (`src/gui/pages/branch_graph_page.py`, дерево + маршрут +
+> выбор ветки + пересчёт; сайдбар «Граф»).
+> Дальше — этап 5 (экспорт/сравнение маршрутов), этап 6 (override внутренних веток типов).
 
 > Этот файл отвечает на вопрос «что у нас есть и как оно устроено», чтобы
 > потом принять продуктовые/архитектурные решения. Решения и открытые вопросы —

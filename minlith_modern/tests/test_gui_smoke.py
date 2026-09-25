@@ -136,6 +136,40 @@ def test_charts_page_samples_sync_across_tabs(qapp):
     assert second.selected_sample_indexes() == {0, 2}
 
 
+def test_branch_graph_page_override_and_recalc(qapp):
+    """Страница «Граф»: выбор ветки → пересчёт с override, подсветка forced."""
+    from src.core.branch_report import forced_branch_ids
+    from src.core.calculator import Calculator
+    from src.core.models import OxideComposition, Sample
+    from src.gui.pages.branch_graph_page import BranchGraphPage
+
+    sample = Sample(name="S", composition=OxideComposition(
+        sio2=70.0, al2o3=12.0, fe2o3=1.0, feo=0.5,
+        mgo=0.3, cao=0.5, na2o=3.0, k2o=6.0))
+    calc = Calculator()
+    results = calc.calculate([sample])
+
+    page = BranchGraphPage(calculator=calc)
+    page.set_results(results)
+    assert page._sample_combo.count() == 1
+    assert page._tree.topLevelItemCount() >= 3
+
+    page._overrides["rock_type"] = "3"
+    page._on_recalculate()
+    assert "rock_type_3" in page._current_result.branch_path["labels"]
+    assert "3" in forced_branch_ids(page._current_result.branch_path)
+
+
+def test_main_window_has_branch_graph_page(qapp):
+    """MainWindow содержит страницу «Граф»; переключение не падает."""
+    from src.gui.main_window import MainWindow
+
+    window = MainWindow()
+    assert window._branch_graph_page is not None
+    window._switch_page(9)   # «Граф»
+    assert window._stack.currentWidget() is window._branch_graph_page
+
+
 def test_main_window_constructs_and_applies_zoom(qapp):
     """Главное окно создаётся, а _apply_zoom_step не падает (регрессия)."""
     from src.gui.main_window import MainWindow

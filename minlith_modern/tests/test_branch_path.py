@@ -195,6 +195,20 @@ def test_calculator_debug_exposes_branch_path():
     assert any(c.branch.startswith("rock_type_") for c in steps)
 
 
+def test_path_branch_id_helpers():
+    from src.core.branch_report import forced_branch_ids, path_branch_ids
+
+    path = {"labels": ["band_H5", "rock_type_1", "A"], "decisions": [
+        {"stage": "stage0", "name": "band_H5", "forced": False},
+        {"stage": "stage0", "name": "rock_type_1", "forced": True},
+        {"stage": "stage_vi", "name": "A", "forced": False},
+    ]}
+    assert path_branch_ids(path) == {"H5", "1", "A"}
+    assert forced_branch_ids(path) == {"1"}
+    assert path_branch_ids(None) == set()
+    assert forced_branch_ids(None) == set()
+
+
 def test_debug_tracer_records_branch_path():
     from src.core.debug_tracer import DebugTraceCollector
 

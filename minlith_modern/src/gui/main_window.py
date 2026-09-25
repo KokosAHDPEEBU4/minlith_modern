@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 from src.core.calculator import Calculator
 from src.core.models import LEGACY_ENGINE_ALIASES, CalculationConfig, Sample
 from src.gui.dialogs.calculation_dialog import CalculationDialog
+from src.gui.pages.branch_graph_page import BranchGraphPage
 from src.gui.pages.charts_page import ChartsPage
 from src.gui.pages.files_page import FilesPage
 from src.gui.pages.history_page import HistoryPage
@@ -131,6 +132,7 @@ class MainWindow(QMainWindow):
             ("Отчёты", "\U0001f4c4"),
             ("История", "\U0001f4c1"),
             ("Настройки", "\u2699\ufe0f"),
+            ("Граф", "\U0001f500"),
             ("Журнал", "\U0001f4dd"),
         ]
 
@@ -175,6 +177,7 @@ class MainWindow(QMainWindow):
         self._settings_page = SettingsPage(self._config)
         self._settings_page.settings_changed.connect(self._on_settings_changed)
         self._history_page = HistoryPage()
+        self._branch_graph_page = BranchGraphPage(calculator=self._calculator)
         self._logs_page = LogsPage()
 
         self._stack.addWidget(self._welcome_page)
@@ -186,6 +189,7 @@ class MainWindow(QMainWindow):
         self._stack.addWidget(self._reports_page)
         self._stack.addWidget(self._history_page)
         self._stack.addWidget(self._settings_page)
+        self._stack.addWidget(self._branch_graph_page)
         self._stack.addWidget(self._logs_page)
 
         main_layout.addWidget(self._stack)
@@ -266,6 +270,7 @@ class MainWindow(QMainWindow):
         self._results_page.add_result(result)
         self._charts_page.set_results(self._results_page._results)
         self._reports_page.set_results(self._results_page._results)
+        self._branch_graph_page.set_results(self._results_page._results)
         self._switch_page(3)  # Results
         self.statusBar().showMessage(
             f"{result.sample_name} -> {result.rock_type.name}  "
@@ -285,6 +290,7 @@ class MainWindow(QMainWindow):
             self._switch_page(3)
             self._charts_page.set_results(dialog.results)
             self._reports_page.set_results(dialog.results)
+            self._branch_graph_page.set_results(dialog.results)
             self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
             self._persist_results(dialog.results)
 
@@ -357,6 +363,7 @@ class MainWindow(QMainWindow):
         # 1. Rebuild calculator with new config
         self._calculator = self._create_calculator()
         self._input_page._calculator = self._calculator
+        self._branch_graph_page.set_calculator(self._calculator)
         logger.info("Calculator rebuilt with new settings")
 
         # 2. Invalidate cache (settings may change results)

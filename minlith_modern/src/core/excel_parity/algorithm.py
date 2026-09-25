@@ -14,7 +14,14 @@ from __future__ import annotations
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput
 from src.core.excel_parity.runner import ExcelRun, run_from_stage0
-from src.core.excel_parity.stage0 import Stage0, classify, coefficients, f_and_a
+from src.core.excel_parity.stage0 import (
+    Stage0,
+    classify,
+    classify_conditions,
+    coefficient_band,
+    coefficients,
+    f_and_a,
+)
 
 
 def stage0_from_input(inp: AlgorithmInput) -> Stage0:
@@ -33,9 +40,12 @@ def stage0_from_input(inp: AlgorithmInput) -> Stage0:
         "MnO": inp.mno, "C": inp.c, "SO3": inp.so3, "F": inp.f,
         "Cl": inp.cl, "S": inp.s, "CO2": inp.co2, "SO": inp.so,
     }
+    overrides = inp.overrides
+    band_override = overrides.get("coefficient_band") if overrides else None
+    type_override = overrides.get("rock_type") if overrides else None
     f, a = f_and_a(fe)
-    k1, k2, k3, k4, achl = coefficients(f, a)
-    rock_type = classify(fe, k1, k3)
+    k1, k2, k3, k4, achl = coefficients(f, a, override=band_override)
+    rock_type = classify(fe, k1, k3, override=type_override)
     s_total = fe["S"]
     pr0 = s_total / 2.0
     ca_raw = inp.cao + 3.33 * inp.p2o5 + 0.5 * inp.f
@@ -49,6 +59,8 @@ def stage0_from_input(inp: AlgorithmInput) -> Stage0:
         ca=inp.cao if inp.cao > 0.0 else 0.0,
         ca_n_in=inp.cao,
         s=s_total,
+        coefficient_band=band_override or coefficient_band(f, a),
+        type_conditions=classify_conditions(fe, k1, k3),
         overrides=inp.overrides,
     )
 
