@@ -423,7 +423,14 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
             sol.ill = ill3
         # p_181/p_189
         c180 = fe3_1 - k / 2.0 - (k1 / k2) * (al3_2 - 3.25 * k)   # C180
-        if c180 > 0:                           # p_181t (3332a: chl по Al)
+        forced_d180 = overrides.get("type3.d180") if overrides else None
+        if forced_d180 == "3332a":
+            c180_ok = True
+        elif forced_d180 == "no_3332a":
+            c180_ok = False
+        else:
+            c180_ok = c180 > 0
+        if c180_ok:                            # p_181t (3332a: chl по Al)
             chl = (al3_2 - 6.5 * ill3) / k3                     # C181
             fe3_2 = fe3_1 - ill3 - k2 * chl                     # C182
             mg_1 = mg - ill3 - k1 * chl                         # C183
@@ -438,6 +445,8 @@ def _t3_fe_path(sol: TypeSolution, si3_2: float, al3_2: float,
             _t3_after_ill(sol, ca_in, si3_2, al3_2, k, mg_1, fe3_2, al3_3,
                           si3_3, k1, k2, k3, k4)
             return
+        if forced_d180 == "no_3332a":
+            sol.trace.append("no_3332a")
         c188 = fe3_1 - k / 2.0 - (k1 / k3) * (al3_2 - 3.25 * k)   # C188
         if c188 < 0:                           # p_189t (3332b: chl по Fe)
             chl = (fe3_1 - ill3) / k2                              # C189

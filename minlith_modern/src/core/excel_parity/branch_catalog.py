@@ -163,6 +163,18 @@ def _build_catalog() -> dict[str, DecisionSpec]:
         ),
     ))
     specs.append(DecisionSpec(
+        id="type3.d180",
+        title="Тип 3: хлорит Fe-путь 3332a / иначе (d180)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="3332a", title="3332a (chl по Al)",
+                       condition="C180 > 0", source="p_181t"),
+            BranchInfo(id="no_3332a", title="без 3332a (3332b / p_196)",
+                       condition="C180 <= 0", source=""),
+        ),
+    ))
+    specs.append(DecisionSpec(
         id="type3.d200",
         title="Тип 3: Fe-путь 3333a / 3333b (d200)",
         stage="type",
