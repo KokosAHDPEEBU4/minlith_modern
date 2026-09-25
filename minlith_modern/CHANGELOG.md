@@ -39,7 +39,10 @@
   - `type2.s204` — `s208` / `s271`; `type2.ill_or` — `ill+or` / `no_ill_or`;
   - `type3.d162` — `3331` / `no_3331`; `type3.d188` — `3332b` / `no_3332b`;
   - `type3.p_53` — `p_53t` / `no_p_53`; `type3.p_97` — `D106` / `D109-fe` / `p253->t5`;
-  - `type45.d334` — `mm-path` / `no_mm`; `type45.d346` — `m_346` / `m_360` (override проносится через `TypeSolution.overrides`).
+  - `type45.d334` — `mm-path` / `no_mm`; `type45.d346` — `m_346` / `m_360`;
+  - `type1.t_73` — `t_74t` / `t_78`;
+  - `type45.d287` — `m287` / `m334`; `type45.d302` — `m302` / `m311`; `type45.d322` — `m322` / `m296`.
+  Override для хелперов type4/5 проносится через поле `TypeSolution.overrides`.
   Форсированные внутренние ветки помечаются `forced` в маршруте (по id из `overrides.choices`). Остальные внутренние решения типов — заглушки `overridable=False`. Тесты: `test_type3_p114_override`, `test_type45_d418_override`, `test_type1_t49_override`, `test_type3_d61_override`, `test_validate_accepts_internal_overrides`.
 - **Экспорт и сравнение маршрутов (этап 5 ТЗ):** чистые функции `branch_report.branch_path_json` и `branch_report.diff_branch_paths`; на странице «Граф» — кнопки «Экспорт маршрута (JSON)» и «Сравнить с авто» (различия авто-маршрута и принудительного). Тест: `test_branch_path_json_and_diff`.
 - **GUI-страница «Граф разветвлений» (этап 4 ТЗ):** `src/gui/pages/branch_graph_page.py` — дерево решений из каталога, подсветка пройденного маршрута (✓) и принудительных веток (★), выбор образца, кнопки «Принудительно выбрать ветку» / «Снять выбор» / «Пересчитать с выбранными ветками». Встроена в `MainWindow` (сайдбар «Граф», индекс перед «Журналом»), получает результаты расчёта. Чистые помощники `branch_report.path_branch_ids/forced_branch_ids`. Заодно адаптер `stage0_from_input` теперь применяет override полосы/типа (раньше только `compute_stage0`). Тесты: +3 (`test_branch_graph_page_override_and_recalc`, `test_main_window_has_branch_graph_page`, `test_path_branch_id_helpers`).

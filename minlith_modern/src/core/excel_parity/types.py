@@ -122,16 +122,27 @@ def type1(st0: Stage0, overrides=None) -> TypeSolution:
             al_r = al1 - ca
             si_r = e46 - 2.0 * ca
             sol.ca_n = st0.ca_n_in - ca      # C71 = D8 - ca
-            if al_r - si_r >= 0:             # t_73/74
+            forced_t73 = overrides.get("type1.t_73") if overrides else None
+            if forced_t73 == "t_74t":
+                t74 = True
+            elif forced_t73 == "t_78":
+                t74 = False
+            else:
+                t74 = al_r - si_r >= 0
+            if t74:                          # t_73/74
                 # t_74t ставит только kn/gb; si_n остаётся = C70 = si_r
                 # (записан ранее в t_68t), НЕ обнуляется.
                 sol.kn = si_r / 2.0
                 sol.gb = al_r - sol.kn
                 sol.si_n = si_r
+                if forced_t73 == "t_74t":
+                    sol.trace.append("t_74t")
             else:                            # t_78/79
                 sol.kn = al_r
                 sol.si_n = si_r - 2.0 * sol.kn
                 sol.gb = 0.0
+                if forced_t73 == "t_78":
+                    sol.trace.append("t_78")
             sol.trace.append("t_67")
         else:                                # t_83 (БК-1)
             sol.an = e46 / 2.0
@@ -885,7 +896,17 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         sol.mm = mm
         sol.mg_n = mg_n
         sol.si_n = si4_2
-        if si4_2 - 6.4 * (na - mm) > 0:    # d287 → m_287t
+        ov = getattr(sol, "overrides", None)
+        forced_d287 = ov.get("type45.d287") if ov else None
+        if forced_d287 == "m287":
+            d287 = True
+        elif forced_d287 == "m334":
+            d287 = False
+        else:
+            d287 = si4_2 - 6.4 * (na - mm) > 0
+        if d287:                           # d287 → m_287t
+            if forced_d287 == "m287":
+                sol.trace.append("m287")
             ab = na - mm                   # C288
             an = 0.2 * ab                  # C290
             ca_n = ca - an                 # C292
@@ -899,6 +920,8 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
             _t45_after_m37x(sol, si, al, k, mg, na, ca)   # m_371
             return sol
         # d287 false → m_334
+        if forced_d287 == "m334":
+            sol.trace.append("m334")
         return _t45_m334(sol, si4_1, al4_1, mg0v, na, k1, k2, k3, k4,
                          ca, ca_in, fe3_1, si, al, k, mg, mm)
     # d281 false → m_296 → m_296t
@@ -909,7 +932,16 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
     ab = na - mm                           # C300
     sol.ab = ab
     sol.si_n = si4_2
-    if ca - 0.2 * ab >= 0:                 # d302 → m_302t
+    forced_d302 = (getattr(sol, "overrides", None) or {}).get("type45.d302")
+    if forced_d302 == "m302":
+        d302 = True
+    elif forced_d302 == "m311":
+        d302 = False
+    else:
+        d302 = ca - 0.2 * ab >= 0
+    if d302:                               # d302 → m_302t
+        if forced_d302 == "m302":
+            sol.trace.append("m302")
         an = 0.2 * ab                      # C303
         ca_n = ca - an                     # C304
         sol.an = an
@@ -923,6 +955,8 @@ def _t45_m281(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         _t3_balance(sol, si_n, al3)        # p_81 (si3_3=C305, al3_3=C306)
         sol.trace.append("m_296t->p81")
         return sol
+    if forced_d302 == "m311":
+        sol.trace.append("m311")
     # m_311 (дефицит Ca)
     an = ca                                # C312
     sol.an = an
@@ -947,7 +981,16 @@ def _t45_m279(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         return _t45_m281(sol, si4_1, al4_1, mg0v, na, k1, k2, k3, k4,
                          ca, ca_in, fe3_1, al, si, k, mg)
     # d279 false (избыток Al) → m_320/m_322
-    if mg0v - 2.0 * na > 0:                    # d322 → m_322t
+    forced_d322 = (getattr(sol, "overrides", None) or {}).get("type45.d322")
+    if forced_d322 == "m322":
+        d322 = True
+    elif forced_d322 == "m296":
+        d322 = False
+    else:
+        d322 = mg0v - 2.0 * na > 0
+    if d322:                                   # d322 → m_322t
+        if forced_d322 == "m322":
+            sol.trace.append("m322")
         sol.mm = na                            # C323
         sol.mg_n = mg0v - 2.0 * na             # C324
         al4 = al4_1 - 5.0 * na                 # C325 (1-я оценка → al4_1)
@@ -963,6 +1006,8 @@ def _t45_m279(sol: TypeSolution, si4_1: float, al4_1: float, mg0v: float,
         sol.trace.append("m_322t->p81")
         return sol
     # m_296 (mg0v-2na<=0) → m_296t
+    if forced_d322 == "m296":
+        sol.trace.append("m296")
     mm = mg0v / 2.0                            # C297
     sol.mm = mm
     sol.mg_n = 0.0

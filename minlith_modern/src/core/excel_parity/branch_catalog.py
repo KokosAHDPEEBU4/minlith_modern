@@ -334,6 +334,48 @@ def _build_catalog() -> dict[str, DecisionSpec]:
                        condition="иначе", source="m_360"),
         ),
     ))
+    specs.append(DecisionSpec(
+        id="type1.t_73",
+        title="Тип 1: t_74t / t_78 (после t_67)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="t_74t", title="t_74t (kn=si_r/2)",
+                       condition="al_r - si_r >= 0", source="t_73/74"),
+            BranchInfo(id="t_78", title="t_78 (kn=al_r)",
+                       condition="al_r - si_r < 0", source="t_78/79"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type45.d287",
+        title="Типы 4/5: m_287t / m_334 (d287)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="m287", title="m_287t", condition="C287 > 0", source="d287"),
+            BranchInfo(id="m334", title="m_334", condition="C287 <= 0", source="m_334"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type45.d302",
+        title="Типы 4/5: m_302t / m_311 (d302)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="m302", title="m_302t", condition="Ca - 0.2*ab >= 0", source="d302"),
+            BranchInfo(id="m311", title="m_311", condition="иначе", source="m_311"),
+        ),
+    ))
+    specs.append(DecisionSpec(
+        id="type45.d322",
+        title="Типы 4/5: m_322t / m_296 (d322)",
+        stage="type",
+        overridable=True,
+        branches=(
+            BranchInfo(id="m322", title="m_322t (mm=Na)", condition="mg0-2Na > 0", source="d322"),
+            BranchInfo(id="m296", title="m_296", condition="иначе", source="m_296"),
+        ),
+    ))
     return {s.id: s for s in specs}
 
 
