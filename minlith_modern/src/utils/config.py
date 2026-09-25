@@ -25,6 +25,8 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "batch_size": "auto",  # "auto" | 1..8
     # "excel_parity" | "excel_exact" | "geological_theory" | "python_rework"
     "calculation_engine": "excel_parity",
+    "branch_overrides": {},  # {decision_id: branch_id} — ручной выбор веток
+    "forced_path": [],       # упорядоченные подписи веток (этап 6 ТЗ)
     "chart.zoom_step": 1.2,  # шаг зума диаграмм, диапазон (1.0, 5.0]
     "theme": "dark",
     "chart_theme": "dark",  # "dark" | "light" — background for charts
@@ -189,6 +191,19 @@ class ConfigManager:
         engine = self._data.get("calculation_engine", "excel_parity")
         if engine not in CALCULATION_ENGINES and engine not in LEGACY_ENGINE_ALIASES:
             errors.append(f"Unknown calculation_engine: {engine!r}")
+
+        bo = self._data.get("branch_overrides", {})
+        if not isinstance(bo, dict):
+            errors.append(f"branch_overrides must be a mapping, got {bo!r}")
+        elif bo:
+            try:
+                from src.core.branch_overrides import BranchOverrides, validate_overrides
+                validate_overrides(BranchOverrides(choices=dict(bo)))
+            except ValueError as exc:
+                errors.append(f"branch_overrides: {exc}")
+        fp = self._data.get("forced_path", [])
+        if not isinstance(fp, (list, tuple)):
+            errors.append(f"forced_path must be a list, got {fp!r}")
 
         zs = self._data.get("chart.zoom_step", 1.2)
         if not isinstance(zs, (int, float)) or isinstance(zs, bool) or not (1.0 < zs <= 5.0):

@@ -203,6 +203,9 @@ class CalculationConfig:
     # "excel_parity" | "excel_exact" | "geological_theory" | "python_rework"
     # (безопасный дефолт; приложение явно ставит "excel_parity")
     calculation_engine: str = "geological_theory"
+    # Ручной выбор веток (override): {decision_id: branch_id}. Пусто — авто.
+    branch_overrides: dict[str, str] = field(default_factory=dict)
+    forced_path: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

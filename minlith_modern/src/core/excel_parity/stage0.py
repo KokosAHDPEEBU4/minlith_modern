@@ -15,6 +15,10 @@ J17/I17/J17/G18/I18 листа «Нач+Type 3».
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.core.branch_overrides import BranchOverrides
 
 # Массы молекул оксидов (г/моль) — колонка C листа «Нач+Type 3».
 # TiO2 и C не переводятся в ф.е. (D3=B3, D13=B13).
@@ -62,6 +66,8 @@ class Stage0:
     # Траектория веток (для графа разветвлений), в расчёте не участвует:
     coefficient_band: str = ""                       # H5/J5/L5/H12/J12/L12
     type_conditions: dict[str, float] = field(default_factory=dict)  # e20..e25
+    # Ручной выбор веток (override). None/пусто — авто-выбор (этап 2 ТЗ).
+    overrides: BranchOverrides | None = None
 
 
 def formula_units(ox: dict[str, float]) -> dict[str, float]:
@@ -225,7 +231,10 @@ def classify(fe: dict[str, float], k1: float, k3: float) -> int:
     return 5
 
 
-def compute_stage0(ox: dict[str, float]) -> Stage0:
+def compute_stage0(
+    ox: dict[str, float],
+    overrides: BranchOverrides | None = None,
+) -> Stage0:
     """Полная стадия 0 для входных весовых процентов оксидов."""
     fe = formula_units(ox)
     f, a = f_and_a(fe)
@@ -249,6 +258,7 @@ def compute_stage0(ox: dict[str, float]) -> Stage0:
         ca=ca,
         ca_n_in=d8,
         s=s_total,
+        overrides=overrides,
         coefficient_band=coefficient_band(f, a),
         type_conditions=classify_conditions(fe, k1, k3),
     )

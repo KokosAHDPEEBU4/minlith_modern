@@ -375,6 +375,28 @@ print(format_branch_path_text(result.branch_path, result.sample_name))
 В GUI: страница «Результаты» → кнопка «Маршрут веток» (диалог
 `src/gui/dialogs/branch_path_dialog.py`).
 
+**Ручной выбор веток (override).** Каталог решений —
+`src/core/excel_parity/branch_catalog.py` (`DECISIONS`, `find_decision`,
+`branch_ids`, `catalog_to_dict`). Выбор задаётся `BranchOverrides` и
+валидируется по каталогу:
+
+```python
+from src.core.models import CalculationConfig, OxideComposition, Sample
+from src.core.calculator import Calculator
+
+cfg = CalculationConfig(
+    calculation_engine="excel_parity",
+    branch_overrides={"rock_type": "3", "coefficient_band": "H12"},
+)
+result = Calculator(config=cfg).calculate_single(sample)
+```
+
+- `CalculationConfig.branch_overrides: dict[str, str]`, `forced_path: tuple[str, ...]`.
+- `AlgorithmInput.overrides: BranchOverrides | None`, `Stage0.overrides`.
+- `src/core/branch_overrides.py`: `BranchOverrides.choices/forced_path/get/is_empty/to_dict`,
+  `validate_overrides()` (неизвестное решение/ветка или `overridable=False` → `ValueError`).
+  Пустой выбор не меняет поведение.
+
 ---
 
 ### 2.3. Coefficients

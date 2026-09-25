@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.core.branch_overrides import BranchOverrides
 
 from src.core.excel_parity.branches import (
     COEFFICIENT_BAND_INFO,
@@ -90,12 +94,15 @@ def run_from_stage0(st0: Stage0) -> ExcelRun:
 def run_sample(oxide_values: dict[str, float],
                data_dir: object | None = None,
                entry: str = "aDefin",
-               rounding: bool | None = None) -> ExcelRun:
+               rounding: bool | None = None,
+               overrides: BranchOverrides | None = None) -> ExcelRun:
     """Прогнать образец через чистый движок (без округлений).
 
     Аргументы data_dir/entry/rounding приняты для совместимости сигнатуры
     c excel_port.run_sample; чистый движок всегда считает в float64.
+
+    ``overrides`` — ручной выбор веток; ``None``/пусто = авто (этап 2–3 ТЗ).
     """
     merged = {**DEFAULT_OXIDES, **{k: (0.0 if v is None else v)
                                    for k, v in oxide_values.items()}}
-    return run_from_stage0(compute_stage0(merged))
+    return run_from_stage0(compute_stage0(merged, overrides=overrides))

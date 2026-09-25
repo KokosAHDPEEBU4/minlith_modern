@@ -13,7 +13,10 @@ To integrate a new engine:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from src.core.branch_overrides import BranchOverrides
 
 
 @dataclass(frozen=True)
@@ -63,6 +66,9 @@ class AlgorithmInput:
     # Нужны движку excel_exact, который, как и книга MINLITH, сам пересчитывает
     # вес.% -> ф.е. с пошаговым ROUND. Для остальных движков необязательно.
     oxide_wt: dict[str, float] | None = None
+
+    # Ручной выбор веток (override). Пусто/None — авто-выбор (поведение не меняется).
+    overrides: BranchOverrides | None = None
 
 
 @dataclass

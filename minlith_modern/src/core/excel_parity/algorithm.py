@@ -49,6 +49,7 @@ def stage0_from_input(inp: AlgorithmInput) -> Stage0:
         ca=inp.cao if inp.cao > 0.0 else 0.0,
         ca_n_in=inp.cao,
         s=s_total,
+        overrides=inp.overrides,
     )
 
 

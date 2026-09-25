@@ -246,6 +246,13 @@ class Calculator:
                 excel_name: float(getattr(composition, attr))
                 for attr, excel_name in _OXIDE_EXCEL_KEYS.items()
             }
+        overrides = None
+        choices = getattr(self.config, "branch_overrides", None) or {}
+        forced = tuple(getattr(self.config, "forced_path", ()) or ())
+        if choices or forced:
+            from src.core.branch_overrides import BranchOverrides, validate_overrides
+            overrides = BranchOverrides(choices=dict(choices), forced_path=forced)
+            validate_overrides(overrides)
         return AlgorithmInput(
             sio2=float(fe[OXIDE_ORDER.index("sio2")]),
             tio2=float(fe[OXIDE_ORDER.index("tio2")]),
@@ -272,6 +279,7 @@ class Calculator:
             A=coeff.A,
             rock_type=int(rock_type),
             oxide_wt=oxide_wt,
+            overrides=overrides,
         )
 
     @staticmethod
