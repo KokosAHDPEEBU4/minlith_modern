@@ -31,6 +31,7 @@
 | `DECISION_LOG.md` | Журнал архитектурных решений |
 | `EXCEL_REFERENCE_MINLITH.md` | Формулы Excel-оригинала (ячеечный уровень), трассировки |
 | `SAMPLE_PARITY_VERIFICATION.md` | Пообразцовая сверка нового файла проб (85 образцов) с живым оригиналом MINLITH: `excel_exact` 1:1 |
+| `parity_check/` | Артефакты сверки: исходные данные, эталон и результаты двух режимов (`parity_check/README.md`) |
 | `TEST_CASES.md` | Наборы контрольных тестовых данных |
 | `TZ_MINLITH_Modern.md` | Техническое задание на MINLITH Modern |
 | `PROMPT_FOR_AI.md` | Промпт для ИИ-агентов при работе над проектом |
