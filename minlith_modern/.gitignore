@@ -47,3 +47,5 @@ build/
 # Сгенерированные одиночные HTML-диаграммы (артефакты экспорта)
 diagrams.html
 acnk.html
+branch_path.json
+branch_scenario.json

@@ -341,6 +341,13 @@ calc = Calculator(config=CalculationConfig(calculation_engine="excel_exact"))
 > исходные вес.% оксидов (ключи Excel: `"SiO2"`, `"TiO2"`, …), т.к. книга сама пересчитывает
 > вес.% → ф.е. с `ROUND`. Без `oxide_wt` движок поднимает `ValueError`.
 
+> `AlgorithmOutput.weight_percent: dict[str, float] | None` — итоговая строка 287 книги
+> «Нач+Type 12» (или её float64-эквивалент у `excel_parity`), ключ — поле
+> `MineralComposition`. Заполняют **excel-движки**; `Calculator` берёт её **напрямую**
+> как `minerals_weight` (без собственной нормировки), поэтому выгрузка `excel_exact`
+> совпадает с оригиналом MINLITH 1:1. У `geological_theory`/`python_rework` — `None`,
+> и масс.% считаются как раньше (`ф.е.×FORMULA_WEIGHTS/10000`, нормировка к 100%).
+
 **Траектория веток (для графа разветвлений).** Движок `excel_parity` дополнительно
 возвращает структурированный маршрут принятых решений:
 

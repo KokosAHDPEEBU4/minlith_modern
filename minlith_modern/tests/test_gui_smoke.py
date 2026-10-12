@@ -186,6 +186,63 @@ def test_engine_compare_dialog(qapp):
     assert dialog._table.rowCount() == len(MINERAL_ORDER)
 
 
+def test_resolve_theme_path_returns_existing_qss():
+    """Тема резолвится в существующий QSS (в исходниках и в frozen-сборке)."""
+    from src.main import _resolve_theme_path
+
+    for theme in ("dark", "light"):
+        path = _resolve_theme_path(theme)
+        assert path.exists(), theme
+        assert path.suffix == ".qss"
+    # Для неизвестной темы — откат на существующий файл (по умолчанию — тёмный).
+    assert _resolve_theme_path("no_such_theme").exists()
+
+
+def test_main_guard_calls_freeze_support_before_main():
+    """В guard `__main__` freeze_support() вызывается раньше main().
+
+    В PyInstaller-сборке дочерние процессы ProcessPoolExecutor перезапускают exe;
+    без freeze_support() первым действием каждый воркер открывает новое окно
+    приложения вместо расчёта. В обычном интерпретаторе это не воспроизводится,
+    поэтому проверяем исходник через AST.
+    """
+    import ast
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "src" / "main.py").read_text(
+        encoding="utf-8"
+    )
+    tree = ast.parse(source)
+
+    guards = [
+        node
+        for node in tree.body
+        if isinstance(node, ast.If)
+        and isinstance(node.test, ast.Compare)
+        and isinstance(node.test.left, ast.Name)
+        and node.test.left.id == "__name__"
+        and any(isinstance(cmp, ast.Constant) and cmp.value == "__main__"
+                for cmp in node.test.comparators)
+    ]
+    assert guards, "в src/main.py нет блока if __name__ == '__main__'"
+
+    calls: list[str] = []
+    for node in ast.walk(guards[0]):
+        if isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Name):
+                calls.append(func.id)
+            elif isinstance(func, ast.Attribute):
+                calls.append(func.attr)
+    assert "freeze_support" in calls, (
+        "freeze_support() не вызывается в __main__-guard: батч-расчёт в "
+        "PyInstaller-сборке открывает новые окна вместо расчёта"
+    )
+    assert calls.index("freeze_support") < calls.index("main"), (
+        "freeze_support() должен вызываться до main()"
+    )
+
+
 def test_main_window_constructs_and_applies_zoom(qapp):
     """Главное окно создаётся, а _apply_zoom_step не падает (регрессия)."""
     from src.gui.main_window import MainWindow

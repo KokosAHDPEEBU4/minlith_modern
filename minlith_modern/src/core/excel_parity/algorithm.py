@@ -12,7 +12,7 @@ F, A и тип породы НЕ берутся из AlgorithmInput, а вычи
 
 from __future__ import annotations
 
-from src.core.algorithm import AlgorithmInput, AlgorithmOutput
+from src.core.algorithm import ROW287_FIELDS, AlgorithmInput, AlgorithmOutput
 from src.core.excel_parity.runner import ExcelRun, run_from_stage0
 from src.core.excel_parity.stage0 import (
     Stage0,
@@ -79,6 +79,11 @@ class ExcelParityAlgorithm:
         run = run_from_stage0(stage0_from_input(inp))
         self.last = run
         tsol, vi = run.tsol, run.vi
+        row287 = run.out.row287
+        weight_percent = {
+            field: float(row287[i]) for i, field in ROW287_FIELDS.items()
+            if i < len(row287) and isinstance(row287[i], (int, float))
+        }
         return AlgorithmOutput(
             Ab=tsol.ab, An=tsol.an, Or=tsol.or_,
             Ill=tsol.ill, Chl=tsol.chl, Kn=tsol.kn,
@@ -88,4 +93,5 @@ class ExcelParityAlgorithm:
             residuals={"ca_n": tsol.ca_n, "mg_n": tsol.mg_n,
                        "fe_n": tsol.fe_n, "si_n": tsol.si_n},
             path=run.path.to_dict(),
+            weight_percent=weight_percent,
         )

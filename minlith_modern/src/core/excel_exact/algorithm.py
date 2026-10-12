@@ -12,8 +12,8 @@
 
 from __future__ import annotations
 
-from src.core.algorithm import AlgorithmInput, AlgorithmOutput
-from src.core.excel_port.runner import run_sample
+from src.core.algorithm import ROW287_FIELDS, AlgorithmInput, AlgorithmOutput
+from src.core.excel_port.runner import run_sample_full
 
 
 def _num(value: object) -> float:
@@ -22,6 +22,12 @@ def _num(value: object) -> float:
         return float(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return 0.0
+
+
+def _weight_percent(row287: list[float]) -> dict[str, float]:
+    """Строка 287 (вес.%) -> {поле MineralComposition: значение}."""
+    return {field: float(row287[i]) for i, field in ROW287_FIELDS.items()
+            if i < len(row287) and isinstance(row287[i], (int, float))}
 
 
 class ExcelExactAlgorithm:
@@ -41,7 +47,7 @@ class ExcelExactAlgorithm:
                 "(AlgorithmInput.oxide_wt): движок, как и книга MINLITH, "
                 "сам пересчитывает вес.% -> ф.е. с пошаговым ROUND."
             )
-        run = run_sample(dict(inp.oxide_wt), rounding=True)
+        run, row287 = run_sample_full(dict(inp.oxide_wt), rounding=True)
         self.last = run
         return AlgorithmOutput(
             Ab=_num(run.get("ab")), An=_num(run.get("an")), Or=_num(run.get("or")),
@@ -55,4 +61,5 @@ class ExcelExactAlgorithm:
                 "ca_n": _num(run.get("ca_n")), "mg_n": _num(run.get("mg_n")),
                 "fe_n": _num(run.get("fe_n")), "si_n": _num(run.get("si_n")),
             },
+            weight_percent=_weight_percent(row287),
         )

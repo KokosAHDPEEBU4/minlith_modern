@@ -169,3 +169,22 @@ def test_empty_chart_data():
         assert fig is not None, f"{type(plugin).__name__}.render(empty) returned None"
         import matplotlib.pyplot as plt
         plt.close(fig)
+
+
+def test_builtin_charts_registry_lazy_and_stable():
+    """Ленивый реестр: тот же список объектов при повторном доступе.
+
+    Регрессия на PEP 562 __getattr__ в src/charts(/built_in)/__init__:
+    порядок BUILTIN_CHARTS позиционный (индекс = type_id в GUI),
+    повторный импорт обязан возвращать те же экземпляры.
+    """
+    import importlib
+
+    import src.charts as charts_pkg
+    import src.charts.built_in as built_in_pkg
+
+    again = importlib.reload(built_in_pkg)  # reload сбрасывает ленивый кэш
+    charts_pkg.BUILTIN_CHARTS  # noqa: B018 — доступ через __getattr__ родителя
+    assert len(again.BUILTIN_CHARTS) == len(BUILTIN_CHARTS) == 23
+    assert [type(p) for p in again.BUILTIN_CHARTS] == [type(p) for p in BUILTIN_CHARTS]
+    assert len({p.get_name() for p in BUILTIN_CHARTS}) == 23

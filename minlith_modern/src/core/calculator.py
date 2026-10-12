@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 
 import numpy as np
 
@@ -45,6 +46,27 @@ class CalculationTimeoutError(Exception):
     """Raised when a calculation exceeds the time limit."""
 
 
+_TIMEOUT_EXECUTOR_LOCAL: threading.local = threading.local()
+
+
+def _timeout_executor():
+    """Переиспользуемый одно-потоковый executor на поток вызова.
+
+    Создание ThreadPoolExecutor на каждый образец стоит ~0.5 мс — на
+    батчах это заметно. При таймауте фоновый расчёт остаётся в потоке,
+    но вызывающий поток его больше не ждёт.
+    """
+    executor = getattr(_TIMEOUT_EXECUTOR_LOCAL, "executor", None)
+    if executor is None:
+        import concurrent.futures
+
+        executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="minlith-timeout",
+        )
+        _TIMEOUT_EXECUTOR_LOCAL.executor = executor
+    return executor
+
+
 class _TimeoutWrapper:
     """Cross-platform timeout wrapper using concurrent.futures."""
 
@@ -60,15 +82,14 @@ class _TimeoutWrapper:
             )
 
         import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(func, *args, **kwargs)
-            try:
-                self.result = future.result(timeout=self.seconds)
-            except concurrent.futures.TimeoutError:
-                future.cancel()
-                raise CalculationTimeoutError(
-                    f"Расчёт превысил лимит {self.seconds} сек"
-                )
+        future = _timeout_executor().submit(func, *args, **kwargs)
+        try:
+            self.result = future.result(timeout=self.seconds)
+        except concurrent.futures.TimeoutError:
+            future.cancel()
+            raise CalculationTimeoutError(
+                f"Расчёт превысил лимит {self.seconds} сек"
+            )
         return self.result
 
 
@@ -383,11 +404,20 @@ class Calculator:
             c=float(fe[OXIDE_ORDER.index("c")]),
         )
 
-        # Stage VII: convert to weight %
-        minerals_weight = self._to_weight_percent(minerals)
-
-        # Normalize to 100%
-        minerals_weight, norm_factor = self._normalize(minerals_weight)
+        # Stage VII: массовые проценты.
+        # excel-движки отдают готовую итоговую строку 287 книги (уже
+        # нормированную — как в оригинале MINLITH), поэтому берём её как есть.
+        # Для теоретических движков строки 287 нет: пересчитываем ф.е.->вес.%
+        # и нормируем сами (собственная шкала).
+        weight_percent = getattr(alg_output, "weight_percent", None)
+        if weight_percent is not None:
+            minerals_weight = MineralComposition(
+                **{k: float(v) for k, v in weight_percent.items()}
+            )
+            norm_factor = 1.0
+        else:
+            minerals_weight = self._to_weight_percent(minerals)
+            minerals_weight, norm_factor = self._normalize(minerals_weight)
         if tracer:
             tracer.record("Нормализация", "factor", norm_factor)
             tracer.record("Нормализация", "Ab_м.д.%", minerals_weight.ab)

@@ -156,16 +156,30 @@ calc_exact = Calculator(config=CalculationConfig(calculation_engine="excel_exact
 
 ## Сборка
 
-```bash
-python build.py
-# или
-pyinstaller minlith.spec
+Portable-сборка (windowed) — автоматический скрипт:
+
+```bat
+build_exe.bat              :: onedir (по умолчанию) — быстрый запуск
+build_exe.bat --onefile    :: один файл (медленнее стартует — распаковка в temp)
 ```
+
+Результат по умолчанию: **`../minlith_exe/MINLITH/MINLITH.exe`** (папка; для
+переноса на другое устройство копируйте её целиком). При `--onefile` — один
+`../minlith_exe/MINLITH.exe`. Python на целевой машине не нужен (Windows x64).
+
+> **Почему onedir по умолчанию:** `--onefile` при каждом запуске распаковывает
+> ~180 МБ во временную папку (+сканирование антивирусом) — старт долгий.
+> `onedir` запускается почти сразу.
+
+Сборка включает ресурсы `src/gui/styles/*.qss` и `src/core/excel_port/data/*`;
+Python/PyInstaller проверяются автоматически (PyInstaller ставится при отсутствии).
+
+Ручные варианты: `python build.py` (старый, onedir) или `pyinstaller minlith.spec`.
 
 ## Тесты
 
 ```bash
-# Все тесты (1329 passed, 5 skipped)
+# Все тесты (1360 passed, 5 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -210,7 +224,7 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 1329 теста (5 skipped)
+├── tests/              # 1360 теста (5 skipped)
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша

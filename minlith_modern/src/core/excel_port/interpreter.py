@@ -23,6 +23,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
+from functools import lru_cache
 
 # ---------------------------------------------------------------------------
 # ROUND как в Excel: half away from zero
@@ -209,6 +210,16 @@ class NegNode:
 # Парсер (recursive descent)
 # ---------------------------------------------------------------------------
 
+@lru_cache(maxsize=4096)
+def _parse_cached(body: str) -> object:
+    """Разобрать тело формулы (без '=') в AST.
+
+    Формулы книги статичны, а eval_node узлы не мутирует, поэтому AST
+    переиспользуется между прогонами и потоками (чтение без записи).
+    """
+    return _Parser(_tokenize(body)).parse()
+
+
 class _Parser:
     def __init__(self, toks: list[Token]):
         self.toks = toks
@@ -342,8 +353,7 @@ class FormulaEvaluator:
         body = formula.strip()
         if body.startswith("="):
             body = body[1:]
-        toks = _tokenize(body)
-        ast = _Parser(toks).parse()
+        ast = _parse_cached(body)
         return self.eval_node(ast)
 
     def eval_node(self, node) -> object:

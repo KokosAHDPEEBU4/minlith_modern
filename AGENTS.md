@@ -57,7 +57,7 @@ Lene/
 
 ```bash
 # из папки minlith_modern/
-python -m pytest -q                 # полный прогон: ожидается 1174 passed, 5 skipped
+python -m pytest -q                 # полный прогон: ожидается 1382 passed, 5 skipped
 python -m ruff check src/ tests/    # линтер
 python -m mypy src/ --ignore-missing-imports
 ```

@@ -114,6 +114,25 @@ class AlgorithmOutput:
     # Заполняется excel_parity; у остальных движков остаётся None.
     path: dict | None = None
 
+    # Массовые проценты минералов — итоговая строка 287 книги «Нач+Type 12»
+    # (или её float64-эквивалент у excel_parity), ключ — поле MineralComposition.
+    # Заполняется excel-движками. Calculator использует их напрямую как
+    # ``minerals_weight`` вместо пересчёта ф.е.->вес.% + собственной нормировки,
+    # чтобы выгрузка совпадала с оригиналом. У теоретических движков — None.
+    weight_percent: dict[str, float] | None = None
+
+
+# Индекс в строке 287 листа «Нач+Type 12» (диапазон B..AI, 34 значения) ->
+# поле :class:`~src.core.models.MineralComposition` (в вес. %).
+# Позиции 0/1 — суммы D151/D154, 4 — Pln (=Ab+An), 28..33 — производные суммы;
+# они не мапятся (для них в MineralComposition есть отдельные поля-производные).
+ROW287_FIELDS: dict[int, str] = {
+    2: "ab", 3: "an", 5: "or_", 6: "q", 7: "mm", 8: "ill", 9: "chl",
+    10: "gb", 11: "kn", 12: "ap", 13: "c", 14: "cc", 15: "dl", 16: "ank",
+    17: "rch", 18: "sd", 19: "srp", 20: "mst", 21: "ht", 22: "prl",
+    23: "pr", 24: "rt", 25: "hl", 26: "gy", 27: "fl",
+}
+
 
 @runtime_checkable
 class MineralAlgorithm(Protocol):
