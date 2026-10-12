@@ -13,7 +13,13 @@ F, A и тип породы НЕ берутся из AlgorithmInput, а вычи
 from __future__ import annotations
 
 from src.core.algorithm import ROW287_FIELDS, AlgorithmInput, AlgorithmOutput
-from src.core.excel_parity.runner import ExcelRun, run_from_stage0
+from src.core.excel_parity.runner import (
+    ExcelRun,
+    run_from_stage0,
+)
+from src.core.excel_parity.runner import (
+    run_sample as parity_run,
+)
 from src.core.excel_parity.stage0 import (
     Stage0,
     classify,
@@ -76,7 +82,14 @@ class ExcelParityAlgorithm:
         self.last: ExcelRun | None = None
 
     def compute(self, inp: AlgorithmInput) -> AlgorithmOutput:
-        run = run_from_stage0(stage0_from_input(inp))
+        # Приложение передаёт исходные вес.% оксидов (oxide_wt). Считаем от них:
+        # легаси-Calculator'овские ф.е. не согласованы со стадией 0 parity
+        # (иные массы/округления), из-за чего её строка 287 искажалась.
+        # Без oxide_wt (прямое использование по ф.е.) — прежний путь.
+        if inp.oxide_wt:
+            run = parity_run(inp.oxide_wt, overrides=inp.overrides)
+        else:
+            run = run_from_stage0(stage0_from_input(inp))
         self.last = run
         tsol, vi = run.tsol, run.vi
         row287 = run.out.row287

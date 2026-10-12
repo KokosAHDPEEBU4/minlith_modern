@@ -21,6 +21,7 @@ from src.core.algorithm import ROW287_FIELDS, AlgorithmInput, AlgorithmOutput
 from src.core.calculator import Calculator
 from src.core.excel_exact.algorithm import ExcelExactAlgorithm
 from src.core.excel_parity.algorithm import ExcelParityAlgorithm
+from src.core.excel_parity.runner import run_sample as parity_run
 from src.core.excel_port.runner import run_sample_full
 from src.core.geological_theory import GeologicalTheoryAlgorithm
 from src.core.models import OxideComposition, Sample
@@ -106,15 +107,19 @@ def test_exact_minerals_weight_equals_book_row287(name):
 
 @pytest.mark.parametrize("name", list(ALL))
 def test_parity_minerals_weight_equals_row287(name):
-    """excel_parity через Calculator: minerals_weight == её строка 287."""
+    """excel_parity через Calculator: minerals_weight == строка 287 parity.
+
+    Сравнение с прямым прогоном parity от тех же оксидов (своя стадия 0),
+    а не с адаптером — так ловится рассинхрон входных ф.е. (легаси-Calculator
+    давал искажённую row287 вдвое до фикса).
+    """
     spy = _Spy(ExcelParityAlgorithm())
     result = Calculator(algorithm=spy).calculate_single(_sample(name, ALL[name]))
-    wp = spy.out.weight_percent
-    assert wp is not None
+    row287 = parity_run(spy.inp.oxide_wt).out.row287
     m = result.minerals_weight
     for i, field in ROW287_FIELDS.items():
-        assert getattr(m, field) == pytest.approx(wp[field], abs=0.0), \
-            f"{name}:{field} = {getattr(m, field)} != {wp[field]}"
+        assert getattr(m, field) == pytest.approx(row287[i], abs=0.0), \
+            f"{name}:{field} = {getattr(m, field)} != row287[{i}] = {row287[i]}"
 
 
 def test_exact_adapter_weight_percent_equals_port_row287():
