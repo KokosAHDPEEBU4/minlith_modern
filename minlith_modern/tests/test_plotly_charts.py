@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -81,37 +80,35 @@ def tmp_html(tmp_path):
 
 PLOTLY_CHARTS = [
     ("bar", {}),
-    ("pie", {"sample_idx": 0}),
-    ("defect", {"sample_idx": 1}),
+    ("pie", {}),
     ("heatmap", {}),
-    ("correlation", {}),
     ("boxplot", {}),
-    ("violin", {}),
-    ("parallel", {}),
     ("rock_type", {}),
-    ("kf", {}),
-    ("qapf", {}),
     ("acnk", {}),
-    ("afm", {}),
 ]
 
 
 @pytest.mark.parametrize("chart_key,kwargs", PLOTLY_CHARTS)
-def test_plotly_chart_creates_html(chart_key: str, kwargs: dict, chart_data: ChartData, tmp_html: Path):
-    from src.charts.engines.plotly_charts import PLOTLY_CHARTS as charts_dict
-    func = charts_dict.get(chart_key)
+def test_plotly_chart_creates_html(
+    chart_key: str, kwargs: dict, chart_data: ChartData, tmp_html: Path
+):
+    from src.charts.engines.plotly_charts import PLOTLY_CHARTS
+    func = PLOTLY_CHARTS.get(chart_key)
     if func is None:
         pytest.skip(f"{chart_key} not in PLOTLY_CHARTS")
     func(chart_data, tmp_html, **kwargs)
     assert tmp_html.exists(), f"{chart_key} did not create {tmp_html}"
     content = tmp_html.read_text(encoding="utf-8")
     assert len(content) > 100, f"{chart_key} produced empty HTML"
-    assert "plotly" in content.lower() or "<html" in content.lower(), f"{chart_key} HTML missing plotly content"
+    assert ("plotly" in content.lower() or "<html" in content.lower()), (
+        f"{chart_key} HTML missing plotly content"
+    )
 
 
 def test_empty_data_plotly(chart_data, tmp_html):
     from src.charts.engines.plotly_charts import PLOTLY_CHARTS
     func = PLOTLY_CHARTS.get("bar")
+    assert func is not None
     empty = ChartData()
     func(empty, tmp_html)
     # should not crash, file may or may not be created

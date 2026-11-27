@@ -5,12 +5,11 @@ from __future__ import annotations
 import logging
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from typing import Optional
 
 from PyQt6.QtCore import QThread, pyqtSignal
 
 from src.core.calculator import Calculator
-from src.core.models import CalculationResult, CalculationConfig, Sample
+from src.core.models import CalculationConfig, CalculationResult, Sample
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,9 @@ def _calc_single(args: tuple) -> tuple[str, dict | None, str | None]:
     try:
         sample = Sample(
             name=sample_dict["name"],
-            composition=__import__("src.core.models", fromlist=["OxideComposition"]).OxideComposition(**sample_dict["composition"]),
+            composition=__import__(
+                "src.core.models", fromlist=["OxideComposition"]
+            ).OxideComposition(**sample_dict["composition"]),
         )
         config = CalculationConfig(**config_dict) if config_dict else CalculationConfig()
         calc = Calculator(config=config)
@@ -40,8 +41,14 @@ def _calc_single(args: tuple) -> tuple[str, dict | None, str | None]:
             "k2": result.coefficients.k2,
             "k3": result.coefficients.k3,
             "k4": result.coefficients.k4,
-            "minerals_wt": {k: v for k, v in result.minerals_weight.__dict__.items() if not k.startswith("_")},
-            "minerals_fu": {k: v for k, v in result.minerals_formula.__dict__.items() if not k.startswith("_")},
+            "minerals_wt": {
+                k: v for k, v in result.minerals_weight.__dict__.items()
+                if not k.startswith("_")
+            },
+            "minerals_fu": {
+                k: v for k, v in result.minerals_formula.__dict__.items()
+                if not k.startswith("_")
+            },
             "defect": result.defect,
             "input_composition": {k: v for k, v in result.input_composition.__dict__.items()},
             "warnings": result.warnings,
@@ -53,8 +60,12 @@ def _calc_single(args: tuple) -> tuple[str, dict | None, str | None]:
 def _deserialize_result(data: dict) -> CalculationResult:
     """Reconstruct CalculationResult from serialized dict."""
     from src.core.models import (
-        OxideComposition, FormulaUnits, MineralComposition,
-        AdaptiveCoefficients, RockType, CalculationResult,
+        AdaptiveCoefficients,
+        CalculationResult,
+        FormulaUnits,
+        MineralComposition,
+        OxideComposition,
+        RockType,
     )
     comp = OxideComposition(**data["input_composition"])
     fu = FormulaUnits(**{k: v for k, v in data.get("minerals_fu", {}).items()
@@ -123,7 +134,6 @@ class CalculationWorker(QThread):
 
     def _run_parallel(self, total: int) -> list[CalculationResult]:
         n_workers = min(os.cpu_count() or 4, max(2, total // 5))
-        batch_size = max(1, (total + n_workers - 1) // n_workers)
 
         config_dict = {
             "molar_mass_source": self._calculator.config.molar_mass_source,
@@ -132,6 +142,7 @@ class CalculationWorker(QThread):
             "warn_negative": self._calculator.config.warn_negative,
             "decimal_places": self._calculator.config.decimal_places,
             "timeout_seconds": self._calculator.config.timeout_seconds,
+            "calculation_engine": self._calculator.config.calculation_engine,
         }
 
         # Prepare tasks

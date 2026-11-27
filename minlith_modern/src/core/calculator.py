@@ -3,14 +3,23 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+import threading
 
 import numpy as np
 
 from src.core.algorithm import AlgorithmInput, AlgorithmOutput, MineralAlgorithm
-from src.core.theory_algorithm import TheoryAlgorithm
 from src.core.anomaly_detector import AnomalyDetector
+from src.core.coefficients import calculate_coefficients
+from src.core.constants import (
+    FORMULA_WEIGHTS,
+    MOLAR_MASSES_IUPAC,
+    MOLAR_MASSES_MINLITH,
+    OXIDE_ORDER,
+)
+from src.core.debug_tracer import DebugTraceCollector
+from src.core.geological_theory import GeologicalTheoryAlgorithm
 from src.core.models import (
+    LEGACY_ENGINE_ALIASES,
     AdaptiveCoefficients,
     CalculationConfig,
     CalculationResult,
@@ -20,21 +29,42 @@ from src.core.models import (
     RockType,
     Sample,
 )
-from src.core.constants import (
-    FORMULA_WEIGHTS,
-    MOLAR_MASSES_IUPAC,
-    MOLAR_MASSES_MINLITH,
-    OXIDE_ORDER,
-)
-from src.core.coefficients import calculate_coefficients
-from src.core.debug_tracer import DebugTraceCollector
 from src.core.validation import validate_sample
 
 logger = logging.getLogger(__name__)
 
+# Поля OxideComposition -> имена оксидов в Excel-книге (колонка B листа).
+_OXIDE_EXCEL_KEYS = {
+    "sio2": "SiO2", "tio2": "TiO2", "al2o3": "Al2O3", "fe2o3": "Fe2O3",
+    "feo": "FeO", "mgo": "MgO", "cao": "CaO", "na2o": "Na2O", "k2o": "K2O",
+    "p2o5": "P2O5", "mno": "MnO", "c": "C", "so3": "SO3", "f": "F",
+    "cl": "Cl", "s": "S", "co2": "CO2", "so": "SO",
+}
+
 
 class CalculationTimeoutError(Exception):
     """Raised when a calculation exceeds the time limit."""
+
+
+_TIMEOUT_EXECUTOR_LOCAL: threading.local = threading.local()
+
+
+def _timeout_executor():
+    """Переиспользуемый одно-потоковый executor на поток вызова.
+
+    Создание ThreadPoolExecutor на каждый образец стоит ~0.5 мс — на
+    батчах это заметно. При таймауте фоновый расчёт остаётся в потоке,
+    но вызывающий поток его больше не ждёт.
+    """
+    executor = getattr(_TIMEOUT_EXECUTOR_LOCAL, "executor", None)
+    if executor is None:
+        import concurrent.futures
+
+        executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="minlith-timeout",
+        )
+        _TIMEOUT_EXECUTOR_LOCAL.executor = executor
+    return executor
 
 
 class _TimeoutWrapper:
@@ -52,15 +82,14 @@ class _TimeoutWrapper:
             )
 
         import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(func, *args, **kwargs)
-            try:
-                self.result = future.result(timeout=self.seconds)
-            except concurrent.futures.TimeoutError:
-                future.cancel()
-                raise CalculationTimeoutError(
-                    f"Расчёт превысил лимит {self.seconds} сек"
-                )
+        future = _timeout_executor().submit(func, *args, **kwargs)
+        try:
+            self.result = future.result(timeout=self.seconds)
+        except concurrent.futures.TimeoutError:
+            future.cancel()
+            raise CalculationTimeoutError(
+                f"Расчёт превысил лимит {self.seconds} сек"
+            )
         return self.result
 
 
@@ -69,11 +98,44 @@ class Calculator:
 
     def __init__(
         self,
-        config: Optional[CalculationConfig] = None,
-        algorithm: Optional[MineralAlgorithm] = None,
+        config: CalculationConfig | None = None,
+        algorithm: MineralAlgorithm | None = None,
     ):
         self.config = config or CalculationConfig()
-        self.algorithm = algorithm or TheoryAlgorithm()
+        if algorithm is not None:
+            self.algorithm = algorithm
+        else:
+            self.algorithm = self._algorithm_for_engine(self.config.calculation_engine)
+
+    @staticmethod
+    def _algorithm_for_engine(engine: str) -> MineralAlgorithm:
+        """Выбрать алгоритм по ``calculation_engine`` из конфигурации.
+
+        - ``excel_parity`` — «как в Excel» с корректными округлениями:
+          тот же алгоритм, но в float64 без пошаговых ROUND;
+        - ``excel_exact`` — полная 1:1 копия Excel (пошаговые ROUND,
+          включая накопление ошибки округления книги MINLITH);
+        - ``geological_theory`` — «самостоятельная попытка»: расчёт по
+          геологической теории MINLITH (файлы 00-07);
+        - ``python_rework`` — «переработанный под Python»: пользовательская
+          Python-реализация (пока fallback на геологическую теорию).
+        """
+        engine = LEGACY_ENGINE_ALIASES.get(engine, engine)
+        if engine == "excel_parity":
+            from src.core.excel_parity.algorithm import ExcelParityAlgorithm
+            logger.info("Calculation engine: excel_parity")
+            return ExcelParityAlgorithm()
+        if engine == "excel_exact":
+            from src.core.excel_exact.algorithm import ExcelExactAlgorithm
+            logger.info("Calculation engine: excel_exact (1:1 Excel, с ROUND)")
+            return ExcelExactAlgorithm()
+        if engine == "python_rework":
+            logger.info(
+                "Calculation engine: python_rework "
+                "(placeholder, fallback to geological_theory)")
+            return GeologicalTheoryAlgorithm()
+        logger.info("Calculation engine: geological_theory (fallback)")
+        return GeologicalTheoryAlgorithm()
 
     def _get_molar_masses(self) -> dict[str, float]:
         """Get molar masses based on config source."""
@@ -85,7 +147,7 @@ class Calculator:
         return masses
 
     def _stage_0(
-        self, samples: list[Sample], tracer: Optional[DebugTraceCollector] = None
+        self, samples: list[Sample], tracer: DebugTraceCollector | None = None
     ) -> tuple[np.ndarray, np.ndarray, list[AdaptiveCoefficients], list[RockType], np.ndarray]:
         """
         Stage 0: Preparation (vectorized with numpy).
@@ -139,25 +201,25 @@ class Calculator:
         mg_fu = fe[:, mgo_idx]
 
         with np.errstate(divide="ignore", invalid="ignore"):
-            F_values = np.where(
+            f_vals = np.where(
                 fe_total + mg_fu > 0,
                 fe_total / (fe_total + mg_fu),
                 0.0,
             )
 
             al_fu = fe[:, al2o3_idx]
-            A_values = np.where(
+            a_vals = np.where(
                 2 * al_fu + fe_total + mg_fu > 0,
                 2 * al_fu / (2 * al_fu + fe_total + mg_fu),
                 0.0,
             )
 
-        F_values = np.round(F_values, 3)
-        A_values = np.round(A_values, 3)
+        f_vals = np.round(f_vals, 3)
+        a_vals = np.round(a_vals, 3)
 
         coefficients = []
         for i in range(n):
-            coeff = calculate_coefficients(float(F_values[i]), float(A_values[i]))
+            coeff = calculate_coefficients(float(f_vals[i]), float(a_vals[i]))
             coefficients.append(coeff)
 
         k2o_idx = OXIDE_ORDER.index("k2o")
@@ -192,9 +254,26 @@ class Calculator:
         return RockType.TYPE_5
 
     def _build_algorithm_input(
-        self, fe: np.ndarray, coeff: AdaptiveCoefficients, rock_type: RockType
+        self,
+        fe: np.ndarray,
+        coeff: AdaptiveCoefficients,
+        rock_type: RockType,
+        composition: OxideComposition | None = None,
     ) -> AlgorithmInput:
         """Build AlgorithmInput from prepared formula unit array."""
+        oxide_wt = None
+        if composition is not None:
+            oxide_wt = {
+                excel_name: float(getattr(composition, attr))
+                for attr, excel_name in _OXIDE_EXCEL_KEYS.items()
+            }
+        overrides = None
+        choices = getattr(self.config, "branch_overrides", None) or {}
+        forced = tuple(getattr(self.config, "forced_path", ()) or ())
+        if choices or forced:
+            from src.core.branch_overrides import BranchOverrides, validate_overrides
+            overrides = BranchOverrides(choices=dict(choices), forced_path=forced)
+            validate_overrides(overrides)
         return AlgorithmInput(
             sio2=float(fe[OXIDE_ORDER.index("sio2")]),
             tio2=float(fe[OXIDE_ORDER.index("tio2")]),
@@ -220,10 +299,12 @@ class Calculator:
             F=coeff.F,
             A=coeff.A,
             rock_type=int(rock_type),
+            oxide_wt=oxide_wt,
+            overrides=overrides,
         )
 
     @staticmethod
-    def _output_to_mineralComposition(out: AlgorithmOutput) -> MineralComposition:
+    def _output_to_mineral_composition(out: AlgorithmOutput) -> MineralComposition:
         """Map algorithm output to MineralComposition dataclass."""
         return MineralComposition(
             ab=out.Ab,
@@ -275,11 +356,15 @@ class Calculator:
             tracer.record("Тип породы", "rock_type", rock_type.name)
 
         # Build AlgorithmInput
-        alg_input = self._build_algorithm_input(fe, coeff, rock_type)
+        alg_input = self._build_algorithm_input(
+            fe, coeff, rock_type, sample.composition
+        )
 
         # Run algorithm with timeout
         wrapper = _TimeoutWrapper(self.config.timeout_seconds)
         alg_output = wrapper.run(self.algorithm.compute, alg_input)
+        if tracer and getattr(alg_output, "path", None):
+            tracer.record_branch_path(alg_output.path)
         if tracer:
             tracer.record("Алгоритм", "Ab", alg_output.Ab)
             tracer.record("Алгоритм", "An", alg_output.An)
@@ -290,7 +375,7 @@ class Calculator:
             tracer.record("Алгоритм", "Kn", alg_output.Kn)
 
         # Map to MineralComposition
-        minerals = self._output_to_mineralComposition(alg_output)
+        minerals = self._output_to_mineral_composition(alg_output)
 
         # Add accessory minerals (computed outside main algorithm)
         minerals = MineralComposition(
@@ -319,11 +404,20 @@ class Calculator:
             c=float(fe[OXIDE_ORDER.index("c")]),
         )
 
-        # Stage VII: convert to weight %
-        minerals_weight = self._to_weight_percent(minerals)
-
-        # Normalize to 100%
-        minerals_weight, norm_factor = self._normalize(minerals_weight)
+        # Stage VII: массовые проценты.
+        # excel-движки отдают готовую итоговую строку 287 книги (уже
+        # нормированную — как в оригинале MINLITH), поэтому берём её как есть.
+        # Для теоретических движков строки 287 нет: пересчитываем ф.е.->вес.%
+        # и нормируем сами (собственная шкала).
+        weight_percent = getattr(alg_output, "weight_percent", None)
+        if weight_percent is not None:
+            minerals_weight = MineralComposition(
+                **{k: float(v) for k, v in weight_percent.items()}
+            )
+            norm_factor = 1.0
+        else:
+            minerals_weight = self._to_weight_percent(minerals)
+            minerals_weight, norm_factor = self._normalize(minerals_weight)
         if tracer:
             tracer.record("Нормализация", "factor", norm_factor)
             tracer.record("Нормализация", "Ab_м.д.%", minerals_weight.ab)
@@ -381,6 +475,7 @@ class Calculator:
             warnings=warnings,
             debug_trace=tracer,
             geo_params=geo_params,
+            branch_path=getattr(alg_output, "path", None),
         )
 
         # Detect anomalies
@@ -400,6 +495,7 @@ class Calculator:
             debug_trace=tracer,
             geo_params=geo_params,
             anomalies=anomalies,
+            branch_path=getattr(alg_output, "path", None),
         )
 
     def _to_weight_percent(self, minerals: MineralComposition) -> MineralComposition:
@@ -441,7 +537,10 @@ class Calculator:
     def _normalize(self, minerals: MineralComposition) -> tuple[MineralComposition, float]:
         """Normalize mineral weights to sum to 100%. Returns (normalized, factor)."""
         d = minerals.__dict__
-        total = sum(v for k, v in d.items() if not k.startswith("_") and k not in self._DERIVED_FIELDS)
+        total = sum(
+            v for k, v in d.items()
+            if not k.startswith("_") and k not in self._DERIVED_FIELDS
+        )
         if total == 0:
             return minerals, 1.0
         factor = 100.0 / total
@@ -449,7 +548,7 @@ class Calculator:
 
     def _calculate_defect(
         self, comp: OxideComposition, minerals: MineralComposition,
-        coeff: Optional[AdaptiveCoefficients] = None,
+        coeff: AdaptiveCoefficients | None = None,
     ) -> dict[str, float]:
         """Calculate defect (oxide residuals) using verified consumption matrix.
 
@@ -560,7 +659,7 @@ class Calculator:
             "auto_correct_sum": self.config.auto_correct_sum,
             "decimal_places": self.config.decimal_places,
             "timeout_seconds": self.config.timeout_seconds,
-            "algorithm_mode": self.config.algorithm_mode,
+            "calculation_engine": self.config.calculation_engine,
         }
 
         results: list[CalculationResult | None] = [None] * len(samples)

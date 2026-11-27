@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import matplotlib
+
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from matplotlib import font_manager
+from matplotlib.figure import Figure
 
 # Register Cyrillic-capable font if available
 _CYRILLIC_FONTS = ["DejaVu Sans", "Arial", "Liberation Sans", "Segoe UI"]
@@ -91,7 +92,7 @@ def get_accent() -> str:
 
 
 def create_figure(
-    figsize: tuple[int, int] = (8, 6),
+    figsize: tuple[float, float] = (8, 6),
     title: str = "",
     theme: str | None = None,
 ) -> Figure:

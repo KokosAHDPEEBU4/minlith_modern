@@ -11,19 +11,31 @@ if _project_root not in sys.path:
 
 
 def _resolve_theme_path(theme: str) -> Path:
-    """Resolve theme name to QSS file path."""
-    base = Path(__file__).resolve().parent / "gui" / "styles"
-    path = base / f"{theme}.qss"
-    if not path.exists():
-        path = base / "default.qss"
-    return path
+    """Resolve theme name to QSS file path (работает и в PyInstaller-сборке)."""
+    here = Path(__file__).resolve().parent
+    candidates = [
+        here / "gui" / "styles",          # запуск из исходников (src/main.py)
+        here / "src" / "gui" / "styles",  # frozen: main.py в корне _MEIPASS
+    ]
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        candidates.append(Path(meipass) / "src" / "gui" / "styles")
+
+    for base in candidates:
+        themed = base / f"{theme}.qss"
+        if themed.exists():
+            return themed
+        default = base / "default.qss"
+        if default.exists():
+            return default
+    return here / "gui" / "styles" / "default.qss"
 
 
 def main() -> None:
     from PyQt6.QtWidgets import QApplication
 
-    from src.utils.logger import setup_logging
     from src.utils.config import ConfigManager
+    from src.utils.logger import setup_logging
 
     setup_logging()
 
@@ -53,4 +65,10 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # В PyInstaller-сборке дочерние процессы ProcessPoolExecutor стартуют как
+    # повторный запуск exe; freeze_support() обязан выполниться первым, иначе
+    # вместо расчёта каждый воркер открывает новое окно приложения.
+    import multiprocessing
+
+    multiprocessing.freeze_support()
     main()

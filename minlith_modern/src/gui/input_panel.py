@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QFormLayout,
-    QGroupBox,
-    QLabel,
     QLineEdit,
     QScrollArea,
     QVBoxLayout,
@@ -43,7 +39,7 @@ OXIDE_FIELDS: list[tuple[str, str, float]] = [
 class InputPanel(QWidget):
     """Widget with editable oxide composition fields."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._editors: dict[str, QLineEdit] = {}
 
@@ -71,7 +67,7 @@ class InputPanel(QWidget):
         self._name_edit = QLineEdit("Sample")
         form.insertRow(0, "Name:", self._name_edit)
 
-    def get_composition(self) -> Optional[OxideComposition]:
+    def get_composition(self) -> OxideComposition | None:
         """Read composition from editors. Returns None if SiO2 is empty."""
         values: dict[str, float] = {}
         for field, editor in self._editors.items():

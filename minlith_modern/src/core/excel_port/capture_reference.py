@@ -9,14 +9,16 @@
 Это эталон, с которым сверяем Python-порт на КАЖДОМ шаге.
 """
 import json
-import sys
 from pathlib import Path
 
 import win32com.client
 
 XLSM = r"C:\Users\kokos\Desktop\Lene\Ispravlenny_MINLITH1_2010.xlsm"
 OUT = Path(r"C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\excel_port\data\reference.json")
-samples = json.load(open(r"C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\excel_port\data\samples.json", encoding="utf-8"))
+samples = json.load(open(
+    r"C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\excel_port\data\samples.json",
+    encoding="utf-8",
+))
 
 ROW_OF = {"SiO2":2,"TiO2":3,"Al2O3":4,"Fe2O3":5,"FeO":6,"MgO":7,"CaO":8,
           "Na2O":9,"K2O":10,"P2O5":11,"MnO":12,"C":13,"SO3":14,"F":15,

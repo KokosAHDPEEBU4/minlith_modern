@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -36,7 +36,7 @@ class ChartPlugin(ABC):
 
     @abstractmethod
     def get_name(self) -> str:
-        """Short name for display (e.g. 'QAPF')."""
+        """Short name for display (e.g. 'A-CN-K')."""
 
     @abstractmethod
     def get_description(self) -> str:
@@ -53,11 +53,18 @@ class ChartPlugin(ABC):
         """Whether this chart needs oxide data."""
 
     @abstractmethod
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         """Render chart and return the matplotlib Figure."""
 
-    def export(self, data: ChartData, path: Path, fmt: str = "png", dpi: int = 150, **kwargs) -> None:
-        """Export chart to file."""
+    def export(self, data: ChartData, path: Path, fmt: str = "png",
+               dpi: int = 150, **kwargs: Any) -> None:
+        """Export chart to file.
+
+        ``fmt`` defaults to the file extension of ``path`` (``png`` if unknown).
+        """
+        path = Path(path)
+        if fmt == "png" and path.suffix.lower() in (".pdf", ".svg", ".jpg", ".jpeg"):
+            fmt = path.suffix.lower().lstrip(".")
         fig = self.render(data, **kwargs)
         fig.savefig(str(path), format=fmt, dpi=dpi, bbox_inches="tight")
         import matplotlib.pyplot as plt

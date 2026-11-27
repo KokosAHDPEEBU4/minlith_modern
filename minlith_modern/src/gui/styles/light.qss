@@ -76,21 +76,21 @@ QLineEdit:focus {
 
 /* ── Buttons ── */
 QPushButton {
-    background-color: #e8e8f0;
+    background-color: #c8c8d8;
     color: #1e1e2e;
-    border: 1px solid #d0d0d8;
+    border: 1px solid #a8a8b8;
     border-radius: 6px;
     padding: 6px 16px;
     font-weight: bold;
 }
 
 QPushButton:hover {
-    background-color: #d0d8f0;
-    border-color: #b0b0c0;
+    background-color: #b8b8c8;
+    border-color: #9090a0;
 }
 
 QPushButton:pressed {
-    background-color: #b8c0e0;
+    background-color: #a8a0c0;
 }
 
 QPushButton:disabled {
@@ -248,4 +248,182 @@ QPlainTextEdit {
     border-radius: 4px;
     font-family: "Cascadia Mono", "Consolas", monospace;
     font-size: 12px;
+}
+
+/* ── Page typography ── */
+QLabel#pageHeader {
+    background: transparent;
+    color: #1e1e2e;
+    font-size: 20px;
+    font-weight: 600;
+    padding: 0;
+}
+QLabel#welcomeTitle {
+    background: transparent;
+    color: #3b6fcc;
+    font-size: 28px;
+    font-weight: 700;
+}
+QLabel#welcomeSubtitle {
+    background: transparent;
+    color: #555555;
+    font-size: 14px;
+}
+QLabel#welcomeHint {
+    background: transparent;
+    color: #555555;
+    font-size: 12px;
+}
+
+/* ── Engine toolbar ── */
+#engineBar {
+    background-color: #f0f0f5;
+    border: none;
+    border-bottom: 1px solid #d0d0d8;
+    padding: 6px 10px;
+    spacing: 6px;
+}
+#engineBar QToolButton {
+    background-color: transparent;
+    color: #555555;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-weight: 600;
+}
+#engineBar QToolButton:hover {
+    background-color: #e0e0e8;
+    color: #1e1e2e;
+}
+#engineBar QToolButton:checked {
+    background-color: #d0d8f0;
+    color: #3b6fcc;
+    border-color: #b0bcd8;
+}
+#engineBar QToolButton#engineParity {
+    color: #1e66f5;
+}
+#engineBar QToolButton#engineExact {
+    color: #c2410c;
+}
+#engineBar QToolButton#engineParity:checked {
+    background-color: #1e66f5;
+    color: #ffffff;
+    border-color: #1e66f5;
+    font-weight: 700;
+}
+#engineBar QToolButton#engineParity:checked:hover {
+    background-color: #3b82f6;
+}
+#engineBar QToolButton#engineExact:checked {
+    background-color: #d97706;
+    color: #ffffff;
+    border-color: #d97706;
+    font-weight: 700;
+}
+#engineBar QToolButton#engineExact:checked:hover {
+    background-color: #f59e0b;
+}
+
+/* ── Tabs ── */
+QTabWidget::pane {
+    background-color: #ffffff;
+    border: 1px solid #d0d0d8;
+    border-radius: 6px;
+    top: -1px;
+}
+QTabBar::tab {
+    background-color: #f0f0f5;
+    color: #555555;
+    border: 1px solid #d0d0d8;
+    border-bottom: none;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    padding: 6px 12px;
+    margin-right: 2px;
+    min-width: 70px;
+}
+QTabBar::tab:selected {
+    background-color: #d0d8f0;
+    color: #1e1e2e;
+}
+QTabBar::tab:hover {
+    background-color: #e0e0e8;
+}
+
+/* ── Trees ── */
+QTreeWidget, QTreeView {
+    background-color: #ffffff;
+    alternate-background-color: #f8f8fc;
+    color: #1e1e2e;
+    border: 1px solid #d0d0d8;
+    border-radius: 4px;
+}
+QTreeWidget::item {
+    padding: 4px 6px;
+}
+QTreeWidget::item:selected {
+    background-color: #d0d8f0;
+    color: #1e1e2e;
+}
+
+/* ── Spin boxes / text areas ── */
+QSpinBox, QDoubleSpinBox {
+    background-color: #ffffff;
+    color: #1e1e2e;
+    border: 1px solid #d0d0d8;
+    border-radius: 4px;
+    padding: 4px 6px;
+}
+QSpinBox:focus, QDoubleSpinBox:focus {
+    border-color: #3b6fcc;
+}
+QTextEdit, QTextBrowser {
+    background-color: #f5f5fa;
+    color: #1e1e2e;
+    border: 1px solid #d0d0d8;
+    border-radius: 4px;
+}
+QRadioButton {
+    spacing: 8px;
+    color: #1e1e2e;
+}
+QMenu {
+    background-color: #ffffff;
+    color: #1e1e2e;
+    border: 1px solid #d0d0d8;
+}
+QMenu::item:selected {
+    background-color: #d0d8f0;
+}
+QDialog, QMessageBox {
+    background-color: #ffffff;
+}
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+QTableCornerButton::section {
+    background-color: #f0f0f5;
+    border: 1px solid #d0d0d8;
+}
+
+#appTitle {
+    background: transparent;
+    color: #1e66f5;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 8px 4px;
+}
+QLabel#dropHint {
+    background: transparent;
+    border: 2px dashed #c0c0c8;
+    border-radius: 8px;
+    padding: 20px;
+    color: #4b5563;
+    font-size: 13px;
+}
+QLabel#dropHint[dragging="true"] {
+    border-color: #1e66f5;
+    color: #1e66f5;
 }

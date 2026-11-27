@@ -189,9 +189,9 @@ tests/test_validation.py           4 passed
 
 ## Дополнение 2026-09-11 — пакет «excel_port» (полный порт Excel-версии)
 
-Вся информация выше относится к `TheoryAlgorithm`. Параллельно ведётся
+Вся информация выше относится к `GeologicalTheoryAlgorithm`. Параллельно ведётся
 точный порт оригинального файла `Ispravlenny_MINLITH1_2010.xlsm`
-(пакет `src/core/excel_port/`) — см. план `todo2.md` и документацию
+(пакет `src/core/excel_port/`) — см. план `../docs/planning/todo2.md` и документацию
 `docs/EXCEL_VERSION_*.md` (00..07, все готовы).
 
 Статус:
@@ -205,13 +205,13 @@ tests/test_validation.py           4 passed
   максимум диффов в ф.е. 0.46..3.08, в вес.% итога 0.01-0.02 п.п.
 - **Тесты**: `tests/test_excel_vm.py` (23), `tests/test_excel_compare.py` (8);
   полный сьют 413 passed, 5 skipped.
-- **Следующий шаг (Фаза 3):** `src/core/clean_engine/` по документам
+- **Следующий шаг (Фаза 3):** `src/core/excel_parity/` по документам
   EXCEL_VERSION_02..06 (без округлений).
 
-## Дополнение — Фаза 3: чистый движок `clean_engine`
+## Дополнение — Фаза 3: чистый движок `excel_parity`
 
 Реализован чистый Python-порт алгоритма без округлений:
-`src/core/clean_engine/` (`stage0.py`, `types.py` [типы 1-5], `stage_vi.py`,
+`src/core/excel_parity/` (`stage0.py`, `types.py` [типы 1-5], `stage_vi.py`,
 `output.py`, `runner.py`, `__init__.py`). Движок считает те же формулы, что и
 `excel_port`, но непрерывной арифметикой float64 (никаких ROUND).
 
@@ -229,9 +229,56 @@ tests/test_validation.py           4 passed
   (34 колонки B..AI, включая суммы AD..AI), невязки D164..D171.
 - Имя переменной `so` = D19 (ф.е. SO), не SO3 — как в оригинале.
 
-**Сверка:** `tests/test_clean_engine.py` (29 тестов) — для 7 образцов
+**Сверка:** `tests/test_excel_parity.py` (29 тестов) — для 7 образцов
 (BK-1, T-O2, аркоз, гранит, базальт, кварцит, высокоглинозёмистый) значения
 37 имён + 34 ячейки строки 287 + 8 невязок совпадают с
 `excel_port(run_sample(rounding=False))` с точностью ≤1e-9 (фактически бит-в-бит).
 
 Полный сьют: 450 passed, 5 skipped.
+
+
+---
+
+## 2026-09-16 — ПОЛНЫЙ ПАРИТЕТ excel_parity vs excel_port (rounding=False)
+
+- 3000-crawl: n_ok=3000 n_gap=0 n_mis=0; **16000-crawl (полная решётка): n_ok=16000 n_gap=0 n_mis=0** (worst |delta| ~2e-12).
+  Прогон воспроизводится скриптом `scripts/verify_synthetic_grid.py`
+  (seed 20260916): 60 % типичных / 30 % граничных / 10 % с суммой 85–115 мас. %,
+  критерий 1e-6, отчёт `reports/synthetic_grid/summary.json`.
+  На корпусе затронуты все 5 типов породы и 6 полос коэффициентов,
+  покрыто 47 из 77 идентификаторов веток (20 из 32 решений каталога).
+- Закрыты последние ветки:
+  - **p_222 → s_271** (тип 3, s_274→s_221→s_221t→s_238→s_243→rVI): ill=0, or=0 (C222/C223 пусты), fe_n=C224, mg_n=C225, kn=C244, gb=C245, si_n=C246; s_238 gate d238 отсутствует -> всегда s_243.
+  - **p222->t5**: `or` сохраняется из p_93t (C98) — в `_t5` передаётся `sol.or_`, не 0.
+  - **m_322t->p_81**: цепочка live-копий C325/C326 -> `_t3_balance(si4-24na, al4-5na)`.
+  - **m_450**: ca_n не пишется (только an/an_4, al4_2, si4_2/si_n).
+  - **Плагиоклазовые редкие ветки**: p_53t (D51&D53) и p_68->p_68t (безусловно).
+- verify_m37x.py и verify_rem.py: все группы OK. property-тесты: 627 passed (gap-тест обновлён: gaps==0).
+
+## 2026-09-16 — GUI+CLI: движок расчёта `excel_parity` («как в Excel»)
+
+- GUI «Настройки» → «Движок расчёта»: `excel_parity` (полный паритет
+  с Excel-версией, без округлений) по умолчанию. `geological_theory` остаётся
+  резервом, `python_rework` — плейсхолдером.
+- Решение движка централизовано в `Calculator` (по `config.calculation_engine`):
+  распространяется на GUI (одиночный и пакетный расчёт), CLI и batch-worker.
+- CLI: `--engine/-e` принимает `excel_parity|geological_theory|python_rework`
+  (по умолчанию `excel_parity`).
+- Тесты: +3 (resolution движков), 1064 passed total.
+
+## 2026-09-21 — Переименование движков и методов в понятные имена
+
+- Ключ `algorithm_mode` → `calculation_engine`; значения
+  `clean|stub|custom` → `excel_parity|geological_theory|python_rework`.
+- Пакет `src/core/excel_parity/` (бывш. `clean_engine`), класс
+  `ExcelParityAlgorithm` (бывш. `CleanEngineAlgorithm`), модуль
+  `geological_theory.py` (бывш. `theory_algorithm.py`), класс
+  `GeologicalTheoryAlgorithm` (бывш. `TheoryAlgorithm`).
+- GUI: тулбар «Движки расчёта» («Как в Excel» / «Геол. теория» /
+  «Python-переработка»), `_set_engine` / `_engine_bar` / `_engine_combo` /
+  `_calculation_engine`; CLI `--engine/-e`.
+- Обратная совместимость: старый ключ `algorithm_mode` и значения
+  `clean`/`stub`/`custom` автоматически мигрируют.
+- Legacy-заглушки `algorithm_stub.py` (невалидный Python: сырой текст без `#`)
+  и `algorithm_real.py` перенесены в `_trash/minlith_modern/src/core/`; убраны
+  из `src/core/__init__.py` и из `hidden-import` в `scripts/build.py`.

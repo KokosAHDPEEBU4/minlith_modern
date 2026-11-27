@@ -11,14 +11,12 @@ F и P₂O₅ считаются независимыми элементами (
 
 from __future__ import annotations
 
-from typing import Optional
-
 from src.core.debug_tracer import DebugTraceCollector
 
 
 def stage1(
     fe: dict[str, float],
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> tuple[dict[str, float], dict[str, float]]:
     """Стадия 1: Ap → Py → Gp → Fl → Hl.
 

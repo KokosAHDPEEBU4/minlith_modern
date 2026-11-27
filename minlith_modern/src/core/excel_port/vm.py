@@ -19,7 +19,6 @@
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from src.core.excel_port.workbook import Workbook, a1_to_rc, rc_to_a1
 
@@ -176,7 +175,7 @@ class VbaVM:
             i += 1
 
     @staticmethod
-    def _find_branch(ops: list[dict], start: int) -> tuple[Optional[int], int]:
+    def _find_branch(ops: list[dict], start: int) -> tuple[int | None, int]:
         """Найти индексы Else (на уровне 1) и End If для If Range на позиции start."""
         depth = 0
         else_i = None

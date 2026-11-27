@@ -8,6 +8,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from src.core.models import CALCULATION_ENGINES, LEGACY_ENGINE_ALIASES
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -18,8 +20,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "decimal_places": 2,
     "include_formula_units": False,
     "include_defect": True,
+    "include_parameters": True,
     "timeout_seconds": 120,
-    "algorithm_mode": "stub",  # "stub" | "custom"
+    "batch_size": "auto",  # "auto" | 1..8
+    # "excel_parity" | "excel_exact" | "geological_theory" | "python_rework"
+    "calculation_engine": "excel_parity",
+    "branch_overrides": {},  # {decision_id: branch_id} — ручной выбор веток
+    "forced_path": [],       # упорядоченные подписи веток (этап 6 ТЗ)
+    "chart.zoom_step": 1.2,  # шаг зума диаграмм, диапазон (1.0, 5.0]
     "theme": "dark",
     "chart_theme": "dark",  # "dark" | "light" — background for charts
     "language": "ru",
@@ -55,11 +63,21 @@ class ConfigManager:
         self._data = dict(DEFAULT_CONFIG)
         if self._path.exists():
             try:
-                with open(self._path, "r", encoding="utf-8") as f:
+                with open(self._path, encoding="utf-8") as f:
                     saved = json.load(f)
                 self._data.update(saved)
+                self._migrate_legacy(saved)
             except (json.JSONDecodeError, OSError) as e:
                 logger.warning("Failed to load config from %s: %s", self._path, e)
+
+    def _migrate_legacy(self, saved: dict[str, Any]) -> None:
+        """Перенести старые ключи/значения настроек в актуальные."""
+        if "algorithm_mode" in saved and "calculation_engine" not in saved:
+            self._data["calculation_engine"] = saved["algorithm_mode"]
+        self._data.pop("algorithm_mode", None)
+        engine = self._data.get("calculation_engine")
+        if isinstance(engine, str) and engine in LEGACY_ENGINE_ALIASES:
+            self._data["calculation_engine"] = LEGACY_ENGINE_ALIASES[engine]
 
     def save(self, debounce: bool = False) -> None:
         """Persist current settings to disk.
@@ -150,9 +168,46 @@ class ConfigManager:
         if not isinstance(timeout, int) or timeout < 1:
             errors.append(f"timeout_seconds must be positive, got {timeout}")
 
-        mode = self._data.get("algorithm_mode", "stub")
-        if mode not in ("stub", "custom"):
-            errors.append(f"Unknown algorithm_mode: {mode!r}")
+        for flag in ("warn_negative", "auto_correct_sum",
+                     "include_formula_units", "include_defect",
+                     "include_parameters"):
+            val = self._data.get(flag, False)
+            if not isinstance(val, bool):
+                errors.append(f"{flag} must be bool, got {val!r}")
+
+        batch = self._data.get("batch_size", "auto")
+        valid_batches = ("auto", 1, 2, 4, 8)
+        if not (batch in valid_batches or (isinstance(batch, int) and batch >= 1)):
+            errors.append(f"batch_size must be 'auto' or positive int, got {batch!r}")
+
+        mm = self._data.get("custom_molar_masses", {})
+        if not isinstance(mm, dict):
+            errors.append("custom_molar_masses must be a mapping")
+        else:
+            for k, v in mm.items():
+                if not isinstance(v, (int, float)) or isinstance(v, bool) or v <= 0:
+                    errors.append(f"custom_molar_masses[{k!r}] must be positive number, got {v!r}")
+
+        engine = self._data.get("calculation_engine", "excel_parity")
+        if engine not in CALCULATION_ENGINES and engine not in LEGACY_ENGINE_ALIASES:
+            errors.append(f"Unknown calculation_engine: {engine!r}")
+
+        bo = self._data.get("branch_overrides", {})
+        if not isinstance(bo, dict):
+            errors.append(f"branch_overrides must be a mapping, got {bo!r}")
+        elif bo:
+            try:
+                from src.core.branch_overrides import BranchOverrides, validate_overrides
+                validate_overrides(BranchOverrides(choices=dict(bo)))
+            except ValueError as exc:
+                errors.append(f"branch_overrides: {exc}")
+        fp = self._data.get("forced_path", [])
+        if not isinstance(fp, (list, tuple)):
+            errors.append(f"forced_path must be a list, got {fp!r}")
+
+        zs = self._data.get("chart.zoom_step", 1.2)
+        if not isinstance(zs, (int, float)) or isinstance(zs, bool) or not (1.0 < zs <= 5.0):
+            errors.append(f"chart.zoom_step must be in (1.0, 5.0], got {zs!r}")
 
         theme = self._data.get("theme", "dark")
         if theme not in ("dark", "light"):
@@ -175,7 +230,7 @@ class ConfigManager:
 
     def import_settings(self, path: Path | str) -> None:
         """Import settings from a JSON file (merges with current)."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             imported = json.load(f)
         self._data.update(imported)
         self.save()

@@ -24,9 +24,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
-from src.core.excel_port.interpreter import xround
 from src.core.excel_port.workbook import Workbook
 
 # Диапазоны-кандидаты: (флаг, колонка, первая строка)
@@ -146,13 +144,13 @@ def compute_stage0(wb: Workbook, oxide_values: dict[str, float]) -> Stage0Result
     k1, k2, k3, k4, achl, _flag = select_coefficients(wb)
     write_coefficients(wb, k1, k2, k3, k4, achl)
 
-    F = float(wb.eval_cell(COEF_SHEET, "G2"))
-    A = float(wb.eval_cell(COEF_SHEET, "I2"))
+    f = float(wb.eval_cell(COEF_SHEET, "G2"))
+    a = float(wb.eval_cell(COEF_SHEET, "I2"))
     fe = _fe_from_sheet(wb, COEF_SHEET)
     rock_type, flags = classify(wb)
 
     return Stage0Result(
-        fe=fe, F=F, A=A,
+        fe=fe, F=f, A=a,
         k1=k1, k2=k2, k3=k3, k4=k4, achl=achl,
         rock_type=rock_type, flags=flags,
     )

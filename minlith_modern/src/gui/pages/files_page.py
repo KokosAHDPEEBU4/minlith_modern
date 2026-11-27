@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -65,7 +64,9 @@ class FilesPage(QWidget):
 
         self._btn_calculate = QPushButton("  Рассчитать все  ")
         self._btn_calculate.setStyleSheet("font-weight: bold; padding: 6px 16px;")
-        self._btn_calculate.setToolTip("Рассчитать все загруженные образцы")
+        self._btn_calculate.setToolTip(
+            "Рассчитать выбранные образцы (отмеченные галочкой)"
+        )
         self._btn_calculate.clicked.connect(self._on_calculate_all)
         self._btn_calculate.setEnabled(False)
         btn_row.addWidget(self._btn_calculate)
@@ -89,6 +90,12 @@ class FilesPage(QWidget):
 
         list_header = QHBoxLayout()
         list_header.addWidget(QLabel("Загруженные образцы:"))
+        self._chk_select_all = QCheckBox("Выбрать все")
+        self._chk_select_all.setTristate(True)
+        self._chk_select_all.setChecked(True)
+        self._chk_select_all.setEnabled(False)
+        self._chk_select_all.stateChanged.connect(self._on_select_all_changed)
+        list_header.addWidget(self._chk_select_all)
         list_header.addStretch()
         self._btn_clear = QPushButton("Очистить всё")
         self._btn_clear.clicked.connect(self._clear_list)
@@ -98,6 +105,7 @@ class FilesPage(QWidget):
         self._file_list = QListWidget()
         self._file_list.setAlternatingRowColors(True)
         self._file_list.itemDoubleClicked.connect(self._on_item_double_clicked)
+        self._file_list.itemChanged.connect(self._sync_select_all_state)
         bottom_layout.addWidget(self._file_list)
 
         splitter.addWidget(bottom)
@@ -172,6 +180,13 @@ class FilesPage(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", str(e))
 
+    def _add_sample_item(self, sample, source: str) -> None:
+        """Добавить образец в список (отмечен по умолчанию)."""
+        item = QListWidgetItem(f"{sample.name}  ({source})")
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+        item.setCheckState(Qt.CheckState.Checked)
+        self._file_list.addItem(item)
+
     def _load_file(self, path: str) -> None:
         try:
             samples = load_samples(path)
@@ -180,10 +195,11 @@ class FilesPage(QWidget):
                 return
             self._loaded_samples.extend(samples)
             for s in samples:
-                self._file_list.addItem(f"{s.name}  ({Path(path).name})")
+                self._add_sample_item(s, Path(path).name)
             if self._config:
                 self._config.add_recent_file(path)
             self._btn_calculate.setEnabled(bool(self._loaded_samples))
+            self._chk_select_all.setEnabled(bool(self._loaded_samples))
             self.samples_loaded.emit(samples)
             logger.info("Загружено %d образцов из %s", len(samples), Path(path).name)
         except Exception as e:
@@ -194,7 +210,7 @@ class FilesPage(QWidget):
         try:
             import csv
             samples = []
-            with open(path, "r", encoding="utf-8-sig") as f:
+            with open(path, encoding="utf-8-sig") as f:
                 reader = csv.DictReader(f, delimiter=";")
                 for row in reader:
                     from src.core.models import OxideComposition, Sample
@@ -211,26 +227,78 @@ class FilesPage(QWidget):
 
             self._loaded_samples.extend(samples)
             for s in samples:
-                self._file_list.addItem(f"{s.name}  ({Path(path).name})")
+                self._add_sample_item(s, Path(path).name)
+            self._btn_calculate.setEnabled(bool(self._loaded_samples))
+            self._chk_select_all.setEnabled(bool(self._loaded_samples))
             self.samples_loaded.emit(samples)
             logger.info("Загружено %d образцов из CSV", len(samples))
         except Exception as e:
             QMessageBox.critical(self, "Ошибка импорта CSV", str(e))
 
+    def _on_select_all_changed(self, state: int) -> None:
+        """Отметить/снять отметку со всех образцов."""
+        check = (Qt.CheckState.Unchecked
+                 if state == 0
+                 else Qt.CheckState.Checked)
+        self._file_list.blockSignals(True)
+        for i in range(self._file_list.count()):
+            self._file_list.item(i).setCheckState(check)
+        self._file_list.blockSignals(False)
+        self._btn_calculate.setEnabled(self._file_list.count() > 0)
+
+    def _sync_select_all_state(self, _item=None) -> None:
+        """Обновить состояние чекбокса «Выбрать все» по списку."""
+        total = self._file_list.count()
+        if total == 0:
+            state = Qt.CheckState.Checked
+        else:
+            checked = sum(
+                1 for i in range(total)
+                if self._file_list.item(i).checkState() == Qt.CheckState.Checked
+            )
+            if checked == 0:
+                state = Qt.CheckState.Unchecked
+            elif checked < total:
+                state = Qt.CheckState.PartiallyChecked
+            else:
+                state = Qt.CheckState.Checked
+        self._chk_select_all.blockSignals(True)
+        self._chk_select_all.setCheckState(state)
+        self._chk_select_all.blockSignals(False)
+
     def _on_item_double_clicked(self, item: QListWidgetItem) -> None:
+        if item.checkState() == Qt.CheckState.Unchecked:
+            return
         row = self._file_list.row(item)
         if 0 <= row < len(self._loaded_samples):
             sample = self._loaded_samples[row]
             self.samples_loaded.emit([sample])
 
     def _on_calculate_all(self) -> None:
-        if self._loaded_samples:
-            self.calculate_requested.emit(list(self._loaded_samples))
+        selected = self.get_selected_samples()
+        if not selected:
+            QMessageBox.information(
+                self, "Расчёт",
+                "Не отмечено ни одного образца. Поставьте галочки в списке "
+                "или нажмите «Выбрать все».",
+            )
+            return
+        self.calculate_requested.emit(selected)
+
+    def get_selected_samples(self) -> list:
+        selected = []
+        for i in range(self._file_list.count()):
+            if self._file_list.item(i).checkState() == Qt.CheckState.Checked:
+                if 0 <= i < len(self._loaded_samples):
+                    selected.append(self._loaded_samples[i])
+        return selected
 
     def _clear_list(self) -> None:
         self._loaded_samples.clear()
         self._file_list.clear()
         self._btn_calculate.setEnabled(False)
+        self._chk_select_all.setEnabled(False)
+        self._chk_select_all.setCheckState(Qt.CheckState.Checked)
 
     def get_all_samples(self) -> list:
         return list(self._loaded_samples)

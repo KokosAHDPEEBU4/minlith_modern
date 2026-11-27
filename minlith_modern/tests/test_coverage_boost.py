@@ -2,33 +2,29 @@
 
 import json
 import math
-import tempfile
-from pathlib import Path
 
 import numpy as np
 import pytest
 
+from src.core.algorithm import AlgorithmInput, AlgorithmOutput
 from src.core.calibrator import (
-    Calibrator,
-    ParameterizedAlgorithm,
-    CalibrationResult,
-    save_calibration_config,
-    load_calibration_config,
     DEFAULT_PARAMS,
     PARAM_BOUNDS,
+    CalibrationResult,
+    Calibrator,
+    ParameterizedAlgorithm,
+    load_calibration_config,
+    save_calibration_config,
 )
-from src.core.algorithm import AlgorithmInput, AlgorithmOutput
-from src.core.calculator import Calculator
 from src.core.models import (
+    AdaptiveCoefficients,
     CalculationConfig,
+    FormulaUnits,
+    MineralComposition,
     OxideComposition,
     Sample,
-    MineralComposition,
-    AdaptiveCoefficients,
-    FormulaUnits,
 )
 from src.core.types_logic import calculate_type1, calculate_type2
-
 
 # ---------------------------------------------------------------------------
 # ParameterizedAlgorithm
@@ -266,8 +262,14 @@ class TestCSVHandler:
         assert samples[0].composition.sio2 == 65.0
 
     def test_write_csv(self, tmp_path):
+        from src.core.models import (
+            AdaptiveCoefficients,
+            CalculationResult,
+            FormulaUnits,
+            MineralComposition,
+            RockType,
+        )
         from src.io.csv_handler import write_csv
-        from src.core.models import CalculationResult, RockType, AdaptiveCoefficients, MineralComposition, FormulaUnits
         csv_path = tmp_path / "out.csv"
 
         results = [

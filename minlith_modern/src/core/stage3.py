@@ -16,15 +16,13 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from src.core.debug_tracer import DebugTraceCollector
 
 
 def stage3(
     fe: dict[str, float],
     minerals: dict[str, float],
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> dict[str, float]:
     """Стадия 3: карбонаты → оксиды → кварц.
 

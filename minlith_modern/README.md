@@ -1,4 +1,4 @@
-# MINLITH Modern v0.6.8
+# MINLITH Modern v0.7.0
 
 Нормативный минералогический расчёт из химического состава горных пород.
 
@@ -11,9 +11,12 @@ MINLITH Modern — это перезапись легендарной Excel-пр
 - Полная реализация алгоритма MINLITH (типы 1-5, ~500+ условий ветвления)
 - Auto-calibration — автоматическое восстановление параметров алгоритма из Excel через scipy
 - PyQt6 GUI с drag-and-drop, предпросмотром, прогресс-барами
+- Настройки: сайдбар-навигация (Расчёт / Экспорт / Диаграммы / Интерфейс), поиск настроек, карточки, адаптация под тёмную/светлую тему
 - SQLite база данных с версионированием
-- 23 типов диаграмм (matplotlib): bar, pie, defect, QAPF, TAS, A-CN-K, heatmap, rock type, feldspar triangle, harker, AFM, SiO₂-K₂O, Bland-Altman, correlation, k1-k4, box plot, radar, coefficient heatmap, defect accumulation, PCA biplot, dendrogram, parallel coordinates, Mg-Fe-Al ternary
-- 14 интерактивных диаграмм (Plotly HTML): bar, TAS, harker, pie, QAPF, A-CN-K, AFM, heatmap, correlation, k1-k4, boxplot, violin, parallel, rock type
+- 8 типов диаграмм (matplotlib): bar, pie, defect, A-CN-K, heatmap, rock type, box plot, PCA biplot
+- 6 интерактивных диаграмм (Plotly HTML): bar, pie, A-CN-K, heatmap, boxplot, rock type (экспорт из GUI: «Диаграммы» → «Интерактивный HTML…», и CLI `--interactive`)
+- Диаграммы в GUI: вкладки (кнопка «＋» рядом с последней), три уровня выбора слева-направо (диаграммы | образцы | минералы), подсказка с именем образца при наведении на точку
+- Граф разветвлений: дерево решений, подсветка маршрута образца, ручной выбор ветки + пересчёт; сравнение движков `excel_parity` vs `excel_exact` «бок о бок» (страница «Результаты» → «Сравнить движки»)
 - Генератор отчётов (PDF, Word, HTML) с встроенными диаграммами
 - 5 шаблонов отчётов: brief, standard, full, core, geochemical
 - Параллельный расчёт через ProcessPoolExecutor
@@ -114,6 +117,7 @@ python calibrate.py --input MINLITH1.xlsx --output calibration_config.json --max
 | `--template`, `-t` | Шаблон отчёта (brief, standard, full, core, geochemical) |
 | `--dpi N` | Разрешение диаграммы |
 | `--interactive` | Экспорт в интерактивный HTML (Plotly) |
+| `--engine`, `-e` | Движок расчёта: `excel_parity` (как в Excel с корректными округлениями, по умолчанию), `excel_exact` (полная 1:1 копия Excel с ROUND), `geological_theory` (по геологической теории), `python_rework` (Python-переработка) |
 
 ### Python API
 
@@ -133,20 +137,49 @@ print(result.rock_type)          # RockType.TYPE_5
 print(result.minerals_weight.ab) # 7.82
 print(result.defect)             # oxide residuals
 print(result.anomalies)          # list[AnomalyHypothesis]
+
+# Движок расчёта:
+#   excel_parity      — «как в Excel» с корректными округлениями: тот же алгоритм
+#                       в float64 без пошаговых ROUND (по умолчанию)
+#   excel_exact       — полная 1:1 копия Excel: формулы + VBA + пошаговые ROUND,
+#                       включая накопление ошибки округления книги MINLITH
+#   geological_theory — «самостоятельная попытка»: расчёт по геологической теории
+#   python_rework     — «переработанный под Python»: пользовательская реализация
+#                       (пока не подключена)
+calc_excel = Calculator(config=CalculationConfig(calculation_engine="excel_parity"))
+calc_exact = Calculator(config=CalculationConfig(calculation_engine="excel_exact"))
 ```
+
+> В GUI движок выбирается на странице «Настройки» → «Движок расчёта», а также на
+> тулбаре «Движки расчёта» («Excel (корректные округл.)» / «Excel 1:1 (ROUND)» /
+> «Геол. теория» / «Python-переработка»).
 
 ## Сборка
 
-```bash
-python build.py
-# или
-pyinstaller minlith.spec
+Portable-сборка (windowed) — автоматический скрипт:
+
+```bat
+build_exe.bat              :: onedir (по умолчанию) — быстрый запуск
+build_exe.bat --onefile    :: один файл (медленнее стартует — распаковка в temp)
 ```
+
+Результат по умолчанию: **`../minlith_exe/MINLITH/MINLITH.exe`** (папка; для
+переноса на другое устройство копируйте её целиком). При `--onefile` — один
+`../minlith_exe/MINLITH.exe`. Python на целевой машине не нужен (Windows x64).
+
+> **Почему onedir по умолчанию:** `--onefile` при каждом запуске распаковывает
+> ~180 МБ во временную папку (+сканирование антивирусом) — старт долгий.
+> `onedir` запускается почти сразу.
+
+Сборка включает ресурсы `src/gui/styles/*.qss` и `src/core/excel_port/data/*`;
+Python/PyInstaller проверяются автоматически (PyInstaller ставится при отсутствии).
+
+Ручные варианты: `python build.py` (старый, onedir) или `pyinstaller minlith.spec`.
 
 ## Тесты
 
 ```bash
-# Все тесты (293)
+# Все тесты (1323 passed, 4 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -166,7 +199,11 @@ minlith_modern/
 ├── src/
 │   ├── core/           # Расчётный движок
 │   │   ├── calculator.py       # Оркестратор
-│   │   ├── algorithm_stub.py   # Заглушка VBA
+│   │   ├── excel_parity/       # Движок «как в Excel» (корректные округления, без ROUND)
+│   │   │   └── branches.py     # Траектория веток (BranchPath) — база графа разветвлений
+│   │   ├── excel_exact/        # Движок «Excel 1:1» (адаптер к excel_port, с ROUND)
+│   │   ├── excel_port/         # Реплика Excel-версии (бит-в-бит, со всеми ROUND)
+│   │   ├── geological_theory.py # Движок по геологической теории (файлы 00-07)
 │   │   ├── algorithm.py        # Протокол алгоритма
 │   │   ├── models.py           # Датаклассы
 │   │   ├── coefficients.py     # k1-k4 коэффициенты
@@ -187,7 +224,7 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 293 тестов
+├── tests/              # 1323 тестов (4 skipped)
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша

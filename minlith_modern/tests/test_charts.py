@@ -74,32 +74,17 @@ def chart_data() -> ChartData:
     )
 
 
-# ── All 23 built-in charts ──
+# ── All 8 built-in charts (минимальный рабочий набор) ──
 
 CHART_TEST_PARAMS = [
     ("BarChart", True, False),
     ("PieChart", True, False),
     ("DefectChart", True, True),
-    ("QAPFChart", True, False),
-    ("TASChart", False, True),
     ("ACNKChart", False, True),
     ("HeatmapChart", True, False),
     ("RockTypeChart", False, False),
-    ("FeldsparTriangle", True, False),
-    ("HarkerPlugin", False, True),
-    ("AFMPlugin", False, True),
-    ("SiO2K2OPlugin", False, True),
-    ("BlandAltmanPlugin", False, False),
-    ("CorrelationPlugin", False, True),
-    ("KFChart", False, False),
     ("BoxPlotChart", True, False),
-    ("RadarChart", True, False),
-    ("CoefficientHeatmap", False, False),
-    ("DefectAccumulation", True, True),
     ("PCABiplot", True, False),
-    ("DendrogramChart", True, False),
-    ("ParallelCoordinates", True, False),
-    ("MineralMgFeAl", True, True),
 ]
 
 
@@ -111,7 +96,9 @@ def _find_plugin(name: str):
 
 
 @pytest.mark.parametrize("cls_name,needs_minerals,needs_oxides", CHART_TEST_PARAMS)
-def test_chart_renders(cls_name: str, needs_minerals: bool, needs_oxides: bool, chart_data: ChartData):
+def test_chart_renders(
+    cls_name: str, needs_minerals: bool, needs_oxides: bool, chart_data: ChartData
+):
     plugin = _find_plugin(cls_name)
     fig = plugin.render(chart_data)
     assert fig is not None, f"{cls_name}.render() returned None"
@@ -152,14 +139,6 @@ def test_defect_chart_stacked(chart_data: ChartData):
     plt.close(fig)
 
 
-def test_radar_chart_sample_idx(chart_data: ChartData):
-    plugin = _find_plugin("RadarChart")
-    fig = plugin.render(chart_data, sample_idx=3)
-    assert fig is not None
-    import matplotlib.pyplot as plt
-    plt.close(fig)
-
-
 def test_empty_chart_data():
     empty = ChartData()
     for plugin in BUILTIN_CHARTS:
@@ -167,3 +146,22 @@ def test_empty_chart_data():
         assert fig is not None, f"{type(plugin).__name__}.render(empty) returned None"
         import matplotlib.pyplot as plt
         plt.close(fig)
+
+
+def test_builtin_charts_registry_lazy_and_stable():
+    """Ленивый реестр: тот же список объектов при повторном доступе.
+
+    Регрессия на PEP 562 __getattr__ в src/charts(/built_in)/__init__:
+    порядок BUILTIN_CHARTS позиционный (индекс = type_id в GUI),
+    повторный импорт обязан возвращать те же экземпляры.
+    """
+    import importlib
+
+    import src.charts as charts_pkg
+    import src.charts.built_in as built_in_pkg
+
+    again = importlib.reload(built_in_pkg)  # reload сбрасывает ленивый кэш
+    charts_pkg.BUILTIN_CHARTS  # noqa: B018 — доступ через __getattr__ родителя
+    assert len(again.BUILTIN_CHARTS) == len(BUILTIN_CHARTS) == 8
+    assert [type(p) for p in again.BUILTIN_CHARTS] == [type(p) for p in BUILTIN_CHARTS]
+    assert len({p.get_name() for p in BUILTIN_CHARTS}) == 8

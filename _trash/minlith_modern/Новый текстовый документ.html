@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Настройки</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f7fa;
+    --panel: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --danger: #ef4444;
+    --success: #10b981;
+  }
+  [data-theme="dark"] {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: #334155;
+    --accent: #60a5fa;
+    --accent-hover: #3b82f6;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: 260px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 0;
+  }
+  .sidebar h2 {
+    padding: 0 24px 20px;
+    font-size: 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .search-box {
+    margin: 0 16px 16px;
+    position: relative;
+  }
+  .search-box input {
+    width: 100%;
+    padding: 9px 12px 9px 34px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+  }
+  .search-box::before {
+    content: "🔍";
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    opacity: 0.6;
+  }
+  .nav-list {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 24px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+  }
+  .nav-item:hover {
+    background: var(--bg);
+    color: var(--text);
+  }
+  .nav-item.active {
+    background: var(--bg);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+  .nav-item .icon { font-size: 18px; }
+
+  /* ===== Main ===== */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .topbar {
+    padding: 20px 32px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .topbar h1 { font-size: 22px; }
+  .topbar .actions { display: flex; gap: 10px; }
+  .btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn.primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.danger { color: var(--danger); }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px;
+  }
+  .section { display: none; animation: fade 0.25s ease; }
+  .section.active { display: block; }
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .card h3 {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .card .desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* ===== Setting rows ===== */
+  .setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  .setting:first-of-type { border-top: none; }
+  .setting-info { flex: 1; padding-right: 20px; }
+  .setting-info .label {
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .setting-info .sublabel {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+  .tooltip {
+    cursor: help;
+    color: var(--muted);
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .tooltip:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: 130%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: var(--panel);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  /* Toggle */
+  .switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: var(--border); border-radius: 24px;
+    transition: 0.25s;
+  }
+  .slider::before {
+    content: ""; position: absolute;
+    height: 18px; width: 18px; left: 3px; bottom: 3px;
+    background: white; border-radius: 50%;
+    transition: 0.25s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  input:checked + .slider { background: var(--accent); }
+  input:checked + .slider::before { transform: translateX(20px); }
+
+  /* Range */
+  .range-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 200px;
+  }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+  .range-value {
+    font-size: 13px;
+    color: var(--muted);
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Select / input */
+  select, input[type="text"], input[type="number"] {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+    min-width: 160px;
+  }
+  select:focus, input:focus { border-color: var(--accent); }
+
+  /* Radio group */
+  .radio-group { display: flex; gap: 8px; }
+  .radio-group label {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .radio-group input { display: none; }
+  .radio-group input:checked + span {
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .radio-group label:has(input:checked) {
+    border-color: var(--accent);
+    background: var(--bg);
+  }
+
+  /* Color picker */
+  .color-picker {
+    display: flex;
+    gap: 8px;
+  }
+  .color-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s;
+  }
+  .color-dot:hover { transform: scale(1.1); }
+  .color-dot.selected { border-color: var(--text); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--text);
+    color: var(--panel);
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 100;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--success); color: white; }
+
+  /* Changes indicator */
+  .changes-badge {
+    background: var(--accent);
+    color: white;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    display: none;
+  }
+  .changes-badge.show { display: inline-block; }
+
+  /* Hidden by search */
+  .setting.hidden { display: none; }
+  .card.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <h2>⚙️ Настройки</h2>
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Поиск настроек...">
+  </div>
+  <nav class="nav-list">
+    <div class="nav-item active" data-section="general"><span class="icon">🏠</span> Общие</div>
+    <div class="nav-item" data-section="appearance"><span class="icon">🎨</span> Внешний вид</div>
+    <div class="nav-item" data-section="notifications"><span class="icon">🔔</span> Уведомления</div>
+    <div class="nav-item" data-section="privacy"><span class="icon">🔒</span> Приватность</div>
+    <div class="nav-item" data-section="audio"><span class="icon">🔊</span> Звук и медиа</div>
+    <div class="nav-item" data-section="account"><span class="icon">👤</span> Аккаунт</div>
+    <div class="nav-item" data-section="about"><span class="icon">ℹ️</span> О программе</div>
+  </nav>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <h1 id="pageTitle">Общие <span class="changes-badge" id="changesBadge">есть изменения</span></h1>
+    <div class="actions">
+      <button class="btn" id="resetBtn">Сбросить</button>
+      <button class="btn primary" id="saveBtn">Сохранить</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- GENERAL -->
+    <div class="section active" id="general">
+      <div class="card">
+        <h3>Язык и регион</h3>
+        <p class="desc">Параметры локализации интерфейса</p>
+        <div class="setting">
+          <div class="setting-info">
+            <div class="label">Язык интерфейса</div>
+            <div class="sublabel">Выберите язык приложения</div>
+          </div>
+          <select>
+            <option>Русский</option><option>English</option><option>Deutsch</option>
+          </select>
+        </div>
+        <div class="setting">
+          <div class="setting-info">
+            <div class="label">Часовой пояс <span class="tooltip" data-tip="Используется для отображения времени">?</span></div>
+          </div>
+          <select><option>UTC+3 (Москва)</option><option>UTC+5 (Екатеринбург)</option></select>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Формат даты</div></div>
+          <div class="radio-group">
+            <label><input type="radio" name="date" checked><span>ДД.ММ.ГГГГ</span></label>
+            <label><input type="radio" name="date"><span>ММ/ДД/ГГ</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Запуск</h3>
+        <p class="desc">Поведение приложения при старте</p>
+        <div class="setting">
+          <div class="setting-info">
+            <div class="label">Запускать при старте системы</div>
+            <div class="sublabel">Автоматически открывать приложение</div>
+          </div>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Сворачивать в трей</div></div>
+          <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPEARANCE -->
+    <div class="section" id="appearance">
+      <div class="card">
+        <h3>Тема</h3>
+        <p class="desc">Настройка внешнего вида</p>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Тёмная тема</div></div>
+          <label class="switch"><input type="checkbox" id="themeToggle"><span class="slider"></span></label>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Акцентный цвет</div></div>
+          <div class="color-picker">
+            <div class="color-dot selected" style="background:#3b82f6" data-color="#3b82f6"></div>
+            <div class="color-dot" style="background:#10b981" data-color="#10b981"></div>
+            <div class="color-dot" style="background:#f59e0b" data-color="#f59e0b"></div>
+            <div class="color-dot" style="background:#ef4444" data-color="#ef4444"></div>
+            <div class="color-dot" style="background:#8b5cf6" data-color="#8b5cf6"></div>
+          </div>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Размер шрифта</div></div>
+          <div class="range-wrap">
+            <input type="range" min="12" max="20" value="14" id="fontSize">
+            <span class="range-value" id="fontSizeVal">14px</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="section" id="notifications">
+      <div class="card">
+        <h3>Уведомления</h3>
+        <p class="desc">Настройте, о чём хотите получать оповещения</p>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Включить уведомления</div></div>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Звук уведомлений</div></div>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Показывать баннеры</div></div>
+          <select><option>Всегда</option><option>Только активные</option><option>Никогда</option></select>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Режим «Не беспокоить»</div></div>
+          <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIVACY -->
+    <div class="section" id="privacy">
+      <div class="card">
+        <h3>Конфиденциальность</h3>
+        <p class="desc">Управление вашими данными</p>
+        <div class="setting">
+          <div class="setting-info">
+            <div class="label">Собирать аналитику <span class="tooltip" data-tip="Анонимная статистика использования">?</span></div>
+          </div>
+          <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Отправлять отчёты об ошибках</div></div>
+          <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Двухфакторная аутентификация</div></div>
+          <label class="switch"><input type="checkbox"><span class="slider"></span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUDIO -->
+    <div class="section" id="audio">
+      <div class="card">
+        <h3>Звук</h3>
+        <p class="desc">Громкость и аудио-настройки</p>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Общая громкость</div></div>
+          <div class="range-wrap">
+            <input type="range" min="0" max="100" value="70" class="range-input">
+            <span class="range-value">70%</span>
+          </div>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Громкость уведомлений</div></div>
+          <div class="range-wrap">
+            <input type="range" min="0" max="100" value="50" class="range-input">
+            <span class="range-value">50%</span>
+          </div>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Устройство вывода</div></div>
+          <select><option>По умолчанию</option><option>Динамики</option><option>Наушники</option></select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="section" id="account">
+      <div class="card">
+        <h3>Профиль</h3>
+        <p class="desc">Информация о вашем аккаунте</p>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Имя пользователя</div></div>
+          <input type="text" value="Kokos">
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Email</div></div>
+          <input type="text" value="kokos@example.com">
+        </div>
+      </div>
+      <div class="card">
+        <h3>Опасная зона</h3>
+        <p class="desc">Необратимые действия</p>
+        <div class="setting">
+          <div class="setting-info">
+            <div class="label">Удалить аккаунт</div>
+            <div class="sublabel">Все данные будут удалены безвозвратно</div>
+          </div>
+          <button class="btn danger">Удалить</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT -->
+    <div class="section" id="about">
+      <div class="card">
+        <h3>О программе</h3>
+        <p class="desc">Информация о версии</p>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Версия</div></div>
+          <span style="color:var(--muted);font-size:13px">1.0.0 (build 1234)</span>
+        </div>
+        <div class="setting">
+          <div class="setting-info"><div class="label">Проверить обновления</div></div>
+          <button class="btn">Проверить</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // Навигация
+  const navItems = document.querySelectorAll('.nav-item');
+  const sections = document.querySelectorAll('.section');
+  const pageTitle = document.getElementById('pageTitle');
+  const badge = document.getElementById('changesBadge');
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      navItems.forEach(n => n.classList.remove('active'));
+      sections.forEach(s => s.classList.remove('active'));
+      item.classList.add('active');
+      const id = item.dataset.section;
+      document.getElementById(id).classList.add('active');
+      pageTitle.firstChild.textContent = item.textContent.trim() + ' ';
+    });
+  });
+
+  // Toast
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // Счётчик изменений
+  let changes = 0;
+  function markChanged() {
+    changes++;
+    badge.classList.add('show');
+  }
+  document.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('change', markChanged);
+    if (el.type === 'range') el.addEventListener('input', markChanged);
+  });
+
+  // Сохранить
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    changes = 0;
+    badge.classList.remove('show');
+    showToast('✓ Настройки сохранены', 'success');
+  });
+
+  // Сбросить
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('Сбросить все изменения?')) {
+      location.reload();
+    }
+  });
+
+  // Тёмная тема
+  document.getElementById('themeToggle').addEventListener('change', e => {
+    document.documentElement.setAttribute('data-theme', e.target.checked ? 'dark' : 'light');
+  });
+
+  // Слайдеры с отображением значения
+  document.querySelectorAll('.range-input, #fontSize').forEach(r => {
+    r.addEventListener('input', e => {
+      const val = e.target.nextElementSibling;
+      val.textContent = e.target.value + (e.target.id === 'fontSize' ? 'px' : '%');
+    });
+  });
+
+  // Цветовые точки
+  document.querySelectorAll('.color-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+      dot.classList.add('selected');
+      document.documentElement.style.setProperty('--accent', dot.dataset.color);
+      markChanged();
+    });
+  });
+
+  // Поиск
+  document.getElementById('search').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    document.querySelectorAll('.section').forEach(sec => {
+      let visibleCards = 0;
+      sec.querySelectorAll('.card').forEach(card => {
+        let visibleSettings = 0;
+        card.querySelectorAll('.setting').forEach(s => {
+          const text = s.textContent.toLowerCase();
+          if (text.includes(q)) {
+            s.classList.remove('hidden');
+            visibleSettings++;
+          } else {
+            s.classList.add('hidden');
+          }
+        });
+        if (visibleSettings > 0 || !q) {
+          card.classList.remove('hidden');
+          visibleCards++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    });
+  });
+</script>
+
+</body>
+</html>

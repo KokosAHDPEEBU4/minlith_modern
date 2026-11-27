@@ -1,6 +1,6 @@
 """Tests for validation — validate_sample."""
 
-from src.core.models import OxideComposition, CalculationConfig
+from src.core.models import CalculationConfig, OxideComposition
 from src.core.validation import validate_sample
 
 

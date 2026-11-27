@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import logging
-
 from PyQt6.QtWidgets import QVBoxLayout, QWidget
 
 from src.gui.widgets.log_widget import LogWidget
@@ -28,8 +26,9 @@ class LogsPage(QWidget):
             handler.set_callback(self._log_widget.append)
 
     def refresh_from_handler(self) -> None:
-        """Load all buffered records from the handler."""
+        """Reload all buffered records from the handler (idempotent)."""
         handler = get_gui_handler()
         if handler:
+            self._log_widget.clear()
             for record in handler.get_records():
                 self._log_widget.append(record)

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+import time
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QTextCursor
+from PyQt6.QtGui import QTextCursor
 from PyQt6.QtWidgets import (
+    QComboBox,
     QHBoxLayout,
     QLabel,
     QPlainTextEdit,
@@ -16,20 +16,16 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-_LEVEL_COLORS = {
-    logging.DEBUG: QColor(150, 150, 150),
-    logging.INFO: QColor(200, 200, 200),
-    logging.WARNING: QColor(255, 200, 50),
-    logging.ERROR: QColor(255, 100, 100),
-    logging.CRITICAL: QColor(255, 50, 50),
-}
+_LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR")
 
 
 class LogWidget(QWidget):
     """Виджет для отображения логов приложения."""
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._records: list[logging.LogRecord] = []
+        self._filter_level: int = logging.INFO
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -38,7 +34,13 @@ class LogWidget(QWidget):
         self._level_label = QLabel("Уровень:")
         toolbar.addWidget(self._level_label)
 
-        self._filter_level = logging.INFO
+        self._level_combo = QComboBox()
+        self._level_combo.addItems(_LEVELS)
+        self._level_combo.setCurrentText("INFO")
+        self._level_combo.setToolTip("Минимальный уровень сообщений в журнале")
+        self._level_combo.currentTextChanged.connect(self._on_level_changed)
+        toolbar.addWidget(self._level_combo)
+
         toolbar.addStretch()
 
         self._btn_clear = QPushButton("Очистить")
@@ -54,25 +56,44 @@ class LogWidget(QWidget):
         layout.addWidget(self._text)
 
     def append(self, record: logging.LogRecord) -> None:
-        if record.levelno < self._filter_level:
-            return
-        color = _LEVEL_COLORS.get(record.levelno, QColor(200, 200, 200))
-        msg = record.getMessage()
-        level_name = logging.getLevelName(record.levelno)
-        line = f"[{record.asctime}] [{level_name}] {record.name}: {msg}\n"
+        self._records.append(record)
+        if len(self._records) > 5000:
+            del self._records[:1000]
+        if record.levelno >= self._filter_level:
+            self._insert(record)
 
+    def _format_record(self, record: logging.LogRecord) -> str:
+        stamp = getattr(record, "asctime", None)
+        if not stamp:
+            stamp = time.strftime("%H:%M:%S", time.localtime(record.created))
+        level_name = logging.getLevelName(record.levelno)
+        return f"[{stamp}] [{level_name}] {record.name}: {record.getMessage()}\n"
+
+    def _insert(self, record: logging.LogRecord) -> None:
         cursor = self._text.textCursor()
         cursor.movePosition(QTextCursor.MoveOperation.End)
         self._text.setTextCursor(cursor)
-
-        self._text.setReadOnly(False)
-        cursor.insertText(line)
-        self._text.setReadOnly(True)
-
-        self._text.verticalScrollBar().setValue(self._text.verticalScrollBar().maximum())
+        cursor.insertText(self._format_record(record))
+        scrollbar = self._text.verticalScrollBar()
+        if scrollbar is not None:
+            scrollbar.setValue(scrollbar.maximum())
 
     def set_filter_level(self, level: int) -> None:
         self._filter_level = level
+        self._rerender()
+
+    def _on_level_changed(self, text: str) -> None:
+        self.set_filter_level(logging.getLevelName(text))
+
+    def _rerender(self) -> None:
+        self._text.clear()
+        for record in self._records:
+            if record.levelno >= self._filter_level:
+                self._insert(record)
+
+    def clear(self) -> None:
+        self._records.clear()
+        self._text.clear()
 
     def _clear(self) -> None:
-        self._text.clear()
+        self.clear()

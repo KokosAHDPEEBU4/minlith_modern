@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Optional
 
 import numpy as np
 
@@ -173,6 +172,19 @@ class Sample:
     composition: OxideComposition
 
 
+# Допустимые значения ``calculation_engine`` (как считает модель).
+CALCULATION_ENGINES = (
+    "excel_parity", "excel_exact", "geological_theory", "python_rework",
+)
+
+# Старые имена движков → новые (обратная совместимость конфигов/кода).
+LEGACY_ENGINE_ALIASES = {
+    "clean": "excel_parity",
+    "stub": "geological_theory",
+    "custom": "python_rework",
+}
+
+
 @dataclass(frozen=True)
 class CalculationConfig:
     """Configuration for calculation."""
@@ -188,7 +200,12 @@ class CalculationConfig:
     include_parameters: bool = True
     timeout_seconds: int = 120
     batch_size: int | str = "auto"
-    algorithm_mode: str = "stub"  # "stub" | "custom"
+    # "excel_parity" | "excel_exact" | "geological_theory" | "python_rework"
+    # (безопасный дефолт; приложение явно ставит "excel_parity")
+    calculation_engine: str = "geological_theory"
+    # Ручной выбор веток (override): {decision_id: branch_id}. Пусто — авто.
+    branch_overrides: dict[str, str] = field(default_factory=dict)
+    forced_path: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -204,6 +221,9 @@ class CalculationResult:
     minerals_weight: MineralComposition     # in weight %
     defect: dict[str, float]               # oxide residuals
     warnings: list[str]
-    debug_trace: Optional[object] = None
-    geo_params: Optional[object] = None    # GeoParameters (CIA, ICV, PIA, ASI, AI)
-    anomalies: Optional[list] = None       # list[AnomalyHypothesis]
+    debug_trace: object | None = None
+    geo_params: object | None = None    # GeoParameters (CIA, ICV, PIA, ASI, AI)
+    anomalies: list | None = None       # list[AnomalyHypothesis]
+    # Маршрут веток движка (для графа разветвлений/диагностики). Заполняется
+    # движками, которые его отдают (excel_parity); у остальных None.
+    branch_path: dict | None = None

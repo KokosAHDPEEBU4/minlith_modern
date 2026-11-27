@@ -4,7 +4,7 @@ build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
 name = "minlith-modern"
-version = "0.6.8"
+version = "0.7.0"
 description = "Normative mineralogical calculation from rock chemical composition"
 readme = "README.md"
 license = {text = "MIT"}
@@ -76,3 +76,10 @@ disallow_untyped_defs = true
 line-length = 100
 target-version = "py312"
 select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N801", "N802", "N803", "N806"]
+"src/core/coefficients.py" = ["N803"]
+"src/core/models.py" = ["N802", "N803"]
+"src/database/mappers.py" = ["N803"]
+"src/gui/widgets/drag_drop_widget.py" = ["N802"]

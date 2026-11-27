@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction, QKeySequence, QShortcut
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence, QShortcut
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
@@ -14,29 +13,31 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
-    QScrollArea,
-    QSplitter,
     QStackedWidget,
+    QToolBar,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
 from src.core.calculator import Calculator
-from src.core.models import CalculationConfig, Sample
-from src.io.excel import load_samples, save_results
-from src.utils.config import ConfigManager
-from src.utils.cache import ResultCache
-from src.gui.pages.welcome_page import WelcomePage
-from src.gui.pages.files_page import FilesPage
-from src.gui.pages.input_page import InputPage
-from src.gui.pages.results_page import ResultsPage
-from src.gui.pages.settings_page import SettingsPage
-from src.gui.pages.history_page import HistoryPage
+from src.core.models import LEGACY_ENGINE_ALIASES, CalculationConfig, Sample
+from src.gui.dialogs.calculation_dialog import CalculationDialog
+from src.gui.layout import normalize_page_layout
+from src.gui.pages.branch_graph_page import BranchGraphPage
 from src.gui.pages.charts_page import ChartsPage
-from src.gui.pages.reports_page import ReportsPage
+from src.gui.pages.files_page import FilesPage
+from src.gui.pages.history_page import HistoryPage
+from src.gui.pages.input_page import InputPage
 from src.gui.pages.logs_page import LogsPage
 from src.gui.pages.output_page import OutputPage
-from src.gui.dialogs.calculation_dialog import CalculationDialog
+from src.gui.pages.reports_page import ReportsPage
+from src.gui.pages.results_page import ResultsPage
+from src.gui.pages.settings_page import SettingsPage
+from src.gui.pages.welcome_page import WelcomePage
+from src.io.excel import save_results
+from src.utils.cache import ResultCache
+from src.utils.config import ConfigManager
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("MINLITH Modern v0.6.8 — Нормативный минералогический расчёт")
+        self.setWindowTitle("MINLITH Modern v0.7.0 — Нормативный минералогический расчёт")
         self.setMinimumSize(1100, 650)
 
         self._config = ConfigManager()
@@ -56,6 +57,54 @@ class MainWindow(QMainWindow):
         # Apply chart theme from settings
         from src.charts.engines.matplotlib_engine import set_chart_theme
         set_chart_theme(self._config.get("chart_theme", "dark"))
+
+        # ── Тулбар движков расчёта ──
+        self._engine_bar = QToolBar("Движки расчёта")
+        self._engine_bar.setObjectName("engineBar")
+        self._engine_bar.setMovable(False)
+        self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._engine_bar)
+
+        self._btn_excel_parity = QToolButton()
+        self._btn_excel_parity.setObjectName("engineParity")
+        self._btn_excel_parity.setText("Excel (корректные округл.)")
+        self._btn_excel_parity.setCheckable(True)
+        self._btn_excel_parity.setToolTip(
+            "excel_parity — алгоритм Excel с корректными округлениями "
+            "(float64, без накопления ошибки ROUND)")
+        self._btn_excel_parity.clicked.connect(
+            lambda: self._set_engine("excel_parity"))
+        self._engine_bar.addWidget(self._btn_excel_parity)
+
+        self._btn_excel_exact = QToolButton()
+        self._btn_excel_exact.setObjectName("engineExact")
+        self._btn_excel_exact.setText("Excel 1:1 (ROUND)")
+        self._btn_excel_exact.setCheckable(True)
+        self._btn_excel_exact.setToolTip(
+            "excel_exact — полная 1:1 копия Excel: пошаговые ROUND как в книге "
+            "(с накоплением ошибки округления)")
+        self._btn_excel_exact.clicked.connect(
+            lambda: self._set_engine("excel_exact"))
+        self._engine_bar.addWidget(self._btn_excel_exact)
+
+        self._btn_geological_theory = QToolButton()
+        self._btn_geological_theory.setText("Геол. теория")
+        self._btn_geological_theory.setCheckable(True)
+        self._btn_geological_theory.setToolTip(
+            "geological_theory — самостоятельная попытка по геологической теории")
+        self._btn_geological_theory.clicked.connect(
+            lambda: self._set_engine("geological_theory"))
+        # Not added to the top toolbar until the engine is finished.
+
+        self._btn_python_rework = QToolButton()
+        self._btn_python_rework.setText("Python-переработка")
+        self._btn_python_rework.setCheckable(True)
+        self._btn_python_rework.setToolTip(
+            "python_rework — реализация, переработанная под Python (плейсхолдер)")
+        self._btn_python_rework.clicked.connect(
+            lambda: self._set_engine("python_rework"))
+        # Not added to the top toolbar until the engine is finished.
+
+        self._update_engine_buttons()
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -72,7 +121,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.setSpacing(2)
 
         title = QLabel("MINLITH")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #89b4fa; padding: 8px 4px;")
+        title.setObjectName("appTitle")
         sidebar_layout.addWidget(title)
 
         self._nav_buttons: list[QPushButton] = []
@@ -86,6 +135,7 @@ class MainWindow(QMainWindow):
             ("Отчёты", "\U0001f4c4"),
             ("История", "\U0001f4c1"),
             ("Настройки", "\u2699\ufe0f"),
+            ("Граф", "\U0001f500"),
             ("Журнал", "\U0001f4dd"),
         ]
 
@@ -118,14 +168,19 @@ class MainWindow(QMainWindow):
 
         self._input_page = InputPage(self._calculator)
         self._input_page.calculation_done.connect(self._on_calculation_done)
+        self._input_page.batch_calculate_requested.connect(self.calculate_batch)
 
         self._results_page = ResultsPage()
         self._charts_page = ChartsPage()
         self._output_page = OutputPage()
         self._reports_page = ReportsPage()
+        self._charts_page.dataChanged.connect(self._output_page.set_data)
+        self._apply_zoom_step()
+
         self._settings_page = SettingsPage(self._config)
         self._settings_page.settings_changed.connect(self._on_settings_changed)
         self._history_page = HistoryPage()
+        self._branch_graph_page = BranchGraphPage(calculator=self._calculator)
         self._logs_page = LogsPage()
 
         self._stack.addWidget(self._welcome_page)
@@ -137,9 +192,25 @@ class MainWindow(QMainWindow):
         self._stack.addWidget(self._reports_page)
         self._stack.addWidget(self._history_page)
         self._stack.addWidget(self._settings_page)
+        self._stack.addWidget(self._branch_graph_page)
         self._stack.addWidget(self._logs_page)
 
         main_layout.addWidget(self._stack)
+
+        # Shared margins/headers for every content page (Settings/Welcome have
+        # their own bespoke layouts).
+        for page, title, add_header in (
+            (self._files_page, "Файлы", False),
+            (self._input_page, "Ввод данных", False),
+            (self._results_page, "Результаты", False),
+            (self._charts_page, "Диаграммы", False),
+            (self._output_page, "Вывод диаграмм", False),
+            (self._reports_page, "Отчёты", True),
+            (self._history_page, "История", False),
+            (self._branch_graph_page, "Граф разветвлений", False),
+            (self._logs_page, "Журнал", True),
+        ):
+            normalize_page_layout(page, title, add_header=add_header)
 
         # Default to Welcome page
         self._switch_page(0)
@@ -170,6 +241,8 @@ class MainWindow(QMainWindow):
         self._stack.setCurrentIndex(index)
         for i, btn in enumerate(self._nav_buttons):
             btn.setChecked(i == index)
+        if hasattr(self, "_logs_page") and self._stack.widget(index) is self._logs_page:
+            self._logs_page.refresh_from_handler()
 
     def _on_save(self) -> None:
         """Ctrl+S — quick export results."""
@@ -191,7 +264,12 @@ class MainWindow(QMainWindow):
                 from src.io.excel import save_results_json
                 save_results_json(path, results)
             else:
-                save_results(path, results)
+                save_results(
+                    path, results,
+                    include_defect=self._config.get("include_defect", True),
+                    include_formula_units=self._config.get("include_formula_units", False),
+                    include_parameters=self._config.get("include_parameters", True),
+                )
             self.statusBar().showMessage(f"Экспортировано: {path}")
         except Exception as e:
             QMessageBox.critical(self, "Ошибка экспорта", str(e))
@@ -202,17 +280,17 @@ class MainWindow(QMainWindow):
         if samples:
             s = samples[0]
             self._input_page.set_composition(s.composition, s.name)
-            self.statusBar().showMessage(f"Загружен: {s.name}")
+            self._input_page.set_all_samples(samples)
+            self.statusBar().showMessage(f"Загружено: {len(samples)} образцов")
 
     def _on_calculate_from_files(self, samples: list) -> None:
         self.calculate_batch(samples)
 
     def _on_calculation_done(self, result) -> None:
         self._results_page.add_result(result)
-        chart_data = self._charts_page.build_data_from_results(self._results_page._results)
-        self._charts_page.set_data(chart_data)
-        self._output_page.set_data(chart_data)
+        self._charts_page.set_results(self._results_page._results)
         self._reports_page.set_results(self._results_page._results)
+        self._branch_graph_page.set_results(self._results_page._results)
         self._switch_page(3)  # Results
         self.statusBar().showMessage(
             f"{result.sample_name} -> {result.rock_type.name}  "
@@ -228,20 +306,38 @@ class MainWindow(QMainWindow):
         if dialog.exec():
             for result in dialog.results:
                 self._results_page.add_result(result)
+            # Update UI first, then persist in background so the GUI never blocks.
+            self._switch_page(3)
+            self._charts_page.set_results(dialog.results)
+            self._reports_page.set_results(dialog.results)
+            self._branch_graph_page.set_results(dialog.results)
+            self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
+            self._persist_results(dialog.results)
+
+    def _persist_results(self, results: list) -> None:
+        """Save results to DB without blocking the UI thread."""
+
+        def _run(repo_results: list) -> None:
+            from src.database.repository import SampleRepository
+            repo = SampleRepository()
+            for result in repo_results:
                 try:
-                    from src.database.repository import SampleRepository
-                    repo = SampleRepository()
                     repo.save_result(result)
                 except Exception as e:
                     logger.warning("Failed to save result to DB: %s", e)
-            self._switch_page(3)
-            chart_data = self._charts_page.build_data_from_results(dialog.results)
-            self._charts_page.set_data(chart_data)
-            self._output_page.set_data(chart_data)
-            self._reports_page.set_results(dialog.results)
-            self.statusBar().showMessage(f"Рассчитано {len(dialog.results)} образцов")
 
-    def closeEvent(self, event) -> None:
+        from PyQt6.QtCore import QThread
+
+        class _SaveThread(QThread):  # noqa: N801
+            def run(self) -> None:  # type: ignore[override]
+                _run(results)
+
+        thread = _SaveThread(self)
+        thread.finished.connect(thread.deleteLater)
+        thread.start()
+        self._save_thread = thread
+
+    def closeEvent(self, event) -> None:  # noqa: N802  # PyQt override
         geom = self.saveGeometry().toHex().data().decode()
         self._config["window_geometry"] = geom
         self._config.save()
@@ -261,32 +357,33 @@ class MainWindow(QMainWindow):
             include_parameters=self._config.get("include_parameters", True),
             timeout_seconds=self._config.get("timeout_seconds", 120),
             batch_size=self._config.get("batch_size", "auto"),
-            algorithm_mode=self._config.get("algorithm_mode", "stub"),
+            calculation_engine=self._config.get("calculation_engine", "excel_parity"),
         )
 
     def _create_calculator(self) -> Calculator:
-        """Create Calculator with current config and algorithm mode."""
+        """Create Calculator with current config and calculation engine."""
         config = self._build_config()
-        mode = config.algorithm_mode
+        logger.info("Calculation engine: %s", config.calculation_engine)
+        return Calculator(config=config)
 
-        if mode == "custom":
-            # Placeholder for user's custom algorithm implementation.
-            # When ready, import and use the custom algorithm class here.
-            # Example:
-            #   from src.core.my_algorithm import MyAlgorithm
-            #   return Calculator(config=config, algorithm=MyAlgorithm())
-            logger.info("Algorithm mode: custom (using stub as placeholder)")
-            return Calculator(config=config)
-        else:
-            # Default stub algorithm (approximate, waiting for VBA port)
-            logger.info("Algorithm mode: stub")
-            return Calculator(config=config)
+    def _apply_zoom_step(self) -> None:
+        """Распространить ``chart.zoom_step`` из конфига на страницы диаграмм.
+
+        Шаг применяется мгновенно ко всем существующим плиткам без пересоздания.
+        """
+        step = self._config.get("chart.zoom_step", 1.2)
+        for page in (self._charts_page, self._output_page):
+            page.set_zoom_step(step)
 
     def _on_settings_changed(self) -> None:
         """Rebuild calculator and apply all settings immediately."""
+        # 0. Apply chart interaction settings (zoom step)
+        self._apply_zoom_step()
+
         # 1. Rebuild calculator with new config
         self._calculator = self._create_calculator()
         self._input_page._calculator = self._calculator
+        self._branch_graph_page.set_calculator(self._calculator)
         logger.info("Calculator rebuilt with new settings")
 
         # 2. Invalidate cache (settings may change results)
@@ -309,8 +406,30 @@ class MainWindow(QMainWindow):
                 app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
                 logger.info("Theme reloaded: %s", theme)
 
-        # 4. Clear stale results/charts since config changed
+        # 5. Clear stale results/charts since config changed
         if self._results_page._results:
             self._results_page.clear()
             self._charts_page.set_data(None)
+            self._output_page.set_data(None)
             logger.info("Results cleared due to settings change")
+
+        # 6. Sync engine toolbar buttons with config
+        self._update_engine_buttons()
+
+    def _set_engine(self, engine: str) -> None:
+        """Переключить движок расчёта из тулбара."""
+        self._config["calculation_engine"] = engine
+        self._config.save()
+        self._on_settings_changed()
+        self._update_engine_buttons()
+        if hasattr(self._settings_page, "_calculation_engine"):
+            self._settings_page._calculation_engine.setCurrentText(engine)
+
+    def _update_engine_buttons(self) -> None:
+        """Синхронизировать состояние кнопок тулбара с конфигом."""
+        engine = self._config.get("calculation_engine", "excel_parity")
+        engine = LEGACY_ENGINE_ALIASES.get(engine, engine)
+        self._btn_excel_parity.setChecked(engine == "excel_parity")
+        self._btn_excel_exact.setChecked(engine == "excel_exact")
+        self._btn_geological_theory.setChecked(engine == "geological_theory")
+        self._btn_python_rework.setChecked(engine == "python_rework")

@@ -5,14 +5,21 @@ from pathlib import Path
 import win32com.client
 
 XLSM = r"C:\Users\kokos\Desktop\Lene\Ispravlenny_MINLITH1_2010.xlsm"
-OUT = Path(r"C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\excel_port\data\reference_multi.json")
+OUT = Path(
+    r"C:\Users\kokos\Desktop\Lene\minlith_modern\src\core\excel_port\data\reference_multi.json"
+)
 
 SAMPLES = {
-    "arkose_t1":    {"SiO2":70.0,"Al2O3":12.0,"Fe2O3":1.0,"FeO":0.5,"MgO":0.3,"CaO":0.5,"Na2O":3.0,"K2O":6.0},
-    "granite_t2":   {"SiO2":72.0,"Al2O3":14.0,"Fe2O3":1.5,"FeO":1.0,"MgO":0.5,"CaO":1.5,"Na2O":3.5,"K2O":4.5,"P2O5":0.2},
-    "basalt_t3":    {"SiO2":50.0,"Al2O3":14.5,"Fe2O3":3.0,"FeO":9.0,"MgO":8.0,"CaO":10.5,"Na2O":2.5,"K2O":0.5,"TiO2":1.5,"P2O5":0.3},
-    "quartzite_t4": {"SiO2":95.0,"Al2O3":2.5,"Fe2O3":0.5,"FeO":0.3,"MgO":0.2,"CaO":0.1,"Na2O":0.2,"K2O":0.5},
-    "highal_t5":    {"SiO2":45.0,"Al2O3":35.0,"Fe2O3":2.0,"FeO":5.0,"MgO":3.0,"CaO":1.0,"Na2O":2.0,"K2O":4.0},
+    "arkose_t1":    {"SiO2":70.0,"Al2O3":12.0,"Fe2O3":1.0,"FeO":0.5,
+                     "MgO":0.3,"CaO":0.5,"Na2O":3.0,"K2O":6.0},
+    "granite_t2":   {"SiO2":72.0,"Al2O3":14.0,"Fe2O3":1.5,"FeO":1.0,
+                     "MgO":0.5,"CaO":1.5,"Na2O":3.5,"K2O":4.5,"P2O5":0.2},
+    "basalt_t3":    {"SiO2":50.0,"Al2O3":14.5,"Fe2O3":3.0,"FeO":9.0,
+                     "MgO":8.0,"CaO":10.5,"Na2O":2.5,"K2O":0.5,"TiO2":1.5,"P2O5":0.3},
+    "quartzite_t4": {"SiO2":95.0,"Al2O3":2.5,"Fe2O3":0.5,"FeO":0.3,
+                     "MgO":0.2,"CaO":0.1,"Na2O":0.2,"K2O":0.5},
+    "highal_t5":    {"SiO2":45.0,"Al2O3":35.0,"Fe2O3":2.0,"FeO":5.0,
+                     "MgO":3.0,"CaO":1.0,"Na2O":2.0,"K2O":4.0},
 }
 
 ROW_OF = {"SiO2":2,"TiO2":3,"Al2O3":4,"Fe2O3":5,"FeO":6,"MgO":7,"CaO":8,

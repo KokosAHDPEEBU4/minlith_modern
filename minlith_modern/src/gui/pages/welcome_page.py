@@ -22,15 +22,16 @@ class WelcomePage(QWidget):
 
         layout = QVBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addStretch(1)
 
         # Title
         title = QLabel("MINLITH Modern")
-        title.setStyleSheet("font-size: 28px; font-weight: bold; color: #89b4fa;")
+        title.setObjectName("welcomeTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
 
         subtitle = QLabel("Нормативный минералогический расчёт")
-        subtitle.setStyleSheet("font-size: 14px; color: #a6adc8;")
+        subtitle.setObjectName("welcomeSubtitle")
         subtitle.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(subtitle)
 
@@ -61,7 +62,7 @@ class WelcomePage(QWidget):
             "Перетащите файлы .xlsx/.csv на вкладку «Файлы» для начала работы.\n"
             "Или введите значения оксидов вручную на вкладке «Ввод»."
         )
-        info.setStyleSheet("color: #6c7086; font-size: 12px;")
+        info.setObjectName("welcomeHint")
         info.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(info)
 

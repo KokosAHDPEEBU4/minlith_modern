@@ -3,8 +3,12 @@
 import pytest
 
 from src.core.models import (
-    OxideComposition, MineralComposition, FormulaUnits,
-    Sample, AdaptiveCoefficients, RockType,
+    AdaptiveCoefficients,
+    FormulaUnits,
+    MineralComposition,
+    OxideComposition,
+    RockType,
+    Sample,
 )
 
 

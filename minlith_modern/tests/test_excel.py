@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
-
-import pytest
-
 from src.core.models import OxideComposition, Sample
 from src.io.excel import (
     MINERAL_FIELD_MAP,
-    load_samples,
     save_results,
     save_results_csv,
-    save_results_json,
 )
 
 
@@ -41,7 +34,12 @@ class TestMineralFieldMap:
 
 class TestSaveResultsXlsx:
     def test_creates_file(self, tmp_path):
-        from src.core.models import CalculationResult, AdaptiveCoefficients, RockType, MineralComposition
+        from src.core.models import (
+            AdaptiveCoefficients,
+            CalculationResult,
+            MineralComposition,
+            RockType,
+        )
         result = CalculationResult(
             sample_name="T-O2",
             input_composition=_make_sample().composition,
@@ -58,7 +56,12 @@ class TestSaveResultsXlsx:
         assert path.exists()
 
     def test_has_all_sheets(self, tmp_path):
-        from src.core.models import CalculationResult, AdaptiveCoefficients, RockType, MineralComposition
+        from src.core.models import (
+            AdaptiveCoefficients,
+            CalculationResult,
+            MineralComposition,
+            RockType,
+        )
         result = CalculationResult(
             sample_name="Test",
             input_composition=_make_sample().composition,
@@ -82,7 +85,12 @@ class TestSaveResultsXlsx:
 
 class TestSaveResultsCsv:
     def test_creates_file(self, tmp_path):
-        from src.core.models import CalculationResult, AdaptiveCoefficients, RockType, MineralComposition
+        from src.core.models import (
+            AdaptiveCoefficients,
+            CalculationResult,
+            MineralComposition,
+            RockType,
+        )
         result = CalculationResult(
             sample_name="Test",
             input_composition=_make_sample().composition,

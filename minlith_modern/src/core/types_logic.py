@@ -36,16 +36,14 @@ Consumption per formula unit:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
+from src.core.debug_tracer import DebugTraceCollector
 from src.core.models import (
     AdaptiveCoefficients,
     FormulaUnits,
     MineralComposition,
 )
-from src.core.debug_tracer import DebugTraceCollector
 
 
 def _calc_an(al1: float, si1: float, ca: float) -> tuple[float, float, float]:
@@ -94,7 +92,7 @@ def _calc_kn_gb(al_resid: float, si_resid: float) -> tuple[float, float, float]:
 def calculate_type1(
     fu: FormulaUnits,
     coeff: AdaptiveCoefficients,
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> MineralComposition:
     """Type 1: Al <= 1.2Na + K. Feldspars only."""
     na = fu.na2o
@@ -125,7 +123,7 @@ def calculate_type1(
 def calculate_type2(
     fu: FormulaUnits,
     coeff: AdaptiveCoefficients,
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> MineralComposition:
     """Type 2: Al <= 1.2Na + 3.25K. Feldspars + illite."""
     na = fu.na2o
@@ -167,7 +165,7 @@ def calculate_type2(
 def calculate_type3(
     fu: FormulaUnits,
     coeff: AdaptiveCoefficients,
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> MineralComposition:
     """Type 3: Al <= 1.2Na + 3.25K + (Mg - 0.5K*k3)/k1.
 
@@ -228,7 +226,7 @@ def calculate_type3(
 def calculate_type4(
     fu: FormulaUnits,
     coeff: AdaptiveCoefficients,
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> MineralComposition:
     """Type 4: Al <= 5Na + 3.25K + (Mg - 0.5K - 2Na)*k3/k1.
 
@@ -299,7 +297,7 @@ def calculate_type4(
 def calculate_type5(
     fu: FormulaUnits,
     coeff: AdaptiveCoefficients,
-    tracer: Optional[DebugTraceCollector] = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> MineralComposition:
     """Type 5: everything else (highest Al).
 
@@ -370,9 +368,9 @@ def calculate_type5(
 def stage_vi(
     fu: FormulaUnits,
     minerals: MineralComposition,
-    fe: "np.ndarray",
-    coeff: Optional[AdaptiveCoefficients] = None,
-    tracer: Optional[DebugTraceCollector] = None,
+    fe: np.ndarray,
+    coeff: AdaptiveCoefficients | None = None,
+    tracer: DebugTraceCollector | None = None,
 ) -> MineralComposition:
     """Stage VI: Final distribution of remaining elements.
 

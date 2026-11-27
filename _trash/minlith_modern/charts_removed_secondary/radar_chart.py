@@ -1,0 +1,102 @@
+"""Radar/spider chart — mineral profile of a single sample."""
+
+from __future__ import annotations
+
+from typing import Any
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from src.charts.base import ChartData, ChartPlugin
+from src.charts.data_builder import mineral_label, visible_mineral_fields
+from src.charts.engines.matplotlib_engine import (
+    create_figure,
+    get_accent,
+    get_bg_color,
+    get_fg_color,
+    get_grid_color,
+)
+
+
+class RadarChart(ChartPlugin):
+    def get_name(self) -> str:
+        return "Mineral Radar"
+
+    def get_description(self) -> str:
+        return "Профиль минералов одного образца (spider diagram)"
+
+    @property
+    def requires_minerals(self) -> bool:
+        return True
+
+    @property
+    def requires_oxides(self) -> bool:
+        return False
+
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
+        bg = get_bg_color()
+        fg = get_fg_color()
+        grid = get_grid_color()
+        accent = get_accent()
+
+        fields = visible_mineral_fields(data)
+        if not fields:
+            return create_figure(title="No mineral data")
+
+        sample_idx = kwargs.get("sample_idx", 0)
+        sample_name = (
+            data.sample_names[sample_idx]
+            if sample_idx < len(data.sample_names)
+            else "Sample"
+        )
+
+        # Keep the radar readable: show at most the 12 most abundant minerals.
+        ranked = sorted(
+            fields,
+            key=lambda f: float(data.minerals_wt[f][sample_idx])
+            if sample_idx < len(data.minerals_wt[f]) else 0.0,
+            reverse=True,
+        )[:12]
+        values = [
+            float(data.minerals_wt[f][sample_idx])
+            if sample_idx < len(data.minerals_wt[f]) else 0.0
+            for f in ranked
+        ]
+        names = [mineral_label(f) for f in ranked]
+        n = len(names)
+        if n < 3:
+            fig = create_figure(title=f"{sample_name} — need ≥3 minerals for radar")
+            return fig
+
+        max_val = max(values) if values else 1.0
+        if max_val == 0:
+            max_val = 1.0
+
+        angles = np.linspace(0, 2 * np.pi, n, endpoint=False).tolist()
+        values_plot = values + [values[0]]
+        angles += [angles[0]]
+
+        def fmt(v: float) -> str:
+            return f"{v:.2g}" if max_val < 1 else f"{v:.1f}"
+
+        ticks = [0.25 * max_val, 0.5 * max_val, 0.75 * max_val, max_val]
+
+        fig = plt.figure(figsize=(8, 8), facecolor=bg)
+        fig.suptitle(f"{sample_name} — Mineral Profile", color=fg, fontsize=14,
+                     fontweight="bold", y=0.98)
+        ax = fig.add_subplot(111, polar=True)
+        ax.set_facecolor(bg)
+
+        ax.plot(angles, values_plot, color=accent, linewidth=2, linestyle="-")
+        ax.fill(angles, values_plot, color=accent, alpha=0.25)
+
+        ax.set_xticks(np.linspace(0, 2 * np.pi, n, endpoint=False))
+        ax.set_xticklabels(names, fontsize=8, color=fg)
+        ax.set_yticks(ticks)
+        ax.set_yticklabels([fmt(v) for v in ticks], fontsize=7, color=fg)
+        ax.set_ylim(0, max_val * 1.1)
+        ax.tick_params(colors=fg)
+        ax.grid(color=grid, alpha=0.5)
+
+        fig.tight_layout()
+        return fig

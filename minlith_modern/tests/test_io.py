@@ -4,10 +4,14 @@ import tempfile
 from pathlib import Path
 
 from src.core.models import (
-    OxideComposition, Sample, CalculationResult, MineralComposition,
-    AdaptiveCoefficients, RockType, FormulaUnits,
+    AdaptiveCoefficients,
+    CalculationResult,
+    FormulaUnits,
+    MineralComposition,
+    OxideComposition,
+    RockType,
 )
-from src.io.excel import save_results, save_results_json, save_results_csv
+from src.io.excel import save_results, save_results_csv, save_results_json
 
 
 def _make_result(name="test", sio2=52.5):

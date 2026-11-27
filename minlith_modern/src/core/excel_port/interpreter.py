@@ -21,9 +21,9 @@ resolver — объект с методом resolve(coord_or_name, sheet) -> flo
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Callable, Optional
+from functools import lru_cache
 
 # ---------------------------------------------------------------------------
 # ROUND как в Excel: half away from zero
@@ -107,11 +107,17 @@ def _tokenize(s: str) -> list[Token]:
             i += 1
             continue
         if ch == "(":
-            toks.append(Token("lparen", ch)); i += 1; continue
+            toks.append(Token("lparen", ch))
+            i += 1
+            continue
         if ch == ")":
-            toks.append(Token("rparen", ch)); i += 1; continue
+            toks.append(Token("rparen", ch))
+            i += 1
+            continue
         if ch == ",":
-            toks.append(Token("comma", ch)); i += 1; continue
+            toks.append(Token("comma", ch))
+            i += 1
+            continue
         # число
         m = _NUM_RE.match(s, i)
         if m:
@@ -151,7 +157,9 @@ def _tokenize(s: str) -> list[Token]:
                 continue
             raise FormulaError(f"Неожиданный символ '$' на позиции {i} в: {s}")
         if ch == ":":
-            toks.append(Token("colon", ch)); i += 1; continue
+            toks.append(Token("colon", ch))
+            i += 1
+            continue
         raise FormulaError(f"Неожиданный символ {ch!r} на позиции {i} в: {s}")
     toks.append(Token("eof", ""))
     return toks
@@ -201,6 +209,16 @@ class NegNode:
 # ---------------------------------------------------------------------------
 # Парсер (recursive descent)
 # ---------------------------------------------------------------------------
+
+@lru_cache(maxsize=4096)
+def _parse_cached(body: str) -> object:
+    """Разобрать тело формулы (без '=') в AST.
+
+    Формулы книги статичны, а eval_node узлы не мутирует, поэтому AST
+    переиспользуется между прогонами и потоками (чтение без записи).
+    """
+    return _Parser(_tokenize(body)).parse()
+
 
 class _Parser:
     def __init__(self, toks: list[Token]):
@@ -335,8 +353,7 @@ class FormulaEvaluator:
         body = formula.strip()
         if body.startswith("="):
             body = body[1:]
-        toks = _tokenize(body)
-        ast = _Parser(toks).parse()
+        ast = _parse_cached(body)
         return self.eval_node(ast)
 
     def eval_node(self, node) -> object:
@@ -369,25 +386,25 @@ class FormulaEvaluator:
         return bool(v)
 
     def _binop(self, node: BinOpNode) -> object:
-        l = self.eval_node(node.left)
-        r = self.eval_node(node.right)
+        left = self.eval_node(node.left)
+        right = self.eval_node(node.right)
         op = node.op
         if op == "plus":
-            return self._num(l) + self._num(r)
+            return self._num(left) + self._num(right)
         if op == "minus":
-            return self._num(l) - self._num(r)
+            return self._num(left) - self._num(right)
         if op == "star":
-            return self._num(l) * self._num(r)
+            return self._num(left) * self._num(right)
         if op == "slash":
-            den = self._num(r)
+            den = self._num(right)
             if den == 0:
                 # Excel: деление на 0 -> #DIV/0!. В MINLITH встречается как текст
                 # (формулы не исполняются); вернём None.
                 return None
-            return self._num(l) / den
+            return self._num(left) / den
         # сравнения
-        lv = self._num(l)
-        rv = self._num(r)
+        lv = self._num(left)
+        rv = self._num(right)
         if op == "lt":
             return lv < rv
         if op == "gt":

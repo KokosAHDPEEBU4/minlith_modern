@@ -9,13 +9,11 @@ import math
 import numpy as np
 import pytest
 
-from src.core.algorithm import AlgorithmInput, AlgorithmOutput
-from src.core.calculator import Calculator, CalculationTimeoutError
+from src.core.calculator import Calculator
 from src.core.coefficients import calculate_coefficients
 from src.core.constants import FORMULA_WEIGHTS, MOLAR_MASSES_IUPAC, OXIDE_ORDER
 from src.core.models import (
     AdaptiveCoefficients,
-    CalculationConfig,
     FormulaUnits,
     MineralComposition,
     OxideComposition,
@@ -24,11 +22,8 @@ from src.core.models import (
 )
 from src.core.types_logic import (
     calculate_type1,
-    calculate_type2,
     calculate_type3,
-    calculate_type4,
 )
-
 
 # T-O2 reference sample (from Excel Нач+Type 12, row 287)
 TO2_OXIDES = dict(
@@ -40,6 +35,13 @@ TO2_EXPECTED = dict(
     ab=7.82, an=0.0, or_=5.53, ill=36.26, chl=25.74,
     kn=-9.77, srp=1.55, prl=0.19, ap=0.72, ht=0.99, q=31.38,
 )
+
+
+def _calc_t_o2():
+    """Calculate the T-O2 reference sample."""
+    return Calculator().calculate_single(
+        Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES))
+    )
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -192,12 +194,12 @@ class TestStep1_Feldspars:
 
     def test_step1_t_o2_ab(self):
         """T-O2: Ab should be > 0 (stub gives approximate)."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.ab > 0
 
     def test_step1_t_o2_or(self):
         """T-O2: Or should be > 0 (stub gives approximate)."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.or_ > 0
 
     # Следующий шаг: Шаг 2 — иллит + хлорит.
@@ -235,12 +237,12 @@ class TestStep2_IlliteChlorite:
 
     def test_step2_t_o2_chl(self):
         """T-O2: Chl = 0 по теории (весь Al → иллит + каолинит, файл 06)."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.chl == pytest.approx(0.0, abs=1.0)
 
     def test_step2_t_o2_ill(self):
         """T-O2: Ill >= 0 (stub gives 0, calibrated gives ~36)."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.ill >= 0
 
     # Следующий шаг: Шаг 3 — каолинит + гиббсит.
@@ -272,7 +274,7 @@ class TestStep3_KaoliniteGibbsite:
 
     def test_step3_negative_kn_allowed(self):
         """Kn can be negative (valid artifact in some types)."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert isinstance(result.minerals_weight.kn, float)
 
     # Следующий шаг: Шаг 4 — кварц.
@@ -302,7 +304,7 @@ class TestStep4_Quartz:
 
     def test_step4_t_o2_q(self):
         """T-O2: Q > 0 (stub gives ~10, calibrated gives ~31)."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.q > 0
 
     # Следующий шаг: Шаг 5 — карбонаты + оксиды.
@@ -342,12 +344,12 @@ class TestStep5_CarbonatesOxides:
 
     def test_step5_t_o2_srp(self):
         """T-O2: Srp ≈ 1.55%."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.srp == pytest.approx(1.55, abs=2.0)
 
     def test_step5_t_o2_prl(self):
         """T-O2: Prl ≈ 0.19%."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.prl == pytest.approx(0.19, abs=0.5)
 
     # Следующий шаг: Шаг 6 — аксессуары.
@@ -363,12 +365,12 @@ class TestStep6_Accessories:
 
     def test_step6_ap_from_p2o5(self):
         """Apatite from P2O5."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.ap >= 0
 
     def test_step6_t_o2_ap(self):
         """T-O2: Ap ≈ 0.72%."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.minerals_weight.ap == pytest.approx(0.72, abs=0.5)
 
     def test_step6_hl_from_cl(self):
@@ -414,7 +416,7 @@ class TestStep7_WeightConversion:
 
     def test_step7_all_weights_finite(self):
         """All mineral weights must be finite."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         for field in result.minerals_weight.__dict__:
             if field.startswith("_"):
                 continue
@@ -434,7 +436,7 @@ class TestStep8_Normalization:
 
     def test_step8_sum_100(self):
         """After normalization, sum ≈ 100%."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         total = sum(v for k, v in result.minerals_weight.__dict__.items() if not k.startswith("_"))
         assert math.isclose(total, 100.0, abs_tol=0.5)
 
@@ -468,7 +470,7 @@ class TestStep9_Defect:
 
     def test_step9_defect_is_dict(self):
         """Defect must be a dict with string keys and float values."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert isinstance(result.defect, dict)
         for k, v in result.defect.items():
             assert isinstance(k, str)
@@ -476,13 +478,13 @@ class TestStep9_Defect:
 
     def test_step9_defect_has_all_oxides(self):
         """Defect must have entries for all oxides."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         for oxide in OXIDE_ORDER:
             assert oxide in result.defect, f"Missing oxide in defect: {oxide}"
 
     def test_step9_defect_small_for_well_fitted(self):
         """For a well-fitted calculation, major oxide defects should be reasonable."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         # Defects are in formula units — stub algorithm has large defects (expected)
         sio2_defect = abs(result.defect.get("sio2", 0))
         assert math.isfinite(sio2_defect)
@@ -500,25 +502,25 @@ class TestStep10_GeochemAnomalies:
 
     def test_step10_geo_params_present(self):
         """Geo params must be present."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert result.geo_params is not None
 
     def test_step10_anomalies_is_list(self):
         """Anomalies must be a list."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert isinstance(result.anomalies, list)
 
     def test_step10_anomaly_detector_runs(self):
         """AnomalyDetector must not crash."""
         from src.core.anomaly_detector import AnomalyDetector
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         detector = AnomalyDetector()
         anomalies = detector.analyze(result)
         assert isinstance(anomalies, list)
 
     def test_step10_warnings_present(self):
         """Warnings list must be present."""
-        result = Calculator().calculate_single(Sample(name="T-O2", composition=OxideComposition(**TO2_OXIDES)))
+        result = _calc_t_o2()
         assert isinstance(result.warnings, list)
 
     # Следующий шаг: Финальный прогон всех тестов.
@@ -569,7 +571,8 @@ class TestFullPipeline:
         calc = Calculator()
         samples = [
             Sample(name="S1", composition=OxideComposition(sio2=70.0, al2o3=15.0)),
-            Sample(name="S2", composition=OxideComposition(sio2=52.5, al2o3=23.41, feo=8.06, mgo=2.35)),
+            Sample(name="S2", composition=OxideComposition(sio2=52.5, al2o3=23.41,
+                                                       feo=8.06, mgo=2.35)),
         ]
         results = calc.calculate(samples)
         assert len(results) == 2

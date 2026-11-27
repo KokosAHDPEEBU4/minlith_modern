@@ -17,8 +17,8 @@ def load_samples_from_zip(path: str | Path) -> list[Sample]:
 
     Supports nested ZIPs one level deep. Returns combined sample list.
     """
-    from src.io.excel import load_samples
     from src.io.csv_handler import read_csv
+    from src.io.excel import load_samples
 
     path = Path(path)
     samples: list[Sample] = []

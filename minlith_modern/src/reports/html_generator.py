@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 from jinja2 import Template
 
 from src.core.models import CalculationResult
-from src.reports.template_builder import ReportTemplate, ReportBlock, BlockType
+from src.reports.chart_renderer import render_chart_base64
+from src.reports.template_builder import BlockType, ReportBlock, ReportTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,15 @@ HTML_TEMPLATE = """\
 body { font-family: "Segoe UI", Arial, sans-serif; margin: 20px; background: #fafafa; color: #333; }
 h1 { color: #1e1e2e; border-bottom: 2px solid #4a9eff; padding-bottom: 8px; }
 h2 { color: #45475a; margin-top: 24px; }
-table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; background: white;
+box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 th { background: #1e1e2e; color: white; padding: 8px 12px; text-align: left; font-size: 13px; }
 td { padding: 6px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
 tr:nth-child(even) { background: #f8f9fa; }
 .negative { color: #e74c3c; }
 .param { font-weight: bold; color: #4a9eff; }
-.footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 11px; color: #999; }
+.footer { margin-top: 32px; padding-top: 12px; border-top:
+1px solid #ddd; font-size: 11px; color: #999; }
 </style>
 </head>
 <body>
@@ -54,6 +56,16 @@ def _block_html(block: ReportBlock, results: list[CalculationResult]) -> str:
 
     if block.block_type == BlockType.TEXT:
         return f"<p>{block.text_content}</p>"
+
+    if block.block_type == BlockType.CHART:
+        img_src = render_chart_base64(
+            block.chart_type, results, block.chart_sample_idx)
+        if img_src:
+            title = f"<h2>{block.title}</h2>" if block.title else ""
+            return (f"{title}\n<div style=\"text-align:center; margin: 8px 0;\">"
+                    f"<img src=\"{img_src}\" style=\"max-width:100%; height:auto;\">"
+                    f"</div>")
+        return f"<p><em>Диаграмма «{block.chart_type}» не построена.</em></p>"
 
     if block.block_type == BlockType.MINERAL_TABLE:
         return _mineral_table_html(results, block)
@@ -80,8 +92,13 @@ def _mineral_table_html(results: list[CalculationResult], block: ReportBlock) ->
     ]
 
     if block.min_wt_percent > 0:
-        minerals = [(c, f) for c, f in minerals
-                    if any(getattr(r.minerals_weight, f, 0.0) >= block.min_wt_percent for r in results)]
+        minerals = [
+            (c, f) for c, f in minerals
+            if any(
+                getattr(r.minerals_weight, f, 0.0) >= block.min_wt_percent
+                for r in results
+            )
+        ]
 
     title = f"<h2>{block.title}</h2>" if block.title else ""
     headers = "".join(f"<th>{r.sample_name}</th>" for r in results)
@@ -162,7 +179,7 @@ class HTMLGenerator:
     def generate(
         self,
         path: Path,
-        template: Optional[ReportTemplate] = None,
+        template: ReportTemplate | None = None,
         title: str = "MINLITH Report",
     ) -> None:
         from datetime import datetime
@@ -173,8 +190,6 @@ class HTMLGenerator:
             ReportBlock(BlockType.PARAMETERS, title="Parameters"),
         ]
 
-        block_htmls = [_block_html(b, self._results) for b in blocks]
-
         tmpl = Template(HTML_TEMPLATE)
         html = tmpl.render(
             title=title,
@@ -182,6 +197,5 @@ class HTMLGenerator:
             block_html=lambda b: _block_html(b, self._results),
             timestamp=datetime.now().strftime("%Y-%m-%d %H:%M"),
         )
-
         path.write_text(html, encoding="utf-8")
         logger.info("HTML exported: %s", path)

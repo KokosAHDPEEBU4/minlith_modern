@@ -5,15 +5,15 @@ from __future__ import annotations
 import io
 import logging
 from pathlib import Path
-from typing import Optional
 
 from docx import Document
-from docx.shared import Inches, Pt, RGBColor
-from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.shared import Inches
 
 from src.core.models import CalculationResult
-from src.reports.template_builder import ReportTemplate, ReportBlock, BlockType
+from src.reports.chart_renderer import render_chart_png
+from src.reports.template_builder import BlockType, ReportBlock, ReportTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class WordGenerator:
     def generate(
         self,
         path: Path,
-        template: Optional[ReportTemplate] = None,
+        template: ReportTemplate | None = None,
         title: str = "MINLITH Report",
     ) -> None:
         doc = Document()
@@ -207,50 +207,8 @@ class WordGenerator:
             for j, r in enumerate(self._results, 1):
                 table.cell(i, j).text = f"{r.defect.get(oxide, 0.0):.2f}"
 
-    def _render_chart_image(self, block: ReportBlock) -> Optional[bytes]:
-        try:
-            from src.charts import BUILTIN_CHARTS, ChartData
-            import numpy as np
-
-            chart = None
-            for c in BUILTIN_CHARTS:
-                if block.chart_type.lower() in c.get_name().lower():
-                    chart = c
-                    break
-            if not chart:
-                return None
-
-            data = self._build_chart_data()
-            fig = chart.render(data, sample_idx=block.chart_sample_idx)
-
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight",
-                        facecolor=fig.get_facecolor())
-            import matplotlib.pyplot as plt
-            plt.close(fig)
-            buf.seek(0)
-            return buf.read()
-        except Exception as e:
-            logger.warning("Chart render for Word failed: %s", e)
-            return None
-
-    def _build_chart_data(self) -> "ChartData":
-        from src.charts import ChartData
-        import numpy as np
-
-        data = ChartData(sample_names=[r.sample_name for r in self._results])
-
-        for field in ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb",
-                       "ap", "cc", "dl", "ank", "rch", "sd", "srp", "mst", "ht", "prl"]:
-            data.minerals_wt[field] = np.array([getattr(r.minerals_weight, field, 0.0) for r in self._results])
-
-        for field in ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao", "na2o", "k2o"]:
-            data.oxides[field] = np.array([getattr(r.input_composition, field, 0.0) for r in self._results])
-
-        data.rock_types = [int(r.rock_type) for r in self._results]
-
-        if self._results and self._results[0].defect:
-            for oxide in self._results[0].defect:
-                data.defect[oxide] = np.array([r.defect.get(oxide, 0.0) for r in self._results])
-
-        return data
+    def _render_chart_image(self, block: ReportBlock) -> bytes | None:
+        return render_chart_png(
+            block.chart_type, self._results,
+            sample_idx=block.chart_sample_idx, dpi=150,
+        )

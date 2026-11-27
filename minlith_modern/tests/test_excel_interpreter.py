@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from src.core.excel_port.interpreter import (
-    FormulaError,
     FormulaEvaluator,
     xround,
 )

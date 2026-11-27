@@ -43,11 +43,12 @@ def _make_result(name: str = "TestRock") -> CalculationResult:
 def repo():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
+
     from src.database.models import Base
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
-    Session = sessionmaker(bind=engine)
-    return SampleRepository(session=Session())
+    session_maker = sessionmaker(bind=engine)
+    return SampleRepository(session=session_maker())
 
 
 class TestSampleRepository:

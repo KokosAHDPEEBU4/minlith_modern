@@ -5,18 +5,23 @@ from __future__ import annotations
 import io
 import logging
 from pathlib import Path
-from typing import Optional
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image,
+    Image,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    Table,
+    TableStyle,
 )
 
-from src.core.models import CalculationResult, MineralComposition
-from src.reports.template_builder import ReportTemplate, ReportBlock, BlockType
+from src.core.models import CalculationResult
+from src.reports.chart_renderer import render_chart_png
+from src.reports.template_builder import BlockType, ReportBlock, ReportTemplate
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +59,7 @@ class PDFGenerator:
     def generate(
         self,
         path: Path,
-        template: Optional[ReportTemplate] = None,
+        template: ReportTemplate | None = None,
         title: str = "MINLITH Report",
     ) -> None:
         doc = SimpleDocTemplate(
@@ -173,7 +178,9 @@ class PDFGenerator:
             data.append(row)
 
         # Sum row
-        data.append(["Σ"] + [f"{sum(r.minerals_weight.__dict__.values()):.1f}" for r in self._results])
+        data.append(
+            ["Σ"] + [f"{sum(r.minerals_weight.__dict__.values()):.1f}" for r in self._results]
+        )
 
         table = Table(data, repeatRows=1)
         style = [
@@ -201,7 +208,9 @@ class PDFGenerator:
         header = ["Oxide"] + [r.sample_name for r in self._results]
         data = [header]
         for label, field in oxides:
-            row = [label] + [f"{getattr(r.input_composition, field, 0.0):.2f}" for r in self._results]
+            row = [label] + [
+                f"{getattr(r.input_composition, field, 0.0):.2f}" for r in self._results
+            ]
             data.append(row)
 
         table = Table(data, repeatRows=1)
@@ -268,56 +277,9 @@ class PDFGenerator:
         table.setStyle(TableStyle(style))
         return table
 
-    def _render_chart_image(self, block: ReportBlock) -> Optional[bytes]:
+    def _render_chart_image(self, block: ReportBlock) -> bytes | None:
         """Render a chart to PNG bytes for embedding."""
-        try:
-            from src.charts import BUILTIN_CHARTS, ChartData
-            import numpy as np
-
-            chart_map = {c.get_name().lower(): c for c in BUILTIN_CHARTS}
-            chart = chart_map.get(block.chart_type.lower())
-            if not chart:
-                # Try matching by partial name
-                for c in BUILTIN_CHARTS:
-                    if block.chart_type.lower() in c.get_name().lower():
-                        chart = c
-                        break
-            if not chart:
-                return None
-
-            data = self._build_chart_data()
-            fig = chart.render(data, sample_idx=block.chart_sample_idx)
-
-            buf = io.BytesIO()
-            fig.savefig(buf, format="png", dpi=150, bbox_inches="tight",
-                        facecolor=fig.get_facecolor())
-            import matplotlib.pyplot as plt
-            plt.close(fig)
-            buf.seek(0)
-            return buf.read()
-        except Exception as e:
-            logger.warning("Failed to render chart for PDF: %s", e)
-            return None
-
-    def _build_chart_data(self) -> "ChartData":
-        from src.charts import ChartData
-        import numpy as np
-
-        data = ChartData(sample_names=[r.sample_name for r in self._results])
-
-        mineral_fields = ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb",
-                          "ap", "cc", "dl", "ank", "rch", "sd", "srp", "mst", "ht", "prl"]
-        for field in mineral_fields:
-            data.minerals_wt[field] = np.array([getattr(r.minerals_weight, field, 0.0) for r in self._results])
-
-        oxide_fields = ["sio2", "al2o3", "fe2o3", "feo", "mgo", "cao", "na2o", "k2o"]
-        for field in oxide_fields:
-            data.oxides[field] = np.array([getattr(r.input_composition, field, 0.0) for r in self._results])
-
-        data.rock_types = [int(r.rock_type) for r in self._results]
-
-        if self._results and self._results[0].defect:
-            for oxide in self._results[0].defect:
-                data.defect[oxide] = np.array([r.defect.get(oxide, 0.0) for r in self._results])
-
-        return data
+        return render_chart_png(
+            block.chart_type, self._results,
+            sample_idx=block.chart_sample_idx, dpi=150,
+        )

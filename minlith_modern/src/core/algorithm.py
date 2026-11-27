@@ -4,18 +4,19 @@ This is the interface that must be implemented when the VBA macro is found.
 The calculator calls algorithm.compute() with all preprocessed inputs,
 and gets back mineral formula units.
 
-To integrate VBA macro:
-  1. Read the macro's branching logic line by line
+To integrate a new engine:
+  1. Read the reference branching logic line by line
   2. Implement compute() to reproduce it
-  3. Swap StubAlgorithm for your implementation in calculator.py
+  3. Register the engine in Calculator._algorithm_for_engine (calculator.py)
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional, Protocol, runtime_checkable
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
-import numpy as np
+if TYPE_CHECKING:
+    from src.core.branch_overrides import BranchOverrides
 
 
 @dataclass(frozen=True)
@@ -61,6 +62,14 @@ class AlgorithmInput:
     # Rock type (1-5)
     rock_type: int
 
+    # Исходные весовые проценты оксидов (ключи как в Excel: "SiO2", "TiO2"…).
+    # Нужны движку excel_exact, который, как и книга MINLITH, сам пересчитывает
+    # вес.% -> ф.е. с пошаговым ROUND. Для остальных движков необязательно.
+    oxide_wt: dict[str, float] | None = None
+
+    # Ручной выбор веток (override). Пусто/None — авто-выбор (поведение не меняется).
+    overrides: BranchOverrides | None = None
+
 
 @dataclass
 class AlgorithmOutput:
@@ -98,8 +107,31 @@ class AlgorithmOutput:
     Ht: float = 0.0    # Hematite
     Prl: float = 0.0   # Pyrolusite
 
-    # Остаточные пулы оксидов (defect по теории). Заполняется TheoryAlgorithm.
-    residuals: Optional[dict[str, float]] = None
+    # Остаточные пулы оксидов (defect по теории). Заполняется GeologicalTheoryAlgorithm.
+    residuals: dict[str, float] | None = None
+
+    # Маршрут веток алгоритма (для графа разветвлений/диагностики).
+    # Заполняется excel_parity; у остальных движков остаётся None.
+    path: dict | None = None
+
+    # Массовые проценты минералов — итоговая строка 287 книги «Нач+Type 12»
+    # (или её float64-эквивалент у excel_parity), ключ — поле MineralComposition.
+    # Заполняется excel-движками. Calculator использует их напрямую как
+    # ``minerals_weight`` вместо пересчёта ф.е.->вес.% + собственной нормировки,
+    # чтобы выгрузка совпадала с оригиналом. У теоретических движков — None.
+    weight_percent: dict[str, float] | None = None
+
+
+# Индекс в строке 287 листа «Нач+Type 12» (диапазон B..AI, 34 значения) ->
+# поле :class:`~src.core.models.MineralComposition` (в вес. %).
+# Позиции 0/1 — суммы D151/D154, 4 — Pln (=Ab+An), 28..33 — производные суммы;
+# они не мапятся (для них в MineralComposition есть отдельные поля-производные).
+ROW287_FIELDS: dict[int, str] = {
+    2: "ab", 3: "an", 5: "or_", 6: "q", 7: "mm", 8: "ill", 9: "chl",
+    10: "gb", 11: "kn", 12: "ap", 13: "c", 14: "cc", 15: "dl", 16: "ank",
+    17: "rch", 18: "sd", 19: "srp", 20: "mst", 21: "ht", 22: "prl",
+    23: "pr", 24: "rt", 25: "hl", 26: "gy", 27: "fl",
+}
 
 
 @runtime_checkable
@@ -107,8 +139,8 @@ class MineralAlgorithm(Protocol):
     """Protocol for normative mineral calculation algorithms.
 
     Implementations include:
-      - StubAlgorithm: placeholder with known stoichiometry
-      - VbaAlgorithm: when VBA macro is found and ported
+      - ExcelParityAlgorithm: «как в Excel» — точный паритет (без ROUND)
+      - GeologicalTheoryAlgorithm: расчёт по геологической теории (файлы 00-07)
     """
 
     def compute(self, inp: AlgorithmInput) -> AlgorithmOutput:

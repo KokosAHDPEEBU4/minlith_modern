@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Literal, Optional
+from typing import Literal
 
 from src.core.models import CalculationResult
 
@@ -116,10 +116,10 @@ def _check_phosphorus(result: CalculationResult) -> tuple[bool, list[str]]:
 def _check_negative_mineral(result: CalculationResult) -> tuple[bool, list[str]]:
     minerals = result.minerals_weight
     negative = []
-    for field in ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb"]:
-        val = getattr(minerals, field, 0.0)
+    for mineral in ["ab", "an", "or_", "q", "ill", "chl", "kn", "mm", "gb"]:
+        val = getattr(minerals, mineral, 0.0)
         if val < -0.1:
-            negative.append(field)
+            negative.append(mineral)
     return len(negative) > 0, negative
 
 
@@ -129,14 +129,14 @@ class AnomalyDetector:
     Singleton: use AnomalyDetector.instance() to get the shared instance.
     """
 
-    _instance: Optional["AnomalyDetector"] = None
+    _instance: AnomalyDetector | None = None
 
-    def __init__(self, rules_path: Optional[str] = None) -> None:
+    def __init__(self, rules_path: str | None = None) -> None:
         self._rules = list(_RULES)
         logger.debug("AnomalyDetector initialized with %d rules", len(self._rules))
 
     @classmethod
-    def instance(cls) -> "AnomalyDetector":
+    def instance(cls) -> AnomalyDetector:
         """Get the shared singleton instance."""
         if cls._instance is None:
             cls._instance = cls()
