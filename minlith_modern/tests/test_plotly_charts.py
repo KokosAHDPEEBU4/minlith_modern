@@ -80,18 +80,11 @@ def tmp_html(tmp_path):
 
 PLOTLY_CHARTS = [
     ("bar", {}),
-    ("pie", {"sample_idx": 0}),
-    ("defect", {"sample_idx": 1}),
+    ("pie", {}),
     ("heatmap", {}),
-    ("correlation", {}),
     ("boxplot", {}),
-    ("violin", {}),
-    ("parallel", {}),
     ("rock_type", {}),
-    ("kf", {}),
-    ("qapf", {}),
     ("acnk", {}),
-    ("afm", {}),
 ]
 
 
@@ -115,6 +108,7 @@ def test_plotly_chart_creates_html(
 def test_empty_data_plotly(chart_data, tmp_html):
     from src.charts.engines.plotly_charts import PLOTLY_CHARTS
     func = PLOTLY_CHARTS.get("bar")
+    assert func is not None
     empty = ChartData()
     func(empty, tmp_html)
     # should not crash, file may or may not be created

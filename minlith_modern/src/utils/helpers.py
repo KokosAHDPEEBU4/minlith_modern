@@ -84,55 +84,6 @@ def cation_moles(oxide_val: float, mw: float, n_cations: int) -> float:
     return (oxide_val / mw) * n_cations
 
 
-# ── Rock classification helpers ─────────────────────────────────────────────
-
-
-def tas_classify(total_alkali: float, silica: float) -> str:
-    """Simple TAS classification (Le Maitre et al. 2002)."""
-    if silica < 45:
-        if total_alkali < 1.0:
-            return "Picrobasalt"
-        if total_alkali < 5.0:
-            return "Basalt"
-        return "Tephrite/Phonolite"
-    if silica < 52:
-        if total_alkali < 5.0:
-            return "Basalt"
-        if total_alkali < 7.0:
-            return "Basaltic Andesite"
-        return "Trachybasalt"
-    if silica < 57:
-        if total_alkali < 6.0:
-            return "Andesite"
-        return "Trachyandesite"
-    if silica < 63:
-        if total_alkali < 7.0:
-            return "Dacite"
-        return "Trachyte"
-    if total_alkali < 8.0:
-        return "Rhyolite"
-    return "Alkaline Rhyolite"
-
-
-def cipw_normative_feldspar(ab: float, an: float, or_: float) -> str:
-    """Simplified feldspar name from normative Ab, An, Or."""
-    total = ab + an + or_
-    if total == 0:
-        return "N/A"
-    p_ab = ab / total * 100
-    p_an = an / total * 100
-    p_or = or_ / total * 100
-    if p_an > 90:
-        return "Anorthosite"
-    if p_ab > 50 and p_or > 20:
-        return "Granite"
-    if p_ab > 60:
-        return "Trondhjemite"
-    if p_or > 50:
-        return "Alkali Feldspar Granite"
-    return "Diorite"
-
-
 # ── File hashing ────────────────────────────────────────────────────────────
 
 

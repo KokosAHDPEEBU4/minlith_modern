@@ -31,7 +31,7 @@ class BlandAltmanPlugin(ChartPlugin):
     def requires_oxides(self) -> bool:
         return False
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         fg = get_fg_color()
         grid = get_grid_color()
 
@@ -46,10 +46,13 @@ class BlandAltmanPlugin(ChartPlugin):
         label_a = compare.get("label_a", "Set A")
         label_b = compare.get("label_b", "Set B")
 
-        if not set_a or not set_b or len(set_a) != len(set_b):
-            # Return empty figure with grid instead of text placeholder
+        if not set_a or not set_b or len(set_a) != len(set_b) or len(set_a) < 2:
             ax.set_xlabel(f"Mean of {label_a} and {label_b}")
             ax.set_ylabel(f"Difference ({label_a} - {label_b})")
+            ax.text(0.5, 0.5,
+                    "Нужно ≥2 пар значений (metadata['compare'])",
+                    ha="center", va="center", fontsize=11,
+                    transform=ax.transAxes, color=fg)
             ax.grid(True, color=grid, alpha=0.3)
             fig.tight_layout()
             return fig
@@ -59,8 +62,8 @@ class BlandAltmanPlugin(ChartPlugin):
         mean_val = (a + b) / 2
         diff = a - b
 
-        mean_diff = np.mean(diff)
-        std_diff = np.std(diff, ddof=1)
+        mean_diff = float(np.mean(diff))
+        std_diff = float(np.std(diff, ddof=1))
         loa_upper = mean_diff + 1.96 * std_diff
         loa_lower = mean_diff - 1.96 * std_diff
 

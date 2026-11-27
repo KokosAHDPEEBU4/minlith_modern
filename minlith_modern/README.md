@@ -13,8 +13,8 @@ MINLITH Modern — это перезапись легендарной Excel-пр
 - PyQt6 GUI с drag-and-drop, предпросмотром, прогресс-барами
 - Настройки: сайдбар-навигация (Расчёт / Экспорт / Диаграммы / Интерфейс), поиск настроек, карточки, адаптация под тёмную/светлую тему
 - SQLite база данных с версионированием
-- 23 типов диаграмм (matplotlib): bar, pie, defect, QAPF, TAS, A-CN-K, heatmap, rock type, feldspar triangle, harker, AFM, SiO₂-K₂O, Bland-Altman, correlation, k1-k4, box plot, radar, coefficient heatmap, defect accumulation, PCA biplot, dendrogram, parallel coordinates, Mg-Fe-Al ternary
-- 14 интерактивных диаграмм (Plotly HTML): bar, TAS, harker, pie, QAPF, A-CN-K, AFM, heatmap, correlation, k1-k4, boxplot, violin, parallel, rock type (экспорт из GUI: «Диаграммы» → «Интерактивный HTML…», и CLI `--interactive`)
+- 8 типов диаграмм (matplotlib): bar, pie, defect, A-CN-K, heatmap, rock type, box plot, PCA biplot
+- 6 интерактивных диаграмм (Plotly HTML): bar, pie, A-CN-K, heatmap, boxplot, rock type (экспорт из GUI: «Диаграммы» → «Интерактивный HTML…», и CLI `--interactive`)
 - Диаграммы в GUI: вкладки (кнопка «＋» рядом с последней), три уровня выбора слева-направо (диаграммы | образцы | минералы), подсказка с именем образца при наведении на точку
 - Граф разветвлений: дерево решений, подсветка маршрута образца, ручной выбор ветки + пересчёт; сравнение движков `excel_parity` vs `excel_exact` «бок о бок» (страница «Результаты» → «Сравнить движки»)
 - Генератор отчётов (PDF, Word, HTML) с встроенными диаграммами
@@ -179,7 +179,7 @@ Python/PyInstaller проверяются автоматически (PyInstalle
 ## Тесты
 
 ```bash
-# Все тесты (1360 passed, 5 skipped)
+# Все тесты (1323 passed, 4 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -224,7 +224,7 @@ minlith_modern/
 │   ├── gui/            # PyQt6 GUI
 │   ├── utils/          # Кэш, конфиг, логгер
 │   └── cli.py          # CLI интерфейс
-├── tests/              # 1360 теста (5 skipped)
+├── tests/              # 1323 тестов (4 skipped)
 │   ├── test_property.py       # Hypothesis property-based
 │   ├── test_scenarios.py      # 75 scenario тестов
 │   ├── test_coverage_boost.py # Покрытие калибратора/кэша

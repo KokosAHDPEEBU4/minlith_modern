@@ -55,7 +55,7 @@ class ResultsTable(QWidget):
         self._header = QLabel("Результаты")
         self._header.setStyleSheet(
             "font-weight: bold; font-size: 14px; padding: 4px; "
-            "color: #e0e0e0; background: transparent;"
+            "color: palette(text); background: transparent;"
         )
         layout.addWidget(self._header)
 

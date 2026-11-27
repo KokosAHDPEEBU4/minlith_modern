@@ -251,3 +251,60 @@ def test_main_window_constructs_and_applies_zoom(qapp):
     window._apply_zoom_step()
     assert window._charts_page is not None
     assert window._output_page is not None
+
+
+def test_page_layout_tokens(qapp):
+    """Все контентные страницы используют общие поля/заголовок."""
+    from PyQt6.QtWidgets import QLabel
+
+    from src.gui.layout import PAGE_MARGINS, PAGE_SPACING
+    from src.gui.main_window import MainWindow
+
+    window = MainWindow()
+    pages = [
+        window._files_page, window._input_page, window._results_page,
+        window._charts_page, window._output_page, window._reports_page,
+        window._history_page, window._branch_graph_page, window._logs_page,
+    ]
+    for page in pages:
+        layout = page.layout()
+        assert layout is not None
+        margins = layout.contentsMargins()
+        assert (margins.left(), margins.top(), margins.right(),
+                margins.bottom()) == PAGE_MARGINS
+        assert layout.spacing() == PAGE_SPACING
+        assert page.findChildren(QLabel, "pageHeader"), type(page).__name__
+
+
+def test_engine_bar_offers_only_two_excel_engines(qapp):
+    """Сверху — только excel_parity/excel_exact; экспериментальные скрыты."""
+    from src.gui.main_window import MainWindow
+
+    window = MainWindow()
+    visible = []
+    for action in window._engine_bar.actions():
+        widget = window._engine_bar.widgetForAction(action)
+        if widget is not None:
+            visible.append(getattr(widget, "text")())
+    assert visible == [
+        "Excel (корректные округл.)",
+        "Excel 1:1 (ROUND)",
+    ]
+    assert window._btn_excel_parity.objectName() == "engineParity"
+    assert window._btn_excel_exact.objectName() == "engineExact"
+
+
+def test_log_widget_level_filter(qapp):
+    """Фильтр уровня в журнале скрывает/показывает записи."""
+    import logging
+
+    from src.gui.widgets.log_widget import LogWidget
+
+    widget = LogWidget()
+    widget.append(logging.LogRecord("test", logging.INFO, __file__, 1, "info", (), None))
+    widget.append(logging.LogRecord("test", logging.ERROR, __file__, 2, "error", (), None))
+    assert "info" in widget._text.toPlainText()
+    widget.set_filter_level(logging.ERROR)
+    text = widget._text.toPlainText()
+    assert "info" not in text
+    assert "error" in text

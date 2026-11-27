@@ -87,7 +87,7 @@ class CalculationDialog(QDialog):
         layout.addLayout(engine_row)
 
         self._engine_hint = QLabel("")
-        self._engine_hint.setStyleSheet("color: #888; font-size: 11px;")
+        self._engine_hint.setStyleSheet("color: palette(mid); font-size: 11px;")
         layout.addWidget(self._engine_hint)
 
         self._engine_combo.currentIndexChanged.connect(self._on_engine_changed)

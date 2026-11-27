@@ -16,7 +16,7 @@ python -m src.cli calculate input.xlsx -o results.xlsx
 ### 2. Тестирование
 
 ```bash
-# Все тесты (1382)
+# Все тесты (1323 passed, 4 skipped)
 python -m pytest tests/ -v
 
 # С покрытием
@@ -27,7 +27,19 @@ python -m pytest tests/ -x -q
 
 # Property-based тесты
 python -m pytest tests/test_property.py -v
+
+# Сверка синтетической сетки 16 000 составов с excel_port (≈10 мин)
+python -m scripts.verify_synthetic_grid --n 16000
+
+# Быстрая проверка на 200 составах без excel_port (≈1 с)
+python -m scripts.verify_synthetic_grid --n 200 --skip-port
 ```
+
+Скрипт `scripts/verify_synthetic_grid.py` — воспроизводимый корпус: 60 %
+типичных составов, 30 % граничных, 10 % с суммой 85/115 мас. %; критерий —
+совпадение именованных переменных и строки 287 с допуском 1e-6. Отчёт
+пишется в `reports/synthetic_grid/summary.json` (статусы, max|Δ|, покрытие
+каталога веток, распределение типов и полос).
 
 ### 3. Линтер/типы
 
@@ -88,7 +100,7 @@ src/
 │   ├── repository.py      # CRUD операции
 │   └── mappers.py         # domain ↔ db mappers
 ├── reports/               # Генераторы отчётов
-├── charts/                # 23 matplotlib + 14 plotly диаграмм
+├── charts/                # 8 matplotlib + 6 plotly диаграмм
 ├── utils/                 # Кэш, конфиг, логгер
 │   ├── config.py          # ConfigManager (debounce)
 │   ├── cache.py           # ResultCache (TTL)
@@ -138,7 +150,7 @@ src/
 | Команда | Описание |
 |---------|----------|
 | `calculate` | Расчёт Excel → Excel/CSV/JSON/PDF |
-| `chart` | Диаграмма (23 типов) |
+| `chart` | Диаграмма (8 статических типов) |
 | `report` | Отчёт (5 шаблонов) |
 | `validate` | Валидация Excel |
 | `info` | Инфо об образце |
@@ -181,33 +193,18 @@ src/
 ```
 src/charts/
 ├── base.py                          # ChartPlugin ABC + ChartData
-├── built_in/                        # 23 matplotlib-плагинов
+├── built_in/                        # 8 matplotlib-плагинов
 │   ├── bar_chart.py                 # stacked, normalized
 │   ├── pie_chart.py                 # sample_idx
 │   ├── defect_chart.py              # stacked
-│   ├── qapf.py                      # IUGS ternary
-│   ├── tas.py                       # TAS scatter
 │   ├── acnk.py                      # A-CN-K ternary
 │   ├── heatmap.py                   # mineral heatmap
 │   ├── rock_type_chart.py           # type distribution
-│   ├── feldspar_triangle.py         # Ab-An-Or ternary
-│   ├── harker.py                    # SiO₂ vs 10 oxides
-│   ├── afm.py                       # AFM ternary
-│   ├── sio2_k2o.py                  # Peccerillo-Taylor
-│   ├── bland_altman.py              # agreement plot
-│   ├── correlation.py               # Pearson heatmap (NaN-safe)
-│   ├── kf_chart.py                  # k1-k4 lines
 │   ├── box_plot.py                  # mineral distribution
-│   ├── radar_chart.py               # spider diagram
-│   ├── coefficient_heatmap.py       # k1-k4 heatmap
-│   ├── defect_accumulation.py       # stacked defect
-│   ├── pca_biplot.py                # PCA 2D
-│   ├── dendrogram.py                # hierarchical clustering
-│   ├── parallel_coordinates.py      # parallel axes
-│   └── mineral_mg_fe_al.py          # Mg-Fe-Al ternary
+│   └── pca_biplot.py                # PCA 2D
 ├── engines/
 │   ├── matplotlib_engine.py         # create_figure(), COLORS
 │   ├── plotly_engine.py             # save_html()
-│   └── plotly_charts.py             # 14 Plotly interactive
+│   └── plotly_charts.py             # 6 Plotly interactive
 └── custom/                          # пусто
 ```

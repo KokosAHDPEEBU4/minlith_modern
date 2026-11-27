@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
-
 from src.charts.base import ChartData, ChartPlugin
+from src.charts.data_builder import mineral_label, mineral_series, visible_mineral_fields
 from src.charts.engines.matplotlib_engine import (
     COLORS,
     create_figure,
@@ -30,24 +29,25 @@ class BoxPlotChart(ChartPlugin):
     def requires_oxides(self) -> bool:
         return False
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         fg = get_fg_color()
         grid = get_grid_color()
 
-        minerals = data.minerals_wt
-        if not minerals:
+        fields = visible_mineral_fields(data)
+        n_samples = len(data.sample_names)
+        if not fields or n_samples == 0:
             return create_figure(title="No mineral data")
 
-        names = list(minerals.keys())
+        names = [mineral_label(field) for field in fields]
         n = len(names)
 
         fig = create_figure(
-            figsize=(max(8, n * 0.8), 6),
+            figsize=(max(8, n * 0.9), 6),
             title=kwargs.get("title", "Mineral Distribution (wt%)"),
         )
         ax = fig.axes[0]
 
-        box_data = [np.array(minerals[m], dtype=float) for m in names]
+        box_data = [mineral_series(data, field, n_samples) for field in fields]
         colors = [COLORS[i % len(COLORS)] for i in range(n)]
 
         bp = ax.boxplot(box_data, patch_artist=True, widths=0.6,
@@ -57,7 +57,7 @@ class BoxPlotChart(ChartPlugin):
                         flierprops=dict(marker="o", markerfacecolor=COLORS[1],
                                         markersize=4, alpha=0.6))
 
-        for patch, color in zip(bp["boxes"], colors):
+        for patch, color in zip(bp["boxes"], colors, strict=False):
             patch.set_facecolor(color)
             patch.set_alpha(0.7)
             patch.set_edgecolor(fg)

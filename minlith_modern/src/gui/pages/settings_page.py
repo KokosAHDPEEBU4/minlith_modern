@@ -96,7 +96,7 @@ def _build_theme_qss(theme: str) -> str:
     return f"""
 QWidget {{ background-color: {c['window']}; color: {c['text']}; font-size: 13px; }}
 
-QLabel#navTitle {{ font-size: 17px; font-weight: bold; padding: 4px 20px 16px; }}
+QLabel#navTitle {{ font-size: 20px; font-weight: bold; padding: 4px 20px 16px; }}
 
 QListWidget#settingsNav {{
     background-color: {c['panel']}; border: none;
@@ -119,10 +119,14 @@ QFrame#settingsCard {{
     background-color: {c['panel']}; border: 1px solid {c['border']};
     border-radius: 10px;
 }}
-QLabel#cardTitle {{ font-size: 15px; font-weight: 600; }}
-QLabel#cardDesc {{ font-size: 12px; color: {c['muted']}; margin-bottom: 8px; }}
-QLabel#settingLabel {{ font-size: 14px; }}
-QLabel#settingSub {{ font-size: 12px; color: {c['muted']}; }}
+QLabel#cardTitle {{ font-size: 15px; font-weight: 600; background: transparent; }}
+QLabel#cardDesc {{
+    font-size: 12px; color: {c['muted']}; margin-bottom: 8px;
+    background: transparent;
+}}
+QLabel#settingLabel {{ font-size: 14px; background: transparent; }}
+QLabel#settingSub {{ font-size: 12px; color: {c['muted']}; background: transparent; }}
+QWidget#settingRow {{ background: transparent; }}
 
 QLineEdit {{
     padding: 6px 10px; border: 1px solid {c['border']};
@@ -553,7 +557,7 @@ class SettingsPage(QWidget):
             "Пустое значение = использовать базовую таблицу.\n"
             "Переопределения действуют поверх «Источника молярных масс»."
         )
-        hint.setStyleSheet("color: #888; font-size: 11px;")
+        hint.setStyleSheet("color: palette(mid); font-size: 11px;")
         lay.addWidget(hint)
 
         table = QTableWidget(len(base), 2, dialog)

@@ -25,7 +25,7 @@ class CoefficientHeatmap(ChartPlugin):
     def requires_oxides(self) -> bool:
         return False
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         import matplotlib.pyplot as plt
 
         bg = get_bg_color()
@@ -70,6 +70,6 @@ class CoefficientHeatmap(ChartPlugin):
         fig.tight_layout()
         return fig
 
-    def _empty_figure(self):
+    def _empty_figure(self) -> Any:
         from src.charts.engines.matplotlib_engine import create_figure
         return create_figure(title="No coefficient data (metadata['k_values'])")

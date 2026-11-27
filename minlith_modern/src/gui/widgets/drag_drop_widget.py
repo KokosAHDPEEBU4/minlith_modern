@@ -20,41 +20,26 @@ class DragDropWidget(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._label = QLabel("Перетащите файлы .xlsx или .csv сюда\nили используйте кнопку Импорт")
+        self._label.setObjectName("dropHint")
+        self._label.setProperty("dragging", False)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._label.setStyleSheet("""
-            QLabel {
-                border: 2px dashed #555;
-                border-radius: 8px;
-                padding: 20px;
-                color: #888;
-                font-size: 13px;
-            }
-        """)
         layout.addWidget(self._label)
+
+    def _set_dragging(self, active: bool) -> None:
+        self._label.setProperty("dragging", active)
+        style = self._label.style()
+        if style is not None:
+            style.unpolish(self._label)
+            style.polish(self._label)
+        self._label.update()
 
     def dragEnterEvent(self, event) -> None:
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
-            self._label.setStyleSheet("""
-                QLabel {
-                    border: 2px dashed #4a9eff;
-                    border-radius: 8px;
-                    padding: 20px;
-                    color: #4a9eff;
-                    font-size: 13px;
-                }
-            """)
+            self._set_dragging(True)
 
     def dragLeaveEvent(self, event) -> None:
-        self._label.setStyleSheet("""
-            QLabel {
-                border: 2px dashed #555;
-                border-radius: 8px;
-                padding: 20px;
-                color: #888;
-                font-size: 13px;
-            }
-        """)
+        self._set_dragging(False)
 
     def dropEvent(self, event) -> None:
         paths = []
@@ -64,12 +49,4 @@ class DragDropWidget(QWidget):
                 paths.append(path)
         if paths:
             self.files_dropped.emit(paths)
-        self._label.setStyleSheet("""
-            QLabel {
-                border: 2px dashed #555;
-                border-radius: 8px;
-                padding: 20px;
-                color: #888;
-                font-size: 13px;
-            }
-        """)
+        self._set_dragging(False)

@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 from src.core.calculator import Calculator
 from src.core.models import LEGACY_ENGINE_ALIASES, CalculationConfig, Sample
 from src.gui.dialogs.calculation_dialog import CalculationDialog
+from src.gui.layout import normalize_page_layout
 from src.gui.pages.branch_graph_page import BranchGraphPage
 from src.gui.pages.charts_page import ChartsPage
 from src.gui.pages.files_page import FilesPage
@@ -59,11 +60,12 @@ class MainWindow(QMainWindow):
 
         # ── Тулбар движков расчёта ──
         self._engine_bar = QToolBar("Движки расчёта")
-        self._engine_bar.setStyleSheet("QToolBar { spacing: 4px; padding: 4px; }")
+        self._engine_bar.setObjectName("engineBar")
         self._engine_bar.setMovable(False)
         self.addToolBar(Qt.ToolBarArea.TopToolBarArea, self._engine_bar)
 
         self._btn_excel_parity = QToolButton()
+        self._btn_excel_parity.setObjectName("engineParity")
         self._btn_excel_parity.setText("Excel (корректные округл.)")
         self._btn_excel_parity.setCheckable(True)
         self._btn_excel_parity.setToolTip(
@@ -74,6 +76,7 @@ class MainWindow(QMainWindow):
         self._engine_bar.addWidget(self._btn_excel_parity)
 
         self._btn_excel_exact = QToolButton()
+        self._btn_excel_exact.setObjectName("engineExact")
         self._btn_excel_exact.setText("Excel 1:1 (ROUND)")
         self._btn_excel_exact.setCheckable(True)
         self._btn_excel_exact.setToolTip(
@@ -90,7 +93,7 @@ class MainWindow(QMainWindow):
             "geological_theory — самостоятельная попытка по геологической теории")
         self._btn_geological_theory.clicked.connect(
             lambda: self._set_engine("geological_theory"))
-        self._engine_bar.addWidget(self._btn_geological_theory)
+        # Not added to the top toolbar until the engine is finished.
 
         self._btn_python_rework = QToolButton()
         self._btn_python_rework.setText("Python-переработка")
@@ -99,7 +102,7 @@ class MainWindow(QMainWindow):
             "python_rework — реализация, переработанная под Python (плейсхолдер)")
         self._btn_python_rework.clicked.connect(
             lambda: self._set_engine("python_rework"))
-        self._engine_bar.addWidget(self._btn_python_rework)
+        # Not added to the top toolbar until the engine is finished.
 
         self._update_engine_buttons()
 
@@ -118,7 +121,7 @@ class MainWindow(QMainWindow):
         sidebar_layout.setSpacing(2)
 
         title = QLabel("MINLITH")
-        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #89b4fa; padding: 8px 4px;")
+        title.setObjectName("appTitle")
         sidebar_layout.addWidget(title)
 
         self._nav_buttons: list[QPushButton] = []
@@ -194,6 +197,21 @@ class MainWindow(QMainWindow):
 
         main_layout.addWidget(self._stack)
 
+        # Shared margins/headers for every content page (Settings/Welcome have
+        # their own bespoke layouts).
+        for page, title, add_header in (
+            (self._files_page, "Файлы", False),
+            (self._input_page, "Ввод данных", False),
+            (self._results_page, "Результаты", False),
+            (self._charts_page, "Диаграммы", False),
+            (self._output_page, "Вывод диаграмм", False),
+            (self._reports_page, "Отчёты", True),
+            (self._history_page, "История", False),
+            (self._branch_graph_page, "Граф разветвлений", False),
+            (self._logs_page, "Журнал", True),
+        ):
+            normalize_page_layout(page, title, add_header=add_header)
+
         # Default to Welcome page
         self._switch_page(0)
 
@@ -223,6 +241,8 @@ class MainWindow(QMainWindow):
         self._stack.setCurrentIndex(index)
         for i, btn in enumerate(self._nav_buttons):
             btn.setChecked(i == index)
+        if hasattr(self, "_logs_page") and self._stack.widget(index) is self._logs_page:
+            self._logs_page.refresh_from_handler()
 
     def _on_save(self) -> None:
         """Ctrl+S — quick export results."""

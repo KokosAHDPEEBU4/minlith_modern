@@ -51,7 +51,7 @@ class SampleSelectorDialog(QDialog):
                     f"Всего: {len(names)}.")
         hint_lbl = QLabel(hint)
         hint_lbl.setWordWrap(True)
-        hint_lbl.setStyleSheet("color: #888; font-size: 11px;")
+        hint_lbl.setStyleSheet("color: palette(mid); font-size: 11px;")
         layout.addWidget(hint_lbl)
 
         self._list = QListWidget()
@@ -137,7 +137,7 @@ class ChartsPage(QWidget):
         toolbar.addWidget(self._btn_plotly)
 
         self._lbl_selection = QLabel("")
-        self._lbl_selection.setStyleSheet("color: #888;")
+        self._lbl_selection.setStyleSheet("color: palette(mid);")
         toolbar.addWidget(self._lbl_selection)
         toolbar.addStretch()
         layout.addLayout(toolbar)

@@ -1,5 +1,10 @@
 # Приближение / отдаление и взаимодействие с диаграммами в GUI
 
+> **Историческая спецификация.** Часть диаграмм, упомянутых ниже (TAS, QAPF,
+> AFM, Харкер, SiO₂–K₂O, фельдшпаты, Mg–Fe–Al), удалена вместе с магматическим
+> набором. Актуальный набор — `docs/reference/CHARTS_SEDIMENTARY.md`; механика
+> зума/синхронизации описана верно и применяется к оставшимся диаграммам.
+
 > Обновлено: 2026-09-17 · статус: реализовано (этапы 1–5 по `CHART_INTERACTIONS_SPEC.md`)
 > Модули: `chart_grid.py` (UI), `chart_interactions.py` (реестр), `zoom_math.py` (чистая математика)
 > Страницы: «Диаграммы» и «Вывод» (`ChartsPage`, `OutputPage`) — обе используют общий виджет `MultiChartView`.
@@ -229,7 +234,7 @@ PASS export: multi-page PDF with 2 pages
 ALL GUI SMOKE TESTS PASSED
 ```
 
-Полный тест-сьют: **1192 passed, 5 skipped** (включая `tests/test_chart_sizes.py`). Статический анализ (`ruff`, `select=E,F,I,N,W,UP`) — чисто.
+Полный тест-сьют: **1323 passed, 4 skipped** (включая `tests/test_chart_sizes.py`). Статический анализ (`ruff`, `select=E,F,I,N,W,UP`) — чисто.
 
 Примечания:
 - GUI-проверки идут в offscreen (`QT_QPA_PLATFORM=offscreen`); события синтезируются объектами с полями `inaxes/xdata/ydata/step` и MouseEvent.

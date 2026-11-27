@@ -23,7 +23,7 @@ from src.reports.word_generator import WordGenerator
 
 REPORT_CHART_TYPES = [
     "bar", "pie", "defect", "boxplot", "heatmap",
-    "correlation", "harker", "qapf", "tas", "radar",
+    "acnk", "rock_type", "pca_biplot",
 ]
 
 

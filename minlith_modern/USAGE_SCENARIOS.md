@@ -974,20 +974,16 @@ class ChartPlugin(ABC):
 | # | get_name() | requires_minerals | requires_oxides | Описание |
 |---|---|---|---|---|
 | 1 | Mineral Bar Chart | True | False | Столбчатая минералов |
-| 2 | Mineral Pie | True | False | Круговая минералов |
-| 3 | Defect Chart | False | True | Дефект оксидов |
-| 4 | QAPF | True | False | Треугольник QAPF |
-| 5 | TAS | False | True | Total Alkali vs Silica |
-| 6 | A-CN-K | False | True | Аксонометрическая |
-| 7 | Mineral Heatmap | True | False | Тепловая карта |
-| 8 | Rock Type Distribution | True | False | Распределение типов |
-| 9 | Feldspar Triangle | True | False | Треугольник полевых шпатов |
-| 10 | Harker | False | True | Вариационные диаграммы |
-| 11 | AFM | False | True | Треугольник AFM |
-| 12 | SiO₂-K₂O | False | True | Диаграмма SiO₂-K₂O |
-| 13 | Bland-Altman | False | True | Анализ различий |
-| 14 | Correlation | False | True | Корреляционная матрица |
-| 15 | KFChart | False | False | Зависимость k1-k4 от F |
+| 2 | Mineral Pie Chart | True | False | Круговая минералов |
+| 3 | Defect Chart | True | True | Дефект оксидов |
+| 4 | A-CN-K | False | True | Треугольник выветривания |
+| 5 | Mineral Heatmap | True | False | Тепловая карта |
+| 6 | Rock Type Distribution | False | False | Распределение типов 1–5 |
+| 7 | Mineral Box Plot | True | False | Распределение минералов |
+| 8 | PCA Biplot | True | False | Главные компоненты |
+
+Магматические диаграммы и дублирующие диагностические виды удалены; см.
+`docs/reference/CHARTS_SEDIMENTARY.md`.
 
 ---
 

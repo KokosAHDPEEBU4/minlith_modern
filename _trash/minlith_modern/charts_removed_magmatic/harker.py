@@ -45,7 +45,7 @@ class HarkerPlugin(ChartPlugin):
     def requires_oxides(self) -> bool:
         return True
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         bg = get_bg_color()
         fg = get_fg_color()
         grid = get_grid_color()
@@ -74,19 +74,23 @@ class HarkerPlugin(ChartPlugin):
             ax.scatter(sio2, y, c=accent, s=62, alpha=0.85,
                        edgecolors=fg, linewidth=0.8, zorder=5)
 
-            # Trend line
-            if len(sio2) >= 2:
+            # Trend line only when both axes vary; a constant FeO column used
+            # to draw a meaningless horizontal "trend".
+            r2: float | None = None
+            if len(sio2) >= 2 and np.std(sio2) > 0 and np.std(y) > 0:
                 coeffs = np.polyfit(sio2, y, 1)
                 x_line = np.linspace(min(sio2), max(sio2), 100)
                 ax.plot(x_line, np.polyval(coeffs, x_line), "--",
                         color=COLORS[2], alpha=0.7, linewidth=1.6)
+                r2 = float(np.corrcoef(sio2, y)[0, 1] ** 2)
 
             ax.set_xlabel("SiO₂ (wt%)", fontsize=12)
             ax.set_ylabel(label, fontsize=12)
-            ax.set_title(label, fontsize=13, fontweight="bold", color=fg)
+            title = f"{label}  ·  R² = {r2:.2f}" if r2 is not None else label
+            ax.set_title(title, fontsize=13, fontweight="bold", color=fg)
             ax.grid(True, color=grid, alpha=0.35)
 
-        for j in range(i + 1, len(axes)):
+        for j in range(len(OXIDES_TO_PLOT), len(axes)):
             axes[j].set_visible(False)
 
         fig.suptitle("Harker Variation Diagrams", fontsize=16,

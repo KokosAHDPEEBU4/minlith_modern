@@ -16,7 +16,7 @@ from src.gui.widgets.chart_sizes import (
 
 
 def test_registry_covers_all_builtin_types() -> None:
-    assert len(BUILTIN_SIZE_IDS) == 23
+    assert len(BUILTIN_SIZE_IDS) == 8
     assert BUILTIN_SIZE_IDS == BUILTIN_TYPE_IDS
     assert set(STANDARDS) == set(BUILTIN_TYPE_IDS)
 

@@ -92,7 +92,7 @@ def get_accent() -> str:
 
 
 def create_figure(
-    figsize: tuple[int, int] = (8, 6),
+    figsize: tuple[float, float] = (8, 6),
     title: str = "",
     theme: str | None = None,
 ) -> Figure:

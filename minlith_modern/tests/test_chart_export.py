@@ -10,7 +10,7 @@ from src.charts.engines.plotly_engine import PLOTLY_LABELS, export_plotly_html
 
 def test_plotly_labels_cover_all_charts() -> None:
     assert set(PLOTLY_LABELS) == set(PLOTLY_CHARTS)
-    assert len(PLOTLY_LABELS) == 14
+    assert len(PLOTLY_LABELS) == 6
 
 
 @pytest.mark.parametrize("chart_type", sorted(PLOTLY_CHARTS))
@@ -33,7 +33,7 @@ def test_export_plotly_html_unknown_chart(result_list, tmp_path) -> None:
 
 def test_export_plotly_html_multiple_combined(result_list, tmp_path) -> None:
     path = tmp_path / "combined.html"
-    ok = export_plotly_html(["bar", "tas", "harker"], result_list, path)
+    ok = export_plotly_html(["bar", "acnk", "heatmap"], result_list, path)
     assert ok is True
     assert path.exists()
     data = path.read_text(encoding="utf-8")

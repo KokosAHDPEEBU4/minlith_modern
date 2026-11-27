@@ -31,18 +31,13 @@ class CorrelationPlugin(ChartPlugin):
     def requires_oxides(self) -> bool:
         return True
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         import matplotlib.pyplot as plt
 
         bg = get_bg_color()
         fg = get_fg_color()
 
-        fields = [f[0] for f in CORR_FIELDS]
-        labels = [f[1] for f in CORR_FIELDS]
-        n = len(fields)
         n_samples = len(data.sample_names)
-
-        matrix = np.full((n, n), np.nan)
         if n_samples < 2:
             fig, ax = plt.subplots(figsize=(9, 8), facecolor=bg)
             ax.set_facecolor(bg)
@@ -50,17 +45,32 @@ class CorrelationPlugin(ChartPlugin):
                     ha="center", va="center", fontsize=12, transform=ax.transAxes, color=fg)
             return fig
 
+        # Constant oxides (e.g. FeO = 0 in a fully oxidised dataset) carry no
+        # correlation information and used to add a useless row of dashes.
+        pairs = [
+            (field, label) for field, label in CORR_FIELDS
+            if len(data.oxides.get(field, np.array([]))) >= 2
+            and float(np.std(data.oxides[field])) > 0
+        ]
+        if len(pairs) < 2:
+            fig, ax = plt.subplots(figsize=(9, 8), facecolor=bg)
+            ax.set_facecolor(bg)
+            ax.text(0.5, 0.5,
+                    "Need ≥2 non-constant oxides for correlation",
+                    ha="center", va="center", fontsize=12,
+                    transform=ax.transAxes, color=fg)
+            return fig
+
+        fields = [p[0] for p in pairs]
+        labels = [p[1] for p in pairs]
+        n = len(fields)
+        matrix = np.zeros((n, n))
         for i, fi in enumerate(fields):
             for j, fj in enumerate(fields):
-                xi = data.oxides.get(fi, np.array([]))
-                xj = data.oxides.get(fj, np.array([]))
-                if len(xi) < 2 or len(xj) < 2:
-                    continue
-                if np.std(xi) == 0 or np.std(xj) == 0:
-                    continue
-                matrix[i, j] = np.corrcoef(xi, xj)[0, 1]
+                matrix[i, j] = np.corrcoef(data.oxides[fi], data.oxides[fj])[0, 1]
 
-        fig, ax = plt.subplots(figsize=(9, 8), facecolor=bg)
+        fig, ax = plt.subplots(figsize=(max(8, n * 0.9), max(7, n * 0.8)),
+                               facecolor=bg)
         ax.set_facecolor(bg)
         im = ax.imshow(matrix, cmap="RdBu_r", vmin=-1, vmax=1, aspect="auto")
 
@@ -72,17 +82,18 @@ class CorrelationPlugin(ChartPlugin):
         for i in range(n):
             for j in range(n):
                 val = matrix[i, j]
-                if np.isnan(val):
-                    ax.text(j, i, "—", ha="center", va="center", fontsize=8, color=fg)
-                else:
-                    color = "white" if abs(val) > 0.6 else "black"
-                    ax.text(j, i, f"{val:.2f}", ha="center", va="center", fontsize=8, color=color)
+                # RdBu_r is white in the centre and dark at ±1: pick the text
+                # colour from the cell brightness, not from the theme.
+                color = "white" if abs(val) > 0.55 else "#1e1e2e"
+                ax.text(j, i, f"{val:.2f}", ha="center", va="center",
+                        fontsize=8, color=color)
 
         cbar = fig.colorbar(im, ax=ax, shrink=0.8)
         cbar.ax.yaxis.label.set_color(fg)
         cbar.ax.tick_params(colors=fg)
         cbar.set_label("Pearson r", color=fg)
 
-        ax.set_title("Correlation Matrix", fontsize=12, fontweight="bold", color=fg, pad=12)
+        ax.set_title("Correlation Matrix", fontsize=12, fontweight="bold",
+                     color=fg, pad=12)
         fig.tight_layout()
         return fig

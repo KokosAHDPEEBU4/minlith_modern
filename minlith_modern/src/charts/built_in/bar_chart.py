@@ -7,7 +7,17 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
+from src.charts.data_builder import (
+    mineral_label,
+    mineral_series,
+    visible_mineral_fields,
+)
+from src.charts.engines.matplotlib_engine import (
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
+)
 
 
 class BarChart(ChartPlugin):
@@ -25,21 +35,21 @@ class BarChart(ChartPlugin):
     def requires_oxides(self) -> bool:
         return False
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         fg = get_fg_color()
         grid = get_grid_color()
 
-        minerals = data.minerals_wt
-        if not minerals:
-            fig = create_figure(title="No mineral data")
-            return fig
+        fields = visible_mineral_fields(data)
+        n_samples = len(data.sample_names)
+        if not fields or n_samples == 0:
+            return create_figure(title="No mineral data")
 
         stacked = kwargs.get("stacked", False)
         normalized = kwargs.get("normalized", False)
 
-        names = list(minerals.keys())
-        n_samples = len(data.sample_names)
-        n_minerals = len(names)
+        values = {field: mineral_series(data, field, n_samples) for field in fields}
+        row_sums = np.sum(np.vstack(list(values.values())), axis=0)
+        row_sums[row_sums == 0] = 1.0
 
         fig = create_figure(
             figsize=(max(8, n_samples * 2), 6),
@@ -48,43 +58,27 @@ class BarChart(ChartPlugin):
         ax = fig.axes[0]
 
         x = np.arange(n_samples)
+        width = 0.8 / max(len(fields), 1)
 
         if stacked:
             bottom = np.zeros(n_samples)
-            for i, mineral in enumerate(names):
-                values = np.array(minerals[mineral], dtype=float)
+            for i, field in enumerate(fields):
+                series = values[field]
                 if normalized:
-                    row_sums = np.array([
-                        sum(minerals[m][s] for m in minerals) for s in range(n_samples)
-                    ])
-                    row_sums[row_sums == 0] = 1
-                    values = values / row_sums * 100
-                color = COLORS[i % len(COLORS)]
-                ax.bar(x, values, bottom=bottom, label=mineral, color=color,
-                       edgecolor="none", width=0.7)
-                bottom += values
-            if normalized:
-                ax.set_ylabel("Normalized %")
-            else:
-                ax.set_ylabel("wt%")
+                    series = series / row_sums * 100
+                ax.bar(x, series, bottom=bottom, label=mineral_label(field),
+                       color=COLORS[i % len(COLORS)], edgecolor="none", width=0.7)
+                bottom += series
         else:
-            width = 0.8 / max(n_minerals, 1)
-            for i, mineral in enumerate(names):
-                values = np.array(minerals[mineral], dtype=float)
+            for i, field in enumerate(fields):
+                series = values[field]
                 if normalized:
-                    row_sums = np.array([
-                        sum(minerals[m][s] for m in minerals) for s in range(n_samples)
-                    ])
-                    row_sums[row_sums == 0] = 1
-                    values = values / row_sums * 100
-                color = COLORS[i % len(COLORS)]
-                offset = (i - n_minerals / 2 + 0.5) * width
-                ax.bar(x + offset, values, width, label=mineral, color=color, edgecolor="none")
-            if normalized:
-                ax.set_ylabel("Normalized %")
-            else:
-                ax.set_ylabel("wt%")
+                    series = series / row_sums * 100
+                offset = (i - len(fields) / 2 + 0.5) * width
+                ax.bar(x + offset, series, width, label=mineral_label(field),
+                       color=COLORS[i % len(COLORS)], edgecolor="none")
 
+        ax.set_ylabel("Normalized %" if normalized else "wt%")
         ax.set_xticks(x)
         ax.set_xticklabels(data.sample_names, rotation=45, ha="right", fontsize=9)
         ax.legend(fontsize=8, loc="upper right", framealpha=0.3, labelcolor=fg)

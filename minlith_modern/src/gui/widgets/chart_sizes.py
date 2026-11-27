@@ -55,26 +55,11 @@ BUILTIN_SIZE_IDS: tuple[str, ...] = (
     "bar",
     "pie",
     "defect",
-    "qapf",
-    "tas",
     "a_cn_k",
     "heatmap",
     "rock_type",
-    "feldspar_triangle",
-    "harker",
-    "afm",
-    "sio2_k2o",
-    "bland_altman",
-    "correlation",
-    "k1_k4",
     "box_plot",
-    "radar",
-    "coefficient_heatmap",
-    "defect_accumulation",
     "pca_biplot",
-    "dendrogram",
-    "parallel_coordinates",
-    "mg_fe_al_ternary",
 )
 
 # ── Стандарты по типам ──────────────────────────────────────────────────────
@@ -88,39 +73,19 @@ STANDARDS: dict[str, ChartSizeSpec] = {
     # Отклонения по оксидам: умеренно широкие столбцы.
     "defect": ChartSizeSpec(max_aspect=2.6, max_width=900),
     # Классификационные/тройные: квадратные, ограниченная ширина.
-    "qapf": ChartSizeSpec(aspect=1.0, max_width=620),
-    "tas": ChartSizeSpec(aspect=1.35, max_width=780),
     "a_cn_k": ChartSizeSpec(aspect=1.0, max_width=620),
     # Тепловые карты: пропорции задаёт матрица (образцы × минералы/оксиды).
     "heatmap": ChartSizeSpec(max_aspect=2.4, max_width=1100),
     # Распределение типов пород: столбцы или круг, умеренная ширина.
     "rock_type": ChartSizeSpec(max_aspect=2.0, max_width=720),
-    "feldspar_triangle": ChartSizeSpec(aspect=1.0, max_width=620),
-    # Харкер: сетка подграфиков, допускаем ширину, но не «ленту».
-    "harker": ChartSizeSpec(max_aspect=2.4, max_width=1100),
-    "afm": ChartSizeSpec(aspect=1.0, max_width=620),
-    "sio2_k2o": ChartSizeSpec(aspect=1.15, max_width=720),
-    # Точечные диаграммы рассеяния: близки к квадрату.
-    "bland_altman": ChartSizeSpec(aspect=1.35, max_width=760),
-    "correlation": ChartSizeSpec(aspect=1.1, max_width=760),
-    # Параметры K: фиксированная широкая фигура (10×6).
-    "k1_k4": ChartSizeSpec(aspect=1.67, max_width=860),
     "box_plot": ChartSizeSpec(max_aspect=2.4, max_width=1100),
-    # Полярные: квадрат.
-    "radar": ChartSizeSpec(aspect=1.0, max_width=620),
-    # Коэффициентная тепловая карта: намеренно низкая и широкая.
-    "coefficient_heatmap": ChartSizeSpec(max_aspect=3.0, max_width=1100),
-    "defect_accumulation": ChartSizeSpec(max_aspect=2.6, max_width=1100),
     "pca_biplot": ChartSizeSpec(aspect=1.25, max_width=820),
-    "dendrogram": ChartSizeSpec(max_aspect=2.4, max_width=1100),
-    "parallel_coordinates": ChartSizeSpec(max_aspect=2.6, max_width=1100),
-    "mg_fe_al_ternary": ChartSizeSpec(aspect=1.0, max_width=620),
 }
 
 
 def _validate_standards() -> None:
-    """Стартовая проверка: все 23 type_id покрыты и уникальны."""
-    expected_len = 23
+    """Стартовая проверка: все 8 type_id покрыты и уникальны."""
+    expected_len = 8
     if len(BUILTIN_SIZE_IDS) != expected_len:
         raise AssertionError(
             f"Ожидалось {expected_len} стандартов размеров, получено {len(BUILTIN_SIZE_IDS)}"

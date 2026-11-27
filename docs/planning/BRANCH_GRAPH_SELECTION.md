@@ -189,8 +189,8 @@
 
 ### 5.1. Диаграммы
 
-- 23 matplotlib-плагина (`src/charts/built_in/`) + 14 интерактивных Plotly
-  (`src/charts/engines/plotly_charts.py`).
+- 16 matplotlib-плагинов (`src/charts/built_in/`) + 10 интерактивных Plotly
+  (`src/charts/engines/plotly_charts.py`); магматические удалены.
 - Единая сборка данных: `build_chart_data()` — `src/charts/data_builder.py:46`.
 - Контейнер данных `ChartData` — `src/charts/base.py:13-31`:
   `sample_names, oxides, minerals_wt, minerals_fu, defect, rock_types,
@@ -275,7 +275,7 @@ Sample ──► Calculator.calculate_single
   а не ветвлением по типу в `chart_grid.py`.
 - **AGENTS.md:** изменение кода/поведения ⇒ обновление md-файлов; числа в
   документации — из фактического прогона `pytest`.
-- **Счётчики:** сейчас `1192 passed, 5 skipped`; диаграмм 23 matplotlib + 14
+- **Счётчики:** сейчас `1406 passed, 4 skipped`; диаграмм 23 matplotlib + 14
   Plotly.
 
 ---
@@ -394,7 +394,7 @@ Sample ──► Calculator.calculate_single
 | GUI | `src/gui/main_window.py`, `src/gui/pages/charts_page.py`, `src/gui/widgets/chart_grid.py`, `src/gui/dialogs/calculation_dialog.py` |
 | Отчёты | `src/reports/chart_renderer.py`, `src/gui/pages/reports_page.py`, `src/reports/template_builder.py` |
 | Конфиг | `src/utils/config.py` |
-| Спец. диаграмм | `docs/CHART_INTERACTIONS_SPEC.md`, `docs/CHART_INTERACTIONS_TODO.md`, `docs/reference/CHARTS_CATALOG.md` |
+| Спец. диаграмм | `docs/CHART_INTERACTIONS_SPEC.md`, `docs/CHART_INTERACTIONS_TODO.md`, `docs/reference/CHARTS_SEDIMENTARY.md` |
 | Паритет/статусы | `docs/planning/todo2.md`, `minlith_modern/WORKFLOW.md` |
 
 ---

@@ -5,7 +5,7 @@
     python -m src calculate input.xlsx --format pdf --template full
     python -m src info input.xlsx
     python -m src validate input.xlsx
-    python -m src chart input.xlsx --type tas -o chart.png
+    python -m src chart input.xlsx --type acnk -o chart.png
     python -m src report input.xlsx --template standard -o report.pdf
     python -m src gui
 """
@@ -391,7 +391,7 @@ def cmd_list_charts(args: argparse.Namespace) -> int:
     for c in BUILTIN_CHARTS:
         print(f"  {c.get_name():20s}  {c.get_description()}")
     print()
-    print("Интерактивные (Plotly): bar, tas, harker, pie")
+    print("Интерактивные (Plotly): bar, pie, acnk, heatmap, boxplot, rock_type")
     return 0
 
 
@@ -501,9 +501,8 @@ def main_cli() -> int:
     _add_common_args(p_chart)
     p_chart.add_argument("-o", "--output", help="Путь для выходного файла")
     p_chart.add_argument("--type", "-T", default="bar",
-                         help="Тип диаграммы: bar, pie, qapf, tas, acnk, "
-                              "defect, heatmap, feldspar, "
-                              "harker, afm, sio2_k2o, bland_altman, correlation")
+                         help="Тип диаграммы: bar, pie, acnk, defect, heatmap, "
+                              "box_plot, rock_type, pca_biplot")
     p_chart.add_argument("--dpi", type=int, default=150, help="Разрешение изображения (DPI)")
     p_chart.add_argument("--interactive", action="store_true",
                          help="Экспорт в интерактивный HTML (Plotly)")

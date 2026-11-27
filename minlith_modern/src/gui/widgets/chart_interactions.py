@@ -78,26 +78,11 @@ BUILTIN_TYPE_IDS: tuple[str, ...] = (
     "bar",
     "pie",
     "defect",
-    "qapf",
-    "tas",
     "a_cn_k",
     "heatmap",
     "rock_type",
-    "feldspar_triangle",
-    "harker",
-    "afm",
-    "sio2_k2o",
-    "bland_altman",
-    "correlation",
-    "k1_k4",
     "box_plot",
-    "radar",
-    "coefficient_heatmap",
-    "defect_accumulation",
     "pca_biplot",
-    "dendrogram",
-    "parallel_coordinates",
-    "mg_fe_al_ternary",
 )
 
 
@@ -138,8 +123,6 @@ SPECS: dict[str, InteractionSpec] = {
         click_action=True,
     ),
     "defect": _cat_bar_tiered("bar-y"),
-    "qapf": _cat_equal_aspect("ternary-100"),
-    "tas": _cat_equal_aspect("tas-field", min_range_fraction=0.25),
     "a_cn_k": _cat_equal_aspect("ternary-100"),
     "heatmap": InteractionSpec(
         category=ChartCategory.HEATMAP,
@@ -147,71 +130,17 @@ SPECS: dict[str, InteractionSpec] = {
         sync_group="samples",
     ),
     "rock_type": _cat_bar_tiered("bar-y"),
-    "feldspar_triangle": _cat_equal_aspect("ternary-100"),
-    "harker": InteractionSpec(
-        category=ChartCategory.DECARTESIAN,
-        sync_group="harker-x:{oxide}",
-    ),
-    "afm": _cat_equal_aspect("ternary-100"),
-    "sio2_k2o": _cat_equal_aspect("tas-field", min_range_fraction=0.25),
-    "bland_altman": InteractionSpec(
-        category=ChartCategory.DECARTESIAN,
-        sync_group="ba",
-    ),
-    "correlation": InteractionSpec(
-        category=ChartCategory.HEATMAP,
-        hover_info=True,
-    ),
-    "k1_k4": InteractionSpec(
-        category=ChartCategory.DECARTESIAN,
-        sync_group="k-params",
-    ),
     "box_plot": _cat_bar_tiered("bar-y"),
-    "radar": InteractionSpec(
-        category=ChartCategory.POLAR,
-        zoom_xy=False,
-        zoom_x=False,
-        zoom_y=False,
-        pan=False,
-        rect_zoom=False,
-        resettable=True,
-        hover_info=True,
-    ),
-    "coefficient_heatmap": InteractionSpec(
-        category=ChartCategory.HEATMAP,
-        hover_info=True,
-    ),
-    "defect_accumulation": InteractionSpec(
-        category=ChartCategory.DECARTESIAN,
-        sync_group="samples",
-    ),
     "pca_biplot": InteractionSpec(
         category=ChartCategory.DECARTESIAN,
         hover_info=True,
         sync_group="pca",
     ),
-    "dendrogram": InteractionSpec(
-        category=ChartCategory.CATEGORY_AXIS,
-        zoom_xy=False,
-        zoom_x=False,
-        zoom_y=True,
-        hover_info=True,
-    ),
-    "parallel_coordinates": InteractionSpec(
-        category=ChartCategory.CATEGORY_AXIS,
-        zoom_xy=False,
-        zoom_x=False,
-        zoom_y=True,
-        rect_zoom=False,
-        hover_info=True,
-    ),
-    "mg_fe_al_ternary": _cat_equal_aspect("ternary-100"),
 }
 
-
 def _validate_registry() -> None:
-    """Стартовая проверка реестра: все 23 type_id определены и уникальны."""
-    expected_len = 23
+    """Стартовая проверка реестра: все 8 type_id определены и уникальны."""
+    expected_len = 8
     if len(BUILTIN_TYPE_IDS) != expected_len:
         raise AssertionError(
             f"Ожидалось {expected_len} встроенных диаграмм, получено {len(BUILTIN_TYPE_IDS)}"

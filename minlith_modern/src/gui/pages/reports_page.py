@@ -55,8 +55,8 @@ BLOCK_TYPES = [
 CHART_TYPES = [
     ("bar", "Столбчатая"), ("pie", "Круговая"), ("defect", "Дефект"),
     ("boxplot", "Box Plot"), ("heatmap", "Тепловая карта"),
-    ("correlation", "Корреляция"), ("harker", "Harker"),
-    ("qapf", "QAPF"), ("tas", "TAS"), ("radar", "Radar"),
+    ("acnk", "A-CN-K"), ("rock_type", "Типы пород"),
+    ("pca_biplot", "PCA"),
 ]
 
 CHART_LABELS = dict(CHART_TYPES)
@@ -239,7 +239,7 @@ class ReportsPage(QWidget):
 
         self._edit_hint = QLabel("Выберите блок в списке слева")
         self._edit_hint.setWordWrap(True)
-        self._edit_hint.setStyleSheet("color: #888; font-style: italic; padding: 8px;")
+        self._edit_hint.setStyleSheet("color: palette(mid); font-style: italic; padding: 8px;")
         right_lay.addWidget(self._edit_hint)
 
         right_lay.addStretch()
@@ -460,7 +460,7 @@ class ReportsPage(QWidget):
         }
         self._edit_hint.setText(hint.get(bt, ""))
         self._edit_hint.setStyleSheet(
-            "color: #888; font-style: italic; padding: 4px; font-size: 11px;"
+            "color: palette(mid); font-style: italic; padding: 4px; font-size: 11px;"
         )
         self._edit_hint.setVisible(True)
 
@@ -536,7 +536,7 @@ class ReportsPage(QWidget):
             padding: 12px; color: #555;">
             <div style="color: #999; font-size: 11px;">{self._template.name} —
             {len(self._template.blocks)} блоков</div>
-            <p style="color: #888; font-style: italic;">Нет данных. Выполните расчёт.</p>
+            <p style="color: palette(mid); font-style: italic;">Нет данных. Выполните расчёт.</p>
             <ol style="font-size: 12px;">{blocks_html}</ol>
             </body></html>
             """

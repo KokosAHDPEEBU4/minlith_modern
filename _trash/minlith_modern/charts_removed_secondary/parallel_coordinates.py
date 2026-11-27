@@ -4,8 +4,20 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
+
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
+from src.charts.data_builder import (
+    mineral_label,
+    mineral_series,
+    visible_mineral_fields,
+)
+from src.charts.engines.matplotlib_engine import (
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
+)
 
 
 class ParallelCoordinates(ChartPlugin):
@@ -23,17 +35,18 @@ class ParallelCoordinates(ChartPlugin):
     def requires_oxides(self) -> bool:
         return False
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         fg = get_fg_color()
         grid = get_grid_color()
 
-        minerals = data.minerals_wt
-        if not minerals:
+        fields = visible_mineral_fields(data)
+        n_samples = len(data.sample_names)
+        if not fields or n_samples == 0:
             return create_figure(title="No mineral data")
 
-        names = list(minerals.keys())
-        n_samples = len(data.sample_names)
+        names = [mineral_label(field) for field in fields]
         n_minerals = len(names)
+        series = np.vstack([mineral_series(data, field, n_samples) for field in fields])
 
         fig = create_figure(
             figsize=(max(10, n_minerals * 1.2), 6),
@@ -42,9 +55,9 @@ class ParallelCoordinates(ChartPlugin):
         ax = fig.axes[0]
 
         for i in range(n_samples):
-            values = [float(minerals[m][i]) if i < len(minerals[m]) else 0.0 for m in names]
             color = COLORS[i % len(COLORS)]
-            ax.plot(range(n_minerals), values, color=color, linewidth=1.5, alpha=0.7,
+            ax.plot(range(n_minerals), series[:, i], color=color, linewidth=1.5,
+                    alpha=0.7,
                     label=data.sample_names[i] if n_samples <= 20 else None)
 
         ax.set_xticks(range(n_minerals))

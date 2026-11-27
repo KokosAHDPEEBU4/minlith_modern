@@ -7,7 +7,12 @@ from typing import Any
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
-from src.charts.engines.matplotlib_engine import COLORS, create_figure, get_fg_color, get_grid_color
+from src.charts.engines.matplotlib_engine import (
+    COLORS,
+    create_figure,
+    get_fg_color,
+    get_grid_color,
+)
 
 
 class DefectAccumulation(ChartPlugin):
@@ -25,7 +30,7 @@ class DefectAccumulation(ChartPlugin):
     def requires_oxides(self) -> bool:
         return True
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         fg = get_fg_color()
         grid = get_grid_color()
 
@@ -34,7 +39,12 @@ class DefectAccumulation(ChartPlugin):
             return create_figure(title="No defect data")
 
         n_samples = len(data.sample_names)
-        oxides = list(defect.keys())
+        oxides = [
+            oxide for oxide, values in defect.items()
+            if len(values) and float(np.nanmax(np.abs(values))) > 0.01
+        ]
+        if not oxides or n_samples == 0:
+            return create_figure(title="Defect ≈ 0 for all oxides")
 
         fig = create_figure(
             figsize=(max(8, n_samples * 1.5), 6),
@@ -46,9 +56,12 @@ class DefectAccumulation(ChartPlugin):
         bottom = np.zeros(n_samples)
 
         for i, oxide in enumerate(oxides):
-            values = np.array(defect[oxide], dtype=float)
+            values = np.asarray(defect[oxide], dtype=float)[:n_samples]
+            if values.size < n_samples:
+                values = np.pad(values, (0, n_samples - values.size))
             color = COLORS[i % len(COLORS)]
-            ax.bar(x, values, bottom=bottom, label=oxide, color=color, edgecolor="none", width=0.7)
+            ax.bar(x, values, bottom=bottom, label=oxide, color=color,
+                   edgecolor="none", width=0.7)
             bottom += values
 
         ax.set_xticks(x)

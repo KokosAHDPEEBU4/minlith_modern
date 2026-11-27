@@ -15,11 +15,11 @@ from src.charts.engines.matplotlib_engine import (
 )
 
 _TYPE_NAMES = {
-    1: "Type 1",
-    2: "Type 2",
-    3: "Type 3",
-    4: "Type 4",
-    5: "Type 5",
+    1: "Тип 1",
+    2: "Тип 2",
+    3: "Тип 3",
+    4: "Тип 4",
+    5: "Тип 5",
 }
 
 
@@ -38,7 +38,7 @@ class RockTypeChart(ChartPlugin):
     def requires_oxides(self) -> bool:
         return False
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         bg = get_bg_color()
         fg = get_fg_color()
         grid = get_grid_color()
@@ -64,10 +64,11 @@ class RockTypeChart(ChartPlugin):
                 ax.text(i, v + 0.1, str(v), ha="center", va="bottom", color=fg, fontsize=10)
         else:
             fig = create_figure(figsize=(7, 7), title="Rock Type Distribution")
-            ax = fig.add_subplot(111)
+            ax = fig.axes[0]
             ax.set_facecolor(bg)
+            ax.axis("off")
             colors = COLORS[:len(labels)]
-            wedges, texts, autotexts = ax.pie(
+            wedges, texts, autotexts = ax.pie(  # type: ignore[misc]
                 values, labels=labels, autopct="%1.0f%%",
                 colors=colors, startangle=90,
                 textprops={"color": fg, "fontsize": 11},

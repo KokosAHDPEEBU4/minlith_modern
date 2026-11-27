@@ -55,6 +55,7 @@ class BranchGraphPage(QWidget):
         layout.addWidget(header)
 
         top = QHBoxLayout()
+        top.setSpacing(8)
         top.addWidget(QLabel("Образец:"))
         self._sample_combo = QComboBox()
         self._sample_combo.setMinimumWidth(200)
@@ -74,23 +75,30 @@ class BranchGraphPage(QWidget):
         self._btn_recalc = QPushButton("Пересчитать с выбранными ветками")
         self._btn_recalc.clicked.connect(self._on_recalculate)
         top.addWidget(self._btn_recalc)
+        layout.addLayout(top)
+
+        # Second row: route/scenario actions.  They used to be appended to the
+        # same row and were clipped at typical window widths.
+        actions = QHBoxLayout()
+        actions.setSpacing(8)
+        actions.addStretch()
 
         self._btn_export = QPushButton("Экспорт маршрута (JSON)")
         self._btn_export.clicked.connect(self._on_export_json)
-        top.addWidget(self._btn_export)
+        actions.addWidget(self._btn_export)
 
         self._btn_compare = QPushButton("Сравнить с авто")
         self._btn_compare.clicked.connect(self._on_compare)
-        top.addWidget(self._btn_compare)
+        actions.addWidget(self._btn_compare)
 
         self._btn_save_scenario = QPushButton("Сохранить сценарий…")
         self._btn_save_scenario.clicked.connect(self._on_save_scenario)
-        top.addWidget(self._btn_save_scenario)
+        actions.addWidget(self._btn_save_scenario)
 
         self._btn_load_scenario = QPushButton("Загрузить сценарий…")
         self._btn_load_scenario.clicked.connect(self._on_load_scenario)
-        top.addWidget(self._btn_load_scenario)
-        layout.addLayout(top)
+        actions.addWidget(self._btn_load_scenario)
+        layout.addLayout(actions)
 
         body = QHBoxLayout()
 
@@ -104,7 +112,7 @@ class BranchGraphPage(QWidget):
         side.addWidget(QLabel("Принудительный выбор (override):"))
         self._overrides_label = QLabel("нет")
         self._overrides_label.setWordWrap(True)
-        self._overrides_label.setStyleSheet("color: #888;")
+        self._overrides_label.setStyleSheet("color: palette(mid);")
         side.addWidget(self._overrides_label)
         side.addWidget(QLabel("Результат:"))
         self._result_label = QLabel("")

@@ -69,7 +69,7 @@ class EngineCompareDialog(QDialog):
         layout.addLayout(top)
 
         self._summary = QLabel("Выберите образец и нажмите «Сравнить».")
-        self._summary.setStyleSheet("color: #888;")
+        self._summary.setStyleSheet("color: palette(mid);")
         layout.addWidget(self._summary)
 
         self._table = QTableWidget(0, 4)

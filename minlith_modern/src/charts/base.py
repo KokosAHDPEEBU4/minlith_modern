@@ -36,7 +36,7 @@ class ChartPlugin(ABC):
 
     @abstractmethod
     def get_name(self) -> str:
-        """Short name for display (e.g. 'QAPF')."""
+        """Short name for display (e.g. 'A-CN-K')."""
 
     @abstractmethod
     def get_description(self) -> str:
@@ -53,11 +53,11 @@ class ChartPlugin(ABC):
         """Whether this chart needs oxide data."""
 
     @abstractmethod
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         """Render chart and return the matplotlib Figure."""
 
     def export(self, data: ChartData, path: Path, fmt: str = "png",
-               dpi: int = 150, **kwargs) -> None:
+               dpi: int = 150, **kwargs: Any) -> None:
         """Export chart to file.
 
         ``fmt`` defaults to the file extension of ``path`` (``png`` if unknown).

@@ -23,28 +23,13 @@ CHART_ALIASES: dict[str, str] = {
     "defect": "Defect Chart",
     "boxplot": "Mineral Box Plot",
     "heatmap": "Mineral Heatmap",
-    "correlation": "correlation",
-    "harker": "harker",
-    "qapf": "QAPF",
-    "tas": "TAS",
     "acnk": "A-CN-K",
-    "radar": "Mineral Radar",
-    "kf": "Коэффициенты хлорита vs F",
     "rock_type": "Rock Type Distribution",
-    "feldspar": "Feldspar Triangle",
-    "sio2_k2o": "sio2_k2o",
-    "afm": "afm",
-    "coefficient_heatmap": "Coefficient Heatmap",
-    "defect_accumulation": "Defect Accumulation",
     "pca_biplot": "PCA Biplot",
-    "dendrogram": "Dendrogram",
-    "parallel_coordinates": "Parallel Coordinates",
-    "mg_fe_al": "Mg-Fe-Al Ternary",
-    "bland_altman": "bland_altman",
 }
 
 # Типы, для которых рендер выполняется по одному образцу.
-_SINGLE_SAMPLE_TYPES = ("pie", "defect", "radar", "kf")
+_SINGLE_SAMPLE_TYPES = ("pie", "defect")
 
 
 def find_chart_plugin(chart_type: str):

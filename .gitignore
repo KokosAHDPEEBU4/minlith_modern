@@ -59,3 +59,14 @@ Desktop.ini
 /mineral_box_plot.png
 /sio2_k2o.png
 /tas.png
+
+# ── Рабочие материалы конференции и агента (не часть продукта) ──
+tezis/
+.opencode/
+_trash/
+MINLITH_materials_*.zip
+
+# ── Генерируемые артефакты проверок и печатных версий ──
+reports/synthetic_grid/samples.csv
+docs/reference/charts_active_light/
+docs/reference/CHARTS_ACTIVE_cheatsheet.html

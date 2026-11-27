@@ -23,7 +23,7 @@ class DefectChart(ChartPlugin):
     def requires_oxides(self) -> bool:
         return True
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         fg = get_fg_color()
         grid = get_grid_color()
 
@@ -48,7 +48,8 @@ class DefectChart(ChartPlugin):
         pairs = [(o, v) for o, v in zip(oxides, values) if abs(v) > 0.01]
         if not pairs:
             return create_figure(title=f"{sample_name} — defect ≈ 0")
-        oxides, values = zip(*pairs)
+        oxides = [o for o, _ in pairs]
+        values = [v for _, v in pairs]
 
         fig = create_figure(
             figsize=(max(8, len(oxides) * 0.8), 5),

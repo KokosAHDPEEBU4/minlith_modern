@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from src.charts.base import ChartData, ChartPlugin
+from src.charts.data_builder import mineral_label, visible_mineral_fields
 from src.charts.engines.matplotlib_engine import (
     create_figure,
     get_accent,
@@ -31,14 +33,14 @@ class RadarChart(ChartPlugin):
     def requires_oxides(self) -> bool:
         return False
 
-    def render(self, data: ChartData, **kwargs) -> Any:
+    def render(self, data: ChartData, **kwargs: Any) -> Any:
         bg = get_bg_color()
         fg = get_fg_color()
         grid = get_grid_color()
         accent = get_accent()
 
-        minerals = data.minerals_wt
-        if not minerals:
+        fields = visible_mineral_fields(data)
+        if not fields:
             return create_figure(title="No mineral data")
 
         sample_idx = kwargs.get("sample_idx", 0)
@@ -48,17 +50,24 @@ class RadarChart(ChartPlugin):
             else "Sample"
         )
 
-        names = list(minerals.keys())
+        # Keep the radar readable: show at most the 12 most abundant minerals.
+        ranked = sorted(
+            fields,
+            key=lambda f: float(data.minerals_wt[f][sample_idx])
+            if sample_idx < len(data.minerals_wt[f]) else 0.0,
+            reverse=True,
+        )[:12]
+        values = [
+            float(data.minerals_wt[f][sample_idx])
+            if sample_idx < len(data.minerals_wt[f]) else 0.0
+            for f in ranked
+        ]
+        names = [mineral_label(f) for f in ranked]
         n = len(names)
         if n < 3:
             fig = create_figure(title=f"{sample_name} — need ≥3 minerals for radar")
             return fig
 
-        values = [
-            float(minerals[m][sample_idx])
-            if sample_idx < len(minerals[m]) else 0.0
-            for m in names
-        ]
         max_val = max(values) if values else 1.0
         if max_val == 0:
             max_val = 1.0
@@ -72,7 +81,9 @@ class RadarChart(ChartPlugin):
 
         ticks = [0.25 * max_val, 0.5 * max_val, 0.75 * max_val, max_val]
 
-        fig = create_figure(figsize=(8, 8), title=f"{sample_name} — Mineral Profile")
+        fig = plt.figure(figsize=(8, 8), facecolor=bg)
+        fig.suptitle(f"{sample_name} — Mineral Profile", color=fg, fontsize=14,
+                     fontweight="bold", y=0.98)
         ax = fig.add_subplot(111, polar=True)
         ax.set_facecolor(bg)
 
@@ -80,7 +91,7 @@ class RadarChart(ChartPlugin):
         ax.fill(angles, values_plot, color=accent, alpha=0.25)
 
         ax.set_xticks(np.linspace(0, 2 * np.pi, n, endpoint=False))
-        ax.set_xticklabels(names, fontsize=9, color=fg)
+        ax.set_xticklabels(names, fontsize=8, color=fg)
         ax.set_yticks(ticks)
         ax.set_yticklabels([fmt(v) for v in ticks], fontsize=7, color=fg)
         ax.set_ylim(0, max_val * 1.1)

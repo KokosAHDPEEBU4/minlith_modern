@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import plotly.graph_objects as go
 
@@ -45,17 +46,9 @@ def save_html(fig: go.Figure, path: str | Path, title: str = "") -> None:
 PLOTLY_LABELS: dict[str, str] = {
     "bar": "Столбчатая (минералы)",
     "pie": "Круговая (минералы)",
-    "tas": "TAS-диаграмма",
-    "qapf": "QAPF",
     "acnk": "A-CN-K",
-    "afm": "AFM",
-    "harker": "Харкер (Harker)",
     "heatmap": "Тепловая карта минералов",
-    "correlation": "Корреляция",
-    "kf": "Коэффициенты хлорита vs F",
     "boxplot": "Ящики (box plot)",
-    "violin": "Скрипки (violin)",
-    "parallel": "Параллельные координаты",
     "rock_type": "Распределение типов пород",
 }
 
@@ -65,7 +58,7 @@ def _write_combined_html(
     path: Path,
     title: str,
     chart_names: list[str],
-    data=None,
+    data: Any | None = None,
 ) -> None:
     """Write one standalone HTML report with several figures and a summary."""
     import html as html_mod
@@ -81,7 +74,7 @@ def _write_combined_html(
         sample_names = list(data.sample_names)
         for fld, vals in data.minerals_wt.items():
             if len(vals) > 0 and max(float(v) for v in vals) > 0:
-                minerals_used.append(MINERAL_LABELS.get(fld, fld))
+                minerals_used.append(MINERAL_LABELS.get(fld) or str(fld))
 
     esc = html_mod.escape
 
@@ -130,7 +123,7 @@ def _write_combined_html(
 
 def export_plotly_html(
     chart_type: str | list[str],
-    results,
+    results: Any,
     path: str | Path,
     title: str = "",
 ) -> bool:

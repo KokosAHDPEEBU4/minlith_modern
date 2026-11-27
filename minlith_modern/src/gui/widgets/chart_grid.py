@@ -6,7 +6,7 @@ import logging
 from typing import NamedTuple
 
 import numpy as np
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -52,7 +53,7 @@ DEFAULT_COLUMNS = 2
 MIN_CANVAS_WIDTH = 320
 
 # Типы, которые всегда занимают всю ширину сетки (много подграфиков).
-FULL_WIDTH_TYPE_IDS: frozenset[str] = frozenset({"harker"})
+FULL_WIDTH_TYPE_IDS: frozenset[str] = frozenset()
 
 
 class _AxisHome(NamedTuple):
@@ -65,6 +66,17 @@ class _AxisHome(NamedTuple):
 def _noop_scroll_zoom(event) -> None:
     """Заглушка для встроенного scroll-зума matplotlib (отключение)."""
     return None
+
+
+def _short_sample_name(name: str) -> str:
+    """Короткая подпись для узкой колонки выбора образцов."""
+    text = " ".join(str(name).split())
+    if len(text) <= 24:
+        return text
+    parts = text.split()
+    if len(parts) >= 2 and parts[-1].startswith("("):
+        return " ".join(parts[-2:])
+    return text[:23].rstrip() + "…"
 
 
 def _now_stamp() -> str:
@@ -114,6 +126,10 @@ class _ChartTile(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
         layout.setSpacing(2)
+        # Two-column grids used to squeeze tiles to ~318 px, clipping the
+        # plot and its control row.  A fixed floor keeps the chart usable.
+        self.setMinimumHeight(440)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         self._title = QLabel()
         self._title.setStyleSheet("font-weight: bold; font-size: 12px; padding: 2px;")
@@ -127,20 +143,18 @@ class _ChartTile(QWidget):
         layout.addWidget(self._canvas_host, stretch=1)
 
         btn_row = QHBoxLayout()
+        btn_row.setSpacing(6)
         self._btn_zoom_out = QPushButton("Отдалить")
-        self._btn_zoom_out.setFixedHeight(28)
         self._btn_zoom_out.setToolTip("Отдалить (колесо мыши — вниз)")
         self._btn_zoom_out.clicked.connect(self._on_zoom_out)
         btn_row.addWidget(self._btn_zoom_out)
 
         self._btn_zoom_in = QPushButton("Приблизить")
-        self._btn_zoom_in.setFixedHeight(28)
         self._btn_zoom_in.setToolTip("Приблизить (колесо мыши — вверх)")
         self._btn_zoom_in.clicked.connect(self._on_zoom_in)
         btn_row.addWidget(self._btn_zoom_in)
 
-        self._btn_reset = QPushButton("По умолчанию")
-        self._btn_reset.setFixedHeight(28)
+        self._btn_reset = QPushButton("Сброс")
         self._btn_reset.setToolTip("Сбросить масштаб этой диаграммы к исходному")
         self._btn_reset.clicked.connect(self.reset_view)
         btn_row.addWidget(self._btn_reset)
@@ -148,8 +162,10 @@ class _ChartTile(QWidget):
         btn_row.addStretch()
 
         self._btn_export = QPushButton("Экспорт")
-        self._btn_export.setFixedHeight(28)
         btn_row.addWidget(self._btn_export)
+        for _btn in (self._btn_zoom_out, self._btn_zoom_in,
+                     self._btn_reset, self._btn_export):
+            _btn.setStyleSheet("padding: 4px 8px; font-size: 12px;")
         layout.addLayout(btn_row)
 
         self._chart_idx: int = -1
@@ -301,7 +317,8 @@ class _ChartTile(QWidget):
         if canvas is None:
             return
         avail_w = self._canvas_host.width()
-        if avail_w <= 1:
+        avail_h = self._canvas_host.height()
+        if avail_w <= 1 or avail_h <= 1:
             return
         spec = self._size_spec
         aspect = aspect_for(spec, self._native_aspect())
@@ -309,6 +326,13 @@ class _ChartTile(QWidget):
         width = max(MIN_CANVAS_WIDTH, width)
         height = int(round(width / aspect)) if aspect > 0 else width
         height = max(spec.min_height, min(height, spec.max_height))
+        # The tile has a finite height too (especially in a 2-column grid):
+        # shrink by height instead of letting the fixed canvas spill out.
+        if height > avail_h:
+            height = avail_h
+            width = int(round(height * aspect)) if aspect > 0 else width
+        width = max(1, width)
+        height = max(1, height)
         if canvas.width() == width and canvas.height() == height:
             return
         canvas.setFixedSize(width, height)
@@ -932,22 +956,29 @@ class MultiChartView(QWidget):
         self._btn_reset_all.clicked.connect(self.reset_all)
         ctrl_row.addWidget(self._btn_reset_all)
 
-        self._btn_export_all = QPushButton("Экспорт всех в PNG")
-        self._btn_export_all.clicked.connect(self.export_all)
-        ctrl_row.addWidget(self._btn_export_all)
+        layout.addLayout(ctrl_row)
 
-        self._btn_export_pdf = QPushButton("Экспорт всех в PDF")
-        self._btn_export_pdf.clicked.connect(self.export_all_pdf)
-        ctrl_row.addWidget(self._btn_export_pdf)
+        # Second control row: export + zoom sync.  Keeping them on a separate
+        # row avoids clipping the rightmost checkbox at 1366-1500 px widths.
+        ctrl_row2 = QHBoxLayout()
+        ctrl_row2.addStretch()
 
         self._chk_sync = QCheckBox("Синхронизировать зум")
         self._chk_sync.setToolTip(
             "Зум/пан плитки применяется ко всем плиткам той же группы "
-            "(по sync_group спецификации: bar-y, ternary-100, tas-field, samples и др.)"
+            "(по sync_group спецификации: bar-y, ternary-100, samples и др.)"
         )
-        ctrl_row.addWidget(self._chk_sync)
+        ctrl_row2.addWidget(self._chk_sync)
 
-        layout.addLayout(ctrl_row)
+        self._btn_export_all = QPushButton("Экспорт всех в PNG")
+        self._btn_export_all.clicked.connect(self.export_all)
+        ctrl_row2.addWidget(self._btn_export_all)
+
+        self._btn_export_pdf = QPushButton("Экспорт всех в PDF")
+        self._btn_export_pdf.clicked.connect(self.export_all_pdf)
+        ctrl_row2.addWidget(self._btn_export_pdf)
+
+        layout.addLayout(ctrl_row2)
 
         # ── Body: side panel (диаграммы → минералы → построить) + grid ──
         body = QHBoxLayout()
@@ -973,6 +1004,7 @@ class MultiChartView(QWidget):
             check_layout.addWidget(cb)
 
         check_layout.addStretch()
+        check_group.setFixedWidth(200)
         columns.addWidget(check_group, stretch=1)
 
         # ── Уровень 2: выбор образца ──
@@ -997,6 +1029,7 @@ class MultiChartView(QWidget):
         self._samples_checkbox_layout.setContentsMargins(0, 0, 0, 0)
         self._samples_checkbox_layout.setSpacing(2)
         samples_layout.addWidget(self._samples_widget)
+        self._samples_group.setFixedWidth(168)
         columns.addWidget(self._samples_group, stretch=1)
 
         # ── Уровень 3: выбор минералов ──
@@ -1022,6 +1055,7 @@ class MultiChartView(QWidget):
         self._mineral_checkbox_layout.setSpacing(2)
         mineral_layout.addWidget(self._mineral_widget)
 
+        self._mineral_group.setFixedWidth(170)
         columns.addWidget(self._mineral_group, stretch=1)
 
         side_layout.addLayout(columns, stretch=1)
@@ -1042,8 +1076,15 @@ class MultiChartView(QWidget):
         scroll.setWidgetResizable(True)
         self._grid_widget = QWidget()
         self._grid_layout = QGridLayout(self._grid_widget)
+        self._grid_layout.setContentsMargins(0, 0, 0, 0)
         self._grid_layout.setSpacing(8)
         scroll.setWidget(self._grid_widget)
+        self._grid_scroll = scroll
+        self._last_grid_width = 0
+        self._grid_scroll.verticalScrollBar().rangeChanged.connect(
+            lambda *_: QTimer.singleShot(0, self._equalize_tiles))
+        self._grid_scroll.horizontalScrollBar().rangeChanged.connect(
+            lambda *_: QTimer.singleShot(0, self._equalize_tiles))
 
         body.addWidget(scroll, stretch=1)
 
@@ -1106,7 +1147,8 @@ class MultiChartView(QWidget):
         names = list(names or [])
         self._samples_group.setEnabled(bool(names))
         for i, name in enumerate(names):
-            cb = QCheckBox(str(name))
+            cb = QCheckBox(_short_sample_name(name))
+            cb.setToolTip(str(name))
             cb.setChecked(selected is None or i in selected)
             cb.stateChanged.connect(self._on_sample_toggled)
             self._sample_checkboxes[i] = cb
@@ -1279,7 +1321,9 @@ class MultiChartView(QWidget):
         for chart_idx in selected:
             chart = BUILTIN_CHARTS[chart_idx]
             try:
-                fig = chart.render(render_data)
+                # The tile already has its own short title; an internal figure
+                # title would be clipped/duplicated in narrow grid cells.
+                fig = chart.render(render_data, title="")
                 chart_type = resolve_type_id(chart_idx)
                 tile = _ChartTile(zoom_step=self._zoom_step)
                 tile.set_figure(chart_idx, fig, chart.get_name(),
@@ -1328,6 +1372,28 @@ class MultiChartView(QWidget):
                 if col >= cols:
                     cur_row += 1
                     col = 0
+        QTimer.singleShot(0, self._equalize_tiles)
+
+    def _equalize_tiles(self) -> None:
+        """Сделать колонки одинаковыми по фактической ширине viewport."""
+        if not self._tiles:
+            return
+        viewport = self._grid_scroll.viewport().width()
+        if viewport <= 1 or abs(viewport - self._last_grid_width) < 2:
+            return
+        self._last_grid_width = viewport
+        cols = max(1, min(self._columns_spin.value(), len(self._tiles)))
+        spacing = self._grid_layout.spacing()
+        tile_w = max(MIN_CANVAS_WIDTH + 8,
+                     (viewport - spacing * (cols - 1) - 4) // cols)
+        for tile in self._tiles:
+            tile.setFixedWidth(
+                viewport if getattr(tile, "_full_width", False) else tile_w)
+
+    def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        if self._tiles:
+            QTimer.singleShot(0, self._equalize_tiles)
 
     def _reflow_tiles(self) -> None:
         if not self._tiles:

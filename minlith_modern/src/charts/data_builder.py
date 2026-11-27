@@ -17,7 +17,7 @@ MINERAL_FIELDS = [
 
 OXIDE_FIELDS = [
     "sio2", "tio2", "al2o3", "fe2o3", "feo", "mgo", "cao",
-    "na2o", "k2o", "p2o5", "mno",
+    "na2o", "k2o", "p2o5", "mno", "co2",
 ]
 
 MINERAL_LABELS: dict[str, str] = {
@@ -41,6 +41,42 @@ MINERAL_LABELS: dict[str, str] = {
     "ht": "Гематит",
     "prl": "Пиролюзит",
 }
+
+
+def visible_mineral_fields(
+    data: ChartData, threshold: float = 0.01
+) -> list[str]:
+    """Return mineral fields that actually occur in at least one sample.
+
+    Zero-only rows (e.g. magnetite in a quartz arenite) made legends and
+    heatmaps unreadable; charts should show only minerals present in the data.
+    """
+    fields: list[str] = []
+    for field, values in data.minerals_wt.items():
+        if len(values) == 0:
+            continue
+        try:
+            peak = float(np.nanmax(np.abs(np.asarray(values, dtype=float))))
+        except (TypeError, ValueError):
+            continue
+        if peak > threshold:
+            fields.append(field)
+    return fields
+
+
+def mineral_label(field: str) -> str:
+    """Human-readable Russian label for a mineral field."""
+    return MINERAL_LABELS.get(field, field)
+
+
+def mineral_series(
+    data: ChartData, field: str, n_samples: int
+) -> np.ndarray:
+    """Return a mineral series padded/truncated to ``n_samples``."""
+    values = np.asarray(data.minerals_wt.get(field, []), dtype=float)
+    if values.size >= n_samples:
+        return values[:n_samples]
+    return np.pad(values, (0, n_samples - values.size))
 
 
 def build_chart_data(results: list[CalculationResult]) -> ChartData:
