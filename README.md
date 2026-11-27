@@ -25,6 +25,15 @@ python -m src.cli calculate input.xlsx -o results.xlsx   # CLI
 
 Подробнее: [`minlith_modern/README.md`](minlith_modern/README.md).
 
+## Лицензирование
+
+- Community-версия — **AGPL-3.0-only** ([`LICENSE`](LICENSE)).
+- Для компаний доступна **платная коммерческая лицензия** — условия и
+  порядок оформления в [`LICENSING.md`](LICENSING.md).
+- Внешние вклады — по [`CLA.md`](CLA.md).
+
+Контакт для коммерческих запросов: **[укажите e-mail]**.
+
 ## Статус
 
 - Полный паритет расчётного движка с Excel-оригиналом: **16000/16000** (2026-09-16);
